@@ -43,7 +43,7 @@
             </div>
         </div>
         @if($badan->hasPages())
-        <div class="card-footer bg-white border-top py-3">{{ $badan->links('pagination::bootstrap-5') }}</div>
+        <div class="card-footer bg-white border-top py-3">{{ $badan->links('pagination::bootstrap-4') }}</div>
         @endif
     </div>
 @endsection

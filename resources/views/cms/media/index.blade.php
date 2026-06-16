@@ -65,7 +65,7 @@
         </div>
         @if($media->hasPages())
         <div class="card-footer bg-white border-top py-3">
-            {{ $media->links('pagination::bootstrap-5') }}
+            {{ $media->links('pagination::bootstrap-4') }}
         </div>
         @endif
         @else

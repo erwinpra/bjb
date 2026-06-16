@@ -10,19 +10,24 @@
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
             <h6 class="fw-semibold mb-0"><i class="bi bi-person-badge me-2"></i>All Data Client</h6>
-            <a href="{{ route('cms.data-client.create') }}" class="btn btn-primary btn-sm">
-                <i class="bi bi-plus-lg me-1"></i> Create Data Client
-            </a>
+            <div class="d-flex gap-2">
+                <a href="{{ route('cms.data-client.import') }}" class="btn btn-info btn-sm text-white">
+                    <i class="bi bi-upload me-1"></i> Import Excel
+                </a>
+                <a href="{{ route('cms.data-client.create') }}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-lg me-1"></i> Create Data Client
+                </a>
+            </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-4">ID</th>
                             <th>Nama Client</th>
                             <th>Tipe Badan</th>
                             <th>NPWP/NIK</th>
+                            <th>Email</th>
                             <th>KPP</th>
                             <th>No. Telephone</th>
                             <th class="text-end pe-4">Actions</th>
@@ -31,10 +36,10 @@
                     <tbody>
                         @forelse($dataClients as $d)
                         <tr>
-                            <td class="ps-4 text-muted small">#{{ $d->id }}</td>
                             <td class="fw-medium">{{ $d->nama_client }}</td>
-                            <td><span class="badge bg-secondary bg-opacity-10 text-secondary">{{ $d->tipe_badan ?: '-' }}</span></td>
+                            <td><span class="badge bg-secondary bg-opacity-10 text-secondary">{{ $d->badan->tipe ?? '-' }}</span></td>
                             <td><code class="small">{{ $d->npwp ?: '-' }}</code></td>
+                            <td><span class="small">{{ $d->email ?: '-' }}</span></td>
                             <td><span class="small">{{ $d->kpp ?: '-' }}</span></td>
                             <td><span class="small">{{ $d->no_telephone ?: '-' }}</span></td>
                             <td class="text-end pe-4">
@@ -74,7 +79,7 @@
             </div>
         </div>
         @if($dataClients->hasPages())
-        <div class="card-footer bg-white border-top py-3">{{ $dataClients->links('pagination::bootstrap-5') }}</div>
+        <div class="card-footer bg-white border-top py-3">{{ $dataClients->links('pagination::bootstrap-4') }}</div>
         @endif
     </div>
 @endsection

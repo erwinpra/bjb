@@ -31,7 +31,7 @@
                             <option value="">-- Pilih Tipe --</option>
                             @foreach($badan as $b)
                                 <option value="{{ $b->id }}" data-tipe="{{ $b->tipe }}"
-                                    {{ old('tipe_badan', optional($dataClient)->tipe_badan ?? '') == $b->tipe ? 'selected' : '' }}>
+                                    {{ old('tipe_badan', optional($dataClient)->tipe_badan ?? '') == $b->id ? 'selected' : '' }}>
                                     {{ $b->tipe }}
                                 </option>
                             @endforeach
@@ -50,6 +50,29 @@
                         <label class="form-label fw-semibold small">No. Telephone</label>
                         <input type="text" name="no_telephone" value="{{ old('no_telephone', $dataClient->no_telephone ?? '') }}" class="form-control" placeholder="0812-XXXX-XXXX">
                     </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small">Email</label>
+                        <input type="email" name="email" value="{{ old('email', $dataClient->email ?? '') }}" class="form-control" placeholder="client@example.com">
+                    </div>
+                    @if($dataClient)
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Password</label>
+                            <div class="input-group">
+                                <input type="text" name="password" id="passwordField" class="form-control" placeholder="Kosongkan jika tidak diubah" value="{{ old('password') }}">
+                                <button type="button" class="btn btn-outline-secondary" onclick="generatePassword()"><i class="bi bi-arrow-repeat"></i></button>
+                            </div>
+                            <div class="form-text small">Kosongkan jika tidak ingin mengubah password.</div>
+                        </div>
+                    @else
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small">Password <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="text" name="password" id="passwordField" class="form-control" value="{{ $generatedPassword ?? '' }}" readonly>
+                                <button type="button" class="btn btn-outline-secondary" onclick="generatePassword()"><i class="bi bi-arrow-repeat"></i></button>
+                            </div>
+                            <div class="form-text small text-info">Simpan password ini dan bagikan ke client.</div>
+                        </div>
+                    @endif
                     <div class="col-12">
                         <label class="form-label fw-semibold small">Alamat</label>
                         <textarea name="alamat" rows="3" class="form-control" placeholder="Alamat lengkap">{{ old('alamat', $dataClient->alamat ?? '') }}</textarea>
@@ -87,5 +110,13 @@
             input.maxLength = 16;
         }
     });
+    function generatePassword() {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
+        let pwd = '';
+        for (let i = 0; i < 12; i++) {
+            pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        document.getElementById('passwordField').value = pwd;
+    }
 </script>
 @endpush

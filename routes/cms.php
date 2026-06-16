@@ -18,6 +18,8 @@ Route::prefix($prefix)
     ->group(function () {
 
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('profile', [\App\Http\Controllers\AuthController::class, 'showProfile'])->name('profile');
+        Route::post('profile/password', [\App\Http\Controllers\AuthController::class, 'updatePassword'])->name('profile.password');
 
         if (config('cms.modules.role.enabled', true)) {
             Route::resource('roles', RoleController::class)->names('roles');
@@ -32,7 +34,11 @@ Route::prefix($prefix)
         }
 
         if (config('cms.modules.data_client.enabled', true)) {
-            Route::resource('data-client', DataClientController::class)->names('data-client');
+            Route::resource('data-client', DataClientController::class)->except(['show'])->names('data-client');
+            Route::get('data-client/import/template', [DataClientController::class, 'downloadTemplate'])->name('data-client.import.template');
+            Route::get('data-client/import', [DataClientController::class, 'showImport'])->name('data-client.import');
+            Route::post('data-client/import/preview', [DataClientController::class, 'previewImport'])->name('data-client.import.preview');
+            Route::post('data-client/import/confirm', [DataClientController::class, 'confirmImport'])->name('data-client.import.confirm');
         }
 
         if (config('cms.modules.badan.enabled', true)) {
@@ -51,5 +57,9 @@ Route::prefix($prefix)
             Route::get('transaksi', [\App\Http\Controllers\Cms\TransaksiController::class, 'create'])->name('transaksi.index');
             Route::get('transaksi/create', [\App\Http\Controllers\Cms\TransaksiController::class, 'create'])->name('transaksi.create');
             Route::post('transaksi/preview', [\App\Http\Controllers\Cms\TransaksiController::class, 'preview'])->name('transaksi.preview');
+            Route::post('transaksi', [\App\Http\Controllers\Cms\TransaksiController::class, 'store'])->name('transaksi.store');
+            Route::post('transaksi/export-pdf', [\App\Http\Controllers\Cms\TransaksiController::class, 'exportPdf'])->name('transaksi.export-pdf');
+            Route::post('transaksi/export-excel', [\App\Http\Controllers\Cms\TransaksiController::class, 'exportExcel'])->name('transaksi.export-excel');
+            Route::get('transaksi/load-data', [\App\Http\Controllers\Cms\TransaksiController::class, 'loadData'])->name('transaksi.load-data');
         }
     });
