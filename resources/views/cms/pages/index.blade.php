@@ -88,7 +88,7 @@
         </div>
         @if($pages->hasPages())
         <div class="card-footer bg-white border-top py-3">
-            {{ $pages->links('pagination::bootstrap-5') }}
+            {{ $pages->links('pagination::bootstrap-4') }}
         </div>
         @endif
     </div>

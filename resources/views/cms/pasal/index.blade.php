@@ -76,7 +76,7 @@
             </div>
         </div>
         @if($pasal->hasPages())
-        <div class="card-footer bg-white border-top py-3">{{ $pasal->links('pagination::bootstrap-5') }}</div>
+        <div class="card-footer bg-white border-top py-3">{{ $pasal->links('pagination::bootstrap-4') }}</div>
         @endif
     </div>
 @endsection

@@ -85,6 +85,9 @@
                     <i class="bi bi-person-circle fs-5"></i>
                     {{ auth()->user()->name ?? '' }}
                 </div>
+                <a href="{{ route('cms.profile') }}" class="btn btn-outline-light btn-sm w-100 mb-2">
+                    <i class="bi bi-gear"></i> Profile
+                </a>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit" class="btn btn-outline-light btn-sm w-100">
