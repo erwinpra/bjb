@@ -74,9 +74,9 @@
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card bg-secondary bg-opacity-10 border-0 text-center py-3">
-                        <div class="fs-2 fw-bold text-secondary">{{ $totalRows - $newCount - $updateCount }}</div>
-                        <small class="text-muted">Tanpa NPWP</small>
+                    <div class="card bg-info bg-opacity-10 border-0 text-center py-3">
+                        <div class="fs-2 fw-bold text-info">{{ $cabangCount ?? 0 }}</div>
+                        <small class="text-muted">Cabang</small>
                     </div>
                 </div>
             </div>
@@ -104,8 +104,11 @@
             @endif
 
             <h6 class="fw-semibold mb-3">Preview Data</h6>
-            <div class="table-responsive" style="max-height:400px">
-                <table class="table table-sm table-hover mb-0">
+            <div class="mb-3">
+                <input type="text" id="searchPreview" class="form-control form-control-sm" placeholder="Cari nama atau NPWP..." style="max-width:300px">
+            </div>
+            <div style="overflow-x: auto; max-height:400px">
+                <table class="table table-sm table-hover mb-0" id="previewTable">
                     <thead class="table-light sticky-top">
                         <tr>
                             <th>#</th>
@@ -124,7 +127,7 @@
                     </thead>
                     <tbody>
                         @forelse($preview as $i => $item)
-                        <tr class="{{ $item['exists'] ? 'table-warning' : '' }}">
+                        <tr class="{{ $item['is_cabang'] ? 'table-info' : ($item['exists'] ? 'table-warning' : '') }}">
                             <td>{{ $i + 1 }}</td>
                             <td>{{ $item['kpp'] ?: '-' }}</td>
                             <td>{{ $item['nama'] }}</td>
@@ -137,7 +140,9 @@
                             <td>{{ $item['ar'] ?: '-' }}</td>
                             <td>{{ $item['ptkp'] ?: '-' }}</td>
                             <td>
-                                @if($item['exists'])
+                                @if($item['is_cabang'])
+                                    <span class="badge bg-info text-white">Cabang</span>
+                                @elseif($item['exists'])
                                     <span class="badge bg-warning text-dark">Akan Diupdate</span>
                                 @else
                                     <span class="badge bg-success">Baru</span>
@@ -165,8 +170,23 @@
                     </button>
                 </form>
             </div>
+            {{-- Loading Backdrop --}}
+            <div id="loadingBackdrop" class="d-none" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;">
+                <div class="text-center text-white">
+                    <div class="spinner-border mb-3" role="status" style="width:3rem;height:3rem;"></div>
+                    <div class="fw-semibold">Sedang memproses import...</div>
+                </div>
+            </div>
+
             @push('scripts')
             <script>
+            document.getElementById('searchPreview')?.addEventListener('input', function() {
+                var q = this.value.toLowerCase();
+                document.querySelectorAll('#previewTable tbody tr').forEach(function(tr) {
+                    var match = tr.textContent.toLowerCase().indexOf(q) > -1;
+                    tr.style.display = match ? '' : 'none';
+                });
+            });
             document.querySelectorAll('input[name="import_mode"]').forEach(function(el) {
                 el.addEventListener('change', function() {
                     document.getElementById('importModeInput').value = this.value;
@@ -184,6 +204,8 @@
                     e.preventDefault();
                 } else if (mode === 'skip' && !confirm('Import {{ $newCount }} data baru? Data yang sudah ada akan dilewati.')) {
                     e.preventDefault();
+                } else {
+                    document.getElementById('loadingBackdrop').classList.remove('d-none');
                 }
             });
             </script>

@@ -93,6 +93,42 @@
                 </table>
             </div>
         </div>
+
+        @if(($dataClient->cabangs_count ?? 0) > 0)
+        <div class="mt-4 pt-3 border-top">
+            <h6 class="fw-semibold mb-3"><i class="bi bi-diagram-2 me-2"></i>Cabang ({{ $dataClient->cabangs_count }})</h6>
+            <div style="overflow-x: auto;">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nama</th>
+                            <th>NPWP</th>
+                            <th>KPP</th>
+                            <th>Email</th>
+                            <th>No. Telp</th>
+                            <th>Alamat NPWP</th>
+                            <th>AR</th>
+                            <th>PTKP</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($dataClient->cabangs as $cab)
+                        <tr>
+                            <td class="fw-medium">{{ $cab->nama_client }}</td>
+                            <td><code>{{ $cab->npwp ?: '-' }}</code></td>
+                            <td>{{ $cab->kpp ?: '-' }}</td>
+                            <td><small>{{ $cab->email ?: '-' }}</small></td>
+                            <td>{{ $cab->no_telephone ?: '-' }}</td>
+                            <td><small class="text-muted">{{ Str::limit($cab->alamat_npwp, 40) ?: '-' }}</small></td>
+                            <td>{{ $cab->AR ?: '-' }}</td>
+                            <td>{{ $cab->ptkp ?: '-' }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endif
     </div>
 </div>
 @endsection

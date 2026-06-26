@@ -18,6 +18,7 @@ class DataClient extends Model implements AuthenticatableContract
         'client_role_id',
         'npwp',
         'npwp_cabang',
+        'npwp_cabang_id',
         'kpp',
         'AR',
         'ptkp',
@@ -45,6 +46,16 @@ class DataClient extends Model implements AuthenticatableContract
     public function clientRole()
     {
         return $this->belongsTo(ClientRole::class, 'client_role_id');
+    }
+
+    public function npwpCabangRel()
+    {
+        return $this->belongsTo(NpwpCabang::class, 'npwp_cabang_id');
+    }
+
+    public function cabangs()
+    {
+        return $this->hasMany(NpwpCabang::class, 'data_client_id');
     }
 
     public function hasClientPermission($permission)

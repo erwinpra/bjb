@@ -11,7 +11,7 @@ class MasterRumusController extends Controller
 {
     public function index()
     {
-        $rumus = MasterRumus::latest()->paginate(15);
+        $rumus = MasterRumus::with('badan')->latest()->paginate(15);
         return view('cms::master-rumus.index', compact('rumus'));
     }
 
@@ -24,7 +24,7 @@ class MasterRumusController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'tipe_badan' => 'required|max:100',
+            'tipe_badan' => 'required|exists:cms_badan,id',
             'max_value' => 'required|numeric|min:0',
             'potongan_persentase' => 'required|numeric|min:0|max:100',
         ]);
@@ -44,7 +44,7 @@ class MasterRumusController extends Controller
     public function update(Request $request, MasterRumus $masterRumus)
     {
         $data = $request->validate([
-            'tipe_badan' => 'required|max:100',
+            'tipe_badan' => 'required|exists:cms_badan,id',
             'max_value' => 'required|numeric|min:0',
             'potongan_persentase' => 'required|numeric|min:0|max:100',
         ]);

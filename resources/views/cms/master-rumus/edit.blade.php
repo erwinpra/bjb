@@ -25,7 +25,7 @@
                         <select name="tipe_badan" class="form-select" required>
                             <option value="">-- Pilih --</option>
                             @foreach($badan as $b)
-                                <option value="{{ $b->tipe }}" {{ old('tipe_badan', $rumus->tipe_badan ?? '') == $b->tipe ? 'selected' : '' }}>{{ $b->tipe }}</option>
+                                <option value="{{ $b->id }}" {{ old('tipe_badan', $rumus->tipe_badan ?? '') == $b->id ? 'selected' : '' }}>{{ $b->tipe }}</option>
                             @endforeach
                         </select>
                     </div>

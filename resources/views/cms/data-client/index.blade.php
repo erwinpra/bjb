@@ -20,6 +20,15 @@
             </div>
         </div>
         <div class="card-body p-0">
+            <div class="px-3 py-3 border-bottom">
+                <form method="GET" class="d-flex gap-2">
+                    <input type="text" name="search" class="form-control form-control-sm" placeholder="Cari nama, NPWP, email, KPP..." value="{{ $search ?? '' }}" style="max-width:300px">
+                    <button type="submit" class="btn btn-sm btn-outline-primary"><i class="bi bi-search"></i></button>
+                    @if($search ?? false)
+                        <a href="{{ route('cms.data-client.index') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-x-lg"></i></a>
+                    @endif
+                </form>
+            </div>
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
@@ -30,6 +39,7 @@
                             <th>NPWP/NIK</th>
                             <th>Email</th>
                             <th>KPP</th>
+                            <th class="text-center">Cabang</th>
                             <th class="text-end pe-4">Actions</th>
                         </tr>
                     </thead>
@@ -48,6 +58,15 @@
                             <td><code class="small">{{ $d->npwp ?: '-' }}</code></td>
                             <td><span class="small">{{ $d->email ?: '-' }}</span></td>
                             <td><span class="small">{{ $d->kpp ?: '-' }}</span></td>
+                            <td class="text-center">
+                                @if(($d->cabangs_count ?? 0) > 0)
+                                    <span class="badge bg-info text-white" title="{{ $d->cabangs_count }} cabang">
+                                        <i class="bi bi-diagram-2 me-1"></i>{{ $d->cabangs_count }}
+                                    </span>
+                                @else
+                                    <span class="text-muted small">-</span>
+                                @endif
+                            </td>
                             <td class="text-end pe-4">
                                 <a href="{{ route('cms.data-client.show', $d) }}" class="btn btn-sm btn-outline-info" title="Lihat Detail">
                                     <i class="bi bi-eye"></i>
@@ -77,7 +96,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="7" class="text-center py-5 text-muted">
+                            <td colspan="8" class="text-center py-5 text-muted">
                                 <i class="bi bi-person-badge display-4 d-block mb-2 text-secondary opacity-50"></i>
                                 No data client yet.
                             </td>

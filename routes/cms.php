@@ -56,6 +56,8 @@ Route::prefix($prefix)
 
         if (config('cms.modules.master_rumus.enabled', true)) {
             Route::get('master-rumus', [MasterRumusController::class, 'index'])->name('master-rumus.index');
+            Route::get('master-rumus/create', [MasterRumusController::class, 'create'])->name('master-rumus.create');
+            Route::post('master-rumus', [MasterRumusController::class, 'store'])->name('master-rumus.store');
             Route::get('master-rumus/{masterRumus}/edit', [MasterRumusController::class, 'edit'])->name('master-rumus.edit');
             Route::put('master-rumus/{masterRumus}', [MasterRumusController::class, 'update'])->name('master-rumus.update');
         }
@@ -75,5 +77,6 @@ Route::prefix($prefix)
             Route::post('transaksi/export-pdf', [\App\Http\Controllers\Cms\TransaksiController::class, 'exportPdf'])->name('transaksi.export-pdf');
             Route::post('transaksi/export-excel', [\App\Http\Controllers\Cms\TransaksiController::class, 'exportExcel'])->name('transaksi.export-excel');
             Route::get('transaksi/load-data', [\App\Http\Controllers\Cms\TransaksiController::class, 'loadData'])->name('transaksi.load-data');
+            Route::get('transaksi/cabangs/{client}', [\App\Http\Controllers\Cms\TransaksiController::class, 'getCabangs'])->name('transaksi.cabangs');
         }
     });

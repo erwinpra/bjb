@@ -10,6 +10,11 @@
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
             <h6 class="fw-semibold mb-0"><i class="bi bi-calculator me-2"></i>All Master Rumus</h6>
+            <div class="d-flex gap-2">
+                <a href="{{ route('cms.master-rumus.create') }}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-lg me-1"></i> Create Master Rumus
+                </a>
+            </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -27,7 +32,7 @@
                         @forelse($rumus as $r)
                         <tr>
                             <td class="ps-4 text-muted small">#{{ $r->id }}</td>
-                            <td><span class="badge bg-secondary bg-opacity-10 text-secondary">{{ $r->tipe_badan }}</span></td>
+                            <td><span class="badge bg-secondary bg-opacity-10 text-secondary">{{ $r->badan->tipe ?? $r->tipe_badan }}</span></td>
                             <td>Rp {{ number_format($r->max_value, 0, ',', '.') }}</td>
                             <td>{{ number_format($r->potongan_persentase, 2) }}%</td>
                             <td class="text-end pe-4">

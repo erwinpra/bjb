@@ -13,4 +13,9 @@ class MasterRumus extends Model
         'max_value',
         'potongan_persentase',
     ];
+
+    public function badan()
+    {
+        return $this->belongsTo(Badan::class, 'tipe_badan', 'id');
+    }
 }

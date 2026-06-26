@@ -33,21 +33,10 @@
                 </div>
             </div>
 
-            <div id="clientDetail" class="row g-3 mb-4 d-none">
-                <div class="col-12">
-                    <div class="card bg-light border">
-                        <div class="card-body py-3 px-4">
-                            <div class="row g-2 small">
-                                <div class="col-md-3"><span class="text-muted">Nama:</span> <span id="detailNama" class="fw-medium"></span></div>
-                                <div class="col-md-3"><span class="text-muted">NPWP:</span> <span id="detailNpwp"></span></div>
-                                <div class="col-md-2"><span class="text-muted">Tipe:</span> <span id="detailTipe"></span></div>
-                                <div class="col-md-2"><span class="text-muted">KPP:</span> <span id="detailKpp"></span></div>
-                                <div class="col-md-2"><span class="text-muted">No. Telp:</span> <span id="detailPhone"></span></div>
-                                <div class="col-12 mt-2"><span class="text-muted">Alamat NPWP:</span> <span id="detailAlamatNpwp"></span></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            {{-- Cabang Tabs --}}
+            <div id="cabangSection" class="d-none mb-4">
+                <ul class="nav nav-tabs" id="cabangTabs" role="tablist"></ul>
+                <div class="tab-content border border-top-0 rounded-bottom p-3 bg-light" id="cabangTabContent"></div>
             </div>
 
             <hr>
@@ -195,8 +184,6 @@
                 </div>
             </div>
 
-            <hr class="mt-5">
-
             {{-- Hidden fields --}}
             <input type="hidden" name="total_omset" id="totalOmsetHidden" value="0">
             <input type="hidden" name="total_pph" id="totalPphHidden" value="0">
@@ -261,6 +248,11 @@ const clients = @json($clients);
 const badanList = @json($badan);
 const rumusList = @json($rumus);
 const bulanList = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+const cabangData = @json($cabangs ?? []);
+
+var activeTabPrefix = 'induk';
+var tabData = {};
+var hasCabang = false;
 
 $(document).ready(function() {
     $('#clientSelect').select2({
@@ -268,502 +260,540 @@ $(document).ready(function() {
         allowClear: true,
         width: '100%'
     });
+    $('#clientSelect').on('select2:select select2:clear change', function() {
+        handleClientChange();
+    });
+    $('body').on('shown.bs.tab', '#cabangTabs button[data-bs-toggle="tab"]', function() {
+        saveCurrentInputs();
+        activeTabPrefix = $(this).data('prefix');
+        restoreCurrentInputs();
+    });
 });
+
+function handleClientChange() {
+    const el = document.getElementById('clientSelect');
+    const id = parseInt(el.value);
+    if (!id) {
+        document.getElementById('cabangSection').classList.add('d-none');
+        document.getElementById('omsetTahunanSection').classList.add('d-none');
+        document.getElementById('omsetBulananSection').classList.add('d-none');
+        document.getElementById('hasilPerhitunganSection').classList.add('d-none');
+        toggleButtons();
+        return;
+    }
+
+    tabData = {};
+    activeTabPrefix = 'induk';
+    hasCabang = false;
+
+    const opt = el.options[el.selectedIndex];
+    if (!opt) return;
+    const tipeId = parseInt(opt.dataset.tipeId);
+    const tipeName = getTipeName(tipeId);
+    const c = clients.find(x => x.id === id);
+
+    clearInputs();
+
+    tabData['induk'] = {
+        nama: c ? c.nama_client : 'Induk',
+        npwp: c ? (c.npwp || '-') : '-',
+        npwp_cabang_id: null,
+        tipeId: tipeId,
+        kpp: c ? (c.kpp || '-') : '-',
+        no_telephone: c ? (c.no_telephone || '-') : '-',
+        alamat_npwp: c ? (c.alamat_npwp || '-') : '-',
+        omsetTahunan: '',
+        omsetBulanan: {}
+    };
+    for (let mo = 1; mo <= 12; mo++) tabData['induk'].omsetBulanan[mo] = '';
+
+    const cabangSection = document.getElementById('cabangSection');
+    const tabsContainer = document.getElementById('cabangTabs');
+    const contentContainer = document.getElementById('cabangTabContent');
+    const clientCabangs = cabangData[id] || [];
+
+    if (clientCabangs && clientCabangs.length > 0) {
+        hasCabang = true;
+        tabsContainer.innerHTML = '';
+        contentContainer.innerHTML = '';
+        buildTab('induk', c ? c.nama_client : 'Induk', c ? (c.npwp || '-') : '-', null, true);
+
+        clientCabangs.forEach(function(cabang, i) {
+            var pfx = 'cabang_' + i;
+            tabData[pfx] = {
+                nama: cabang.nama_client || 'Cabang ' + (i + 1),
+                npwp: cabang.npwp || '-',
+                npwp_cabang_id: cabang.id,
+                tipeId: tipeId,
+                kpp: cabang.kpp || '-',
+                no_telephone: cabang.no_telephone || '-',
+                alamat_npwp: cabang.alamat_npwp || '-',
+                omsetTahunan: '',
+                omsetBulanan: {}
+            };
+            for (let mo = 1; mo <= 12; mo++) tabData[pfx].omsetBulanan[mo] = '';
+            buildTab(pfx, tabData[pfx].nama, tabData[pfx].npwp, cabang.id, false);
+        });
+        cabangSection.classList.remove('d-none');
+    } else {
+        cabangSection.classList.add('d-none');
+    }
+
+    // Show omset section based on tipe
+    if (tipeId === 1) {
+        document.getElementById('omsetTahunanSection').classList.remove('d-none');
+        document.getElementById('omsetBulananSection').classList.add('d-none');
+    } else {
+        document.getElementById('omsetTahunanSection').classList.add('d-none');
+        document.getElementById('omsetBulananSection').classList.remove('d-none');
+    }
+
+    const lampiranUrl = document.getElementById('btnLampiranSpt').href.split('?')[0];
+    document.getElementById('btnLampiranSpt').href = lampiranUrl + '?client_id=' + id + '&tahun=' + (document.getElementById('tahunSelect').value || '{{ date("Y") }}');
+
+    loadDataFromDb();
+}
+
+function buildTab(prefix, nama, npwp, npwpCabangId, isActive) {
+    var tabsContainer = document.getElementById('cabangTabs');
+    var contentContainer = document.getElementById('cabangTabContent');
+    var tabId = 'cabTab_' + prefix;
+
+    var li = document.createElement('li');
+    li.className = 'nav-item';
+    li.innerHTML = '<button class="nav-link ' + (isActive ? 'active' : '') + '" data-bs-toggle="tab" data-bs-target="#' + tabId + '" type="button" role="tab" data-prefix="' + prefix + '">' +
+        '<i class="bi ' + (prefix === 'induk' ? 'bi-building' : 'bi-diagram-2') + ' me-1"></i> ' + (npwp || 'Induk') + '</button>';
+    tabsContainer.appendChild(li);
+
+    var pane = document.createElement('div');
+    pane.className = 'tab-pane fade' + (isActive ? ' show active' : '');
+    pane.id = tabId;
+    pane.setAttribute('role', 'tabpanel');
+    pane.setAttribute('data-prefix', prefix);
+    pane.innerHTML = '<div class="row g-2 small">' +
+        '<div class="col-6"><span class="text-muted">Nama:</span> <span class="fw-medium">' + (nama || '-') + '</span></div>' +
+        '<div class="col-6"><span class="text-muted">NPWP:</span> <span>' + (npwp || '-') + '</span></div>' +
+        (npwpCabangId ? '<div class="col-12"><input type="hidden" name="' + prefix + '[npwp_cabang_id]" value="' + npwpCabangId + '"></div>' : '') +
+        '</div>';
+    contentContainer.appendChild(pane);
+}
 
 function getTipeName(tipeId) {
     const b = badanList.find(x => x.id === tipeId);
     return b ? b.tipe : '';
 }
 
-// --- Toggle buttons based on form completeness ---
-function toggleButtons() {
-    const clientId = parseInt(document.getElementById('clientSelect').value);
-    const hasClient = !!clientId;
-
-    const isId1 = !document.getElementById('omsetTahunanSection').classList.contains('d-none');
-    const omsetTahunanVal = document.getElementById('omsetTahunan').value.replace(/[^0-9]/g, '') || '0';
-    const omsetBulananFilled = Array.from(document.querySelectorAll('.omset-input')).some(inp => {
-        return parseInt(inp.value.replace(/[^0-9]/g, '') || 0) > 0;
-    });
-
-    const hasOmset = isId1 ? parseInt(omsetTahunanVal) > 0 : omsetBulananFilled;
-    const hasData = hasClient && hasOmset;
-
-    document.getElementById('btnPreview').disabled = !hasData;
-    document.getElementById('btnExportPdf').disabled = !hasData;
-    document.getElementById('btnExportExcel').disabled = !hasData;
-    document.getElementById('btnSimpan').disabled = !hasData;
-}
-
-// --- Reset form ---
-function resetForm() {
-    document.querySelectorAll('.omset-input').forEach(el => el.value = '');
+function clearInputs() {
+    document.querySelectorAll('.omset-input').forEach(function(el) { el.value = ''; });
     document.getElementById('omsetTahunan').value = '';
     for (let mo = 1; mo <= 12; mo++) {
-        document.getElementById(`hasilRow-${mo}`).classList.add('d-none');
+        document.getElementById('hasilRow-' + mo).classList.add('d-none');
+        document.getElementById('hasilOmset-' + mo).textContent = '-';
+        document.getElementById('hasilBruto-' + mo).textContent = '-';
+        document.getElementById('hasilPph-' + mo).textContent = '-';
+        document.getElementById('hasilFinal-' + mo).textContent = '-';
+        document.getElementById('hasilStatus-' + mo).textContent = '-';
     }
     document.getElementById('hasilPerhitunganSection').classList.add('d-none');
     document.getElementById('hasilTotalPph').textContent = 'Rp 0';
-    let alert4M = document.getElementById('alert4M');
-    if (alert4M) alert4M.remove();
+    var a = document.getElementById('alert4M');
+    if (a) a.remove();
     toggleButtons();
 }
 
-// --- Client Detail & Toggle Mode ---
-document.getElementById('clientSelect').addEventListener('change', function() {
-    const id = parseInt(this.value);
-    const detail = document.getElementById('clientDetail');
-    if (!id) {
-        detail.classList.add('d-none');
-        toggleButtons();
-        return;
+function saveCurrentInputs() {
+    var prefix = activeTabPrefix;
+    if (!tabData[prefix]) return;
+    var isTahunan = tabData[prefix].tipeId === 1;
+    if (isTahunan) {
+        tabData[prefix].omsetTahunan = document.getElementById('omsetTahunan').value;
+    } else {
+        document.querySelectorAll('.omset-input').forEach(function(inp) {
+            var mo = inp.getAttribute('data-month');
+            tabData[prefix].omsetBulanan[mo] = inp.value;
+        });
     }
+}
 
-    resetForm();
+function restoreCurrentInputs() {
+    var prefix = activeTabPrefix;
+    var data = tabData[prefix];
+    if (!data) { clearInputs(); return; }
 
-    const opt = this.options[this.selectedIndex];
-    const tipeId = parseInt(opt.dataset.tipeId);
-    const tipeName = getTipeName(tipeId);
+    // Restore name attributes on visible omset inputs
+    document.getElementById('omsetTahunan').name = 'omset_tahunan';
+    document.querySelectorAll('.omset-input').forEach(function(inp) {
+        var mo = inp.getAttribute('data-month');
+        inp.name = 'omset_bulanan[' + mo + ']';
+    });
 
-    const c = clients.find(x => x.id === id);
-    if (c) {
-        document.getElementById('detailNama').textContent = c.nama_client;
-        document.getElementById('detailNpwp').textContent = c.npwp || '-';
-        document.getElementById('detailTipe').textContent = tipeName || '-';
-        document.getElementById('detailKpp').textContent = c.kpp || '-';
-        document.getElementById('detailPhone').textContent = c.no_telephone || '-';
-        document.getElementById('detailAlamatNpwp').textContent = c.alamat_npwp || '-';
-        detail.classList.remove('d-none');
-    }
-
-    const lampiranUrl = document.getElementById('btnLampiranSpt').href.split('?')[0];
-    document.getElementById('btnLampiranSpt').href = lampiranUrl + '?client_id=' + id + '&tahun=' + (document.getElementById('tahunSelect').value || '{{ date("Y") }}');
-
-    const isId1 = tipeId === 1;
-
-    if (isId1) {
+    var isTahunan = data.tipeId === 1;
+    if (isTahunan) {
         document.getElementById('omsetTahunanSection').classList.remove('d-none');
         document.getElementById('omsetBulananSection').classList.add('d-none');
+        document.getElementById('omsetTahunan').value = data.omsetTahunan || '';
     } else {
         document.getElementById('omsetTahunanSection').classList.add('d-none');
         document.getElementById('omsetBulananSection').classList.remove('d-none');
+        document.querySelectorAll('.omset-input').forEach(function(inp) {
+            var mo = inp.getAttribute('data-month');
+            inp.value = (data.omsetBulanan && data.omsetBulanan[mo]) || '';
+        });
         hitungOmset();
     }
-
-    loadDataFromDb();
-});
-
-// --- Load existing data from DB ---
-function loadDataFromDb() {
-    const clientId = parseInt(document.getElementById('clientSelect').value);
-    const tahun = document.getElementById('tahunSelect').value;
-    if (!clientId || !tahun) return;
-
-    resetForm();
-
-    fetch(`/admin/transaksi/load-data?client_id=${clientId}&tahun=${tahun}`)
-        .then(res => {
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            return res.json();
-        })
-        .then(data => {
-            if (!data.exists) return;
-
-            const opt = document.querySelector(`#clientSelect option[value="${clientId}"]`);
-            const tipeId = parseInt(opt.dataset.tipeId);
-            const tipeName = getTipeName(tipeId);
-            const c = clients.find(x => x.id === clientId);
-            if (c) {
-                document.getElementById('detailNama').textContent = c.nama_client;
-                document.getElementById('detailNpwp').textContent = c.npwp || '-';
-                document.getElementById('detailTipe').textContent = tipeName || '-';
-                document.getElementById('detailKpp').textContent = c.kpp || '-';
-                document.getElementById('detailPhone').textContent = c.no_telephone || '-';
-                document.getElementById('detailAlamatNpwp').textContent = c.alamat_npwp || '-';
-                document.getElementById('clientDetail').classList.remove('d-none');
-            }
-
-            const isId1 = tipeId === 1;
-
-            if (isId1) {
-                document.getElementById('omsetTahunanSection').classList.remove('d-none');
-                document.getElementById('omsetBulananSection').classList.add('d-none');
-            } else {
-                document.getElementById('omsetTahunanSection').classList.add('d-none');
-                document.getElementById('omsetBulananSection').classList.remove('d-none');
-            }
-
-            // Load omset
-            if (isId1) {
-                const omset = data.omset[0];
-                if (omset) {
-                    document.getElementById('omsetTahunan').value = Number(omset.nominal).toLocaleString('id-ID');
-                }
-            } else {
-                data.omset.forEach(o => {
-                    const input = document.querySelector(`.omset-input[data-month="${o.bulan}"]`);
-                    if (input) {
-                        input.value = Number(o.nominal).toLocaleString('id-ID');
-                    }
-                });
-                hitungOmset();
-            }
-
-            toggleButtons();
-        })
-        .catch(err => console.error('Load data error:', err));
+    toggleButtons();
 }
 
-// --- Toggle Omset Input ---
-document.getElementById('toggleOmsetInput').addEventListener('click', function() {
-    const container = document.getElementById('omsetInputContainer');
-    const isHidden = container.classList.toggle('d-none');
-    this.querySelector('i').className = isHidden ? 'bi bi-eye me-1' : 'bi bi-eye-slash me-1';
-    document.getElementById('toggleOmsetInputLabel').textContent = isHidden ? 'Tampilkan' : 'Sembunyikan';
-});
+function toggleButtons() {
+    const clientId = parseInt(document.getElementById('clientSelect').value);
+    if (!clientId) { disableAllButtons(true); return; }
 
-// --- Toggle Hasil Perhitungan Table ---
-document.getElementById('toggleHasilTable').addEventListener('click', function() {
-    const container = document.getElementById('hasilTableContainer');
-    const isHidden = container.classList.toggle('d-none');
-    this.querySelector('i').className = isHidden ? 'bi bi-eye me-1' : 'bi bi-eye-slash me-1';
-    document.getElementById('toggleHasilTableLabel').textContent = isHidden ? 'Tampilkan' : 'Sembunyikan';
-});
+    var hasData = false;
+    Object.keys(tabData).forEach(function(p) {
+        var td = tabData[p];
+        if (!td) return;
+        if (td.tipeId === 1) {
+            if (Number((td.omsetTahunan || '').replace(/[^0-9]/g, '') || 0) > 0) hasData = true;
+        } else {
+            for (let mo = 1; mo <= 12; mo++) {
+                if (Number((td.omsetBulanan[mo] || '').replace(/[^0-9]/g, '') || 0) > 0) hasData = true;
+            }
+        }
+    });
+    disableAllButtons(!hasData);
+}
 
-// --- Omset calculation per bulan ---
+function disableAllButtons(v) {
+    document.getElementById('btnPreview').disabled = v;
+    document.getElementById('btnExportPdf').disabled = v;
+    document.getElementById('btnExportExcel').disabled = v;
+    document.getElementById('btnSimpan').disabled = v;
+}
+
 function hitungOmset() {
-    const rumus = rumusList.find(r => String(r.tipe_badan) === '7');
+    const tipeId = tabData[activeTabPrefix]?.tipeId;
+    if (!tipeId) return;
+    const rumus = rumusList.find(r => String(r.tipe_badan) === String(tipeId));
     const maxVal = Number(rumus?.max_value || 0);
     const persen = Number(rumus?.potongan_persentase || 0);
     const LIMIT_400JT = 400000000;
     const LIMIT_4M = 4000000000;
 
-    let cumulative = 0;
-    let totalPotongan = 0;
-    let cumulativeExceeds4M = false;
+    let cumulative = 0, totalPotongan = 0, cumulativeExceeds4M = false;
 
     for (let mo = 1; mo <= 12; mo++) {
-        const val = document.querySelector(`.omset-input[data-month="${mo}"]`)?.value || '0';
+        var inp = document.querySelector('.omset-input[data-month="' + mo + '"]');
+        var val = inp ? inp.value : '0';
         const current = Number(val.replace(/[^0-9]/g, '') || 0);
-        const row = document.getElementById(`hasilRow-${mo}`);
+        const row = document.getElementById('hasilRow-' + mo);
 
         if (current === 0) {
-            row.classList.add('d-none');
-            cumulative += current;
-            continue;
+            if (row) row.classList.add('d-none');
+            cumulative += current; continue;
         }
 
         const totalWithCurrent = cumulative + current;
-
-        // --- Validasi > 400jt per bulan (Item 6) ---
         const exceeds400 = current > LIMIT_400JT;
-        const omsetCell = document.getElementById(`hasilOmset-${mo}`);
-        if (exceeds400) {
-            omsetCell.innerHTML = `<span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-1"></i>Rp ${formatNum(String(current))} <span class="badge bg-danger ms-1">>400JT</span></span>`;
-        } else {
-            omsetCell.textContent = 'Rp ' + formatNum(String(current));
+        const omsetCell = document.getElementById('hasilOmset-' + mo);
+        if (omsetCell) {
+            omsetCell.innerHTML = exceeds400
+                ? '<span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-1"></i>Rp ' + formatNum(String(current)) + ' <span class="badge bg-danger ms-1">>400JT</span></span>'
+                : 'Rp ' + formatNum(String(current));
         }
 
-        // --- Validasi akumulasi 4 Milyar (Item 7) ---
-        if (totalWithCurrent >= LIMIT_4M) {
-            cumulativeExceeds4M = true;
-        }
+        if (totalWithCurrent >= LIMIT_4M) cumulativeExceeds4M = true;
 
-        // --- PPh Calculation ---
-        let finalStatus = '';
-        let finalClass = '';
-
+        let pphBayar = '', pphClass = '';
         if (rumus) {
             if (cumulative >= maxVal) {
                 const potongan = current * persen / 100;
                 totalPotongan += potongan;
-                finalStatus = `Rp ${formatNum(String(potongan))}`;
-                finalClass = 'text-danger';
+                pphBayar = 'Rp ' + formatNum(String(potongan)); pphClass = 'text-danger';
             } else if (totalWithCurrent > maxVal) {
                 const kelebihan = totalWithCurrent - maxVal;
                 const potongan = kelebihan * persen / 100;
                 totalPotongan += potongan;
-                finalStatus = `Rp ${formatNum(String(potongan))}`;
-                finalClass = 'text-warning';
-            } else {
-                finalStatus = 'Free';
-                finalClass = 'text-success';
-            }
-        } else {
-            finalStatus = '-';
-            finalClass = '';
+                pphBayar = 'Rp ' + formatNum(String(potongan)); pphClass = 'text-warning';
+            } else { pphBayar = 'Free'; pphClass = 'text-success'; }
+        } else { pphBayar = '-'; pphClass = ''; }
+
+        const pphFinal = !rumus ? '-' : 'Rp ' + formatNum(String(current * persen / 100));
+
+        document.getElementById('hasilBruto-' + mo).textContent = 'Rp ' + formatNum(String(totalWithCurrent));
+        document.getElementById('hasilPph-' + mo).innerHTML = '<span class="text-danger fw-semibold">' + pphFinal + '</span>';
+        document.getElementById('hasilFinal-' + mo).innerHTML = '<span class="fw-semibold ' + pphClass + '">' + pphBayar + '</span>';
+
+        var st = document.getElementById('hasilStatus-' + mo);
+        if (st) {
+            var ic = '';
+            if (exceeds400) ic += '<span class="text-danger" title="Omset > 400 Juta"><i class="bi bi-exclamation-triangle-fill"></i></span>';
+            if (totalWithCurrent >= LIMIT_4M) ic += ' <span class="text-danger" title="Akumulasi >= 4 Milyar"><i class="bi bi-arrow-up-circle-fill"></i></span>';
+            if (!ic) ic = '<span class="text-success"><i class="bi bi-check-circle"></i></span>';
+            st.innerHTML = ic;
         }
-
-        const pphStatus = !rumus ? '-' : (current < 500 ? 'Free' : 'Rp ' + formatNum(String(current * persen / 100)));
-
-        // --- Populate table ---
-        document.getElementById(`hasilBruto-${mo}`).textContent = 'Rp ' + formatNum(String(totalWithCurrent));
-        document.getElementById(`hasilPph-${mo}`).innerHTML = pphStatus === 'Free'
-            ? '<span class="text-success">Free</span>'
-            : '<span class="text-danger fw-semibold">' + pphStatus + '</span>';
-        document.getElementById(`hasilFinal-${mo}`).innerHTML = `<span class="fw-semibold ${finalClass}">${finalStatus}</span>`;
-
-        // Status column
-        const statusCell = document.getElementById(`hasilStatus-${mo}`);
-        let statusIcons = '';
-        if (exceeds400) statusIcons += '<span class="text-danger" title="Omset > 400 Juta"><i class="bi bi-exclamation-triangle-fill"></i></span>';
-        if (totalWithCurrent >= LIMIT_4M) statusIcons += ' <span class="text-danger" title="Akumulasi >= 4 Milyar"><i class="bi bi-arrow-up-circle-fill"></i></span>';
-        if (!statusIcons) statusIcons = '<span class="text-success"><i class="bi bi-check-circle"></i></span>';
-        statusCell.innerHTML = statusIcons;
 
         row.classList.remove('d-none');
         cumulative += current;
     }
 
-    // Total Row
     document.getElementById('hasilTotalPph').textContent = 'Rp ' + formatNum(String(totalPotongan));
-
-    // Show/hide section
-    const hasData = cumulative > 0;
+    var hasData = cumulative > 0;
     document.getElementById('hasilPerhitunganSection').classList.toggle('d-none', !hasData);
-    if (hasData) {
-        document.getElementById('omsetBulananSection').classList.remove('d-none');
-    }
+}
 
-    // Alert for cumulative > 4 Milyar
-    let existingAlert = document.getElementById('alert4M');
-    if (cumulativeExceeds4M) {
-        if (!existingAlert) {
-            const alertDiv = document.createElement('div');
-            alertDiv.id = 'alert4M';
-            alertDiv.className = 'alert alert-danger d-flex align-items-center gap-2 py-2 mb-3';
-            alertDiv.innerHTML = '<i class="bi bi-exclamation-triangle-fill"></i> <strong>Perhatian!</strong> Omset telah mencapai atau melebihi <strong>Rp 4.000.000.000</strong>.';
-            document.getElementById('omsetBulananSection').querySelector('.border-bottom').after(alertDiv);
-        }
-    } else if (existingAlert) {
-        existingAlert.remove();
-    }
+function loadDataFromDb() {
+    const clientId = parseInt(document.getElementById('clientSelect').value);
+    const tahun = document.getElementById('tahunSelect').value;
+    if (!clientId || !tahun) return;
+
+    fetch('/admin/transaksi/load-data?client_id=' + clientId + '&tahun=' + tahun)
+        .then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
+        .then(function(data) {
+            if (!data.exists) {
+                Object.keys(tabData).forEach(function(p) {
+                    tabData[p].omsetTahunan = '';
+                    for (let mo = 1; mo <= 12; mo++) tabData[p].omsetBulanan[mo] = '';
+                });
+                clearInputs();
+                return;
+            }
+            if (data.omset && data.omset.length > 0) {
+                var isTahunan = data.omset[0].bulan === null || data.omset[0].bulan === undefined;
+                if (isTahunan) {
+                    tabData['induk'].omsetTahunan = Number(data.omset[0].nominal).toLocaleString('id-ID');
+                } else {
+                    data.omset.forEach(function(o) { tabData['induk'].omsetBulanan[o.bulan] = Number(o.nominal).toLocaleString('id-ID'); });
+                }
+            }
+            if (data.cabangs) {
+                data.cabangs.forEach(function(cb) {
+                    var pfx = null;
+                    Object.keys(tabData).forEach(function(p) { if (tabData[p].npwp_cabang_id && tabData[p].npwp_cabang_id == cb.npwp_cabang_id) pfx = p; });
+                    if (!pfx) return;
+                    var isTahunan = cb.omset && cb.omset.length > 0 && (cb.omset[0].bulan === null || cb.omset[0].bulan === undefined);
+                    if (isTahunan) tabData[pfx].omsetTahunan = Number(cb.omset[0].nominal).toLocaleString('id-ID');
+                    else if (cb.omset) cb.omset.forEach(function(o) { tabData[pfx].omsetBulanan[o.bulan] = Number(o.nominal).toLocaleString('id-ID'); });
+                });
+            }
+            restoreCurrentInputs();
+            toggleButtons();
+        })
+        .catch(function(err) { console.error('Load data error:', err); });
 }
 
 document.getElementById('tahunSelect').addEventListener('change', function() {
     const clientId = parseInt(document.getElementById('clientSelect').value);
     if (clientId && this.value) {
-        const lampiranUrl = document.getElementById('btnLampiranSpt').href.split('?')[0];
-        document.getElementById('btnLampiranSpt').href = lampiranUrl + '?client_id=' + clientId + '&tahun=' + this.value;
+        document.getElementById('btnLampiranSpt').href = document.getElementById('btnLampiranSpt').href.split('?')[0] + '?client_id=' + clientId + '&tahun=' + this.value;
         loadDataFromDb();
     }
 });
 
-document.querySelectorAll('.omset-input').forEach(input => {
-    input.addEventListener('input', function() {
-        hitungOmset();
-        toggleButtons();
+document.querySelectorAll('.omset-input').forEach(function(inp) {
+    inp.addEventListener('input', function() {
+        var mo = inp.getAttribute('data-month');
+        if (tabData[activeTabPrefix]) tabData[activeTabPrefix].omsetBulanan[mo] = this.value;
+        hitungOmset(); toggleButtons();
     });
+});
+
+document.getElementById('omsetTahunan').addEventListener('input', function() {
+    if (tabData[activeTabPrefix]) tabData[activeTabPrefix].omsetTahunan = this.value;
+    toggleButtons();
+});
+
+document.getElementById('formTransaksi').addEventListener('input', function(e) {
+    if (e.target.classList.contains('format-currency')) {
+        var v = e.target.value.replace(/[^0-9]/g, '');
+        e.target.value = v ? parseInt(v, 10).toLocaleString('id-ID') : '';
+    }
 });
 
 // --- Preview ---
 document.getElementById('btnPreview').addEventListener('click', function() {
     const clientId = parseInt(document.getElementById('clientSelect').value);
-    if (!clientId) {
-        alert('Pilih client terlebih dahulu.');
-        return;
-    }
-
+    if (!clientId) { alert('Pilih client terlebih dahulu.'); return; }
     const tahun = document.getElementById('tahunSelect').value;
-    if (!tahun) {
-        alert('Pilih tahun terlebih dahulu.');
-        return;
+    if (!tahun) { alert('Pilih tahun terlebih dahulu.'); return; }
+
+    saveCurrentInputs();
+
+    const client = clients.find(function(x) { return x.id === clientId; });
+    var tipeName = '';
+    if (client) {
+        var b = badanList.find(function(x) { return x.id === client.tipe_badan; });
+        if (b) tipeName = b.tipe;
     }
 
-    const client = clients.find(x => x.id === clientId);
-    const opt = document.querySelector(`#clientSelect option[value="${clientId}"]`);
-    const tipeId = parseInt(opt.dataset.tipeId);
-    const tipeName = getTipeName(tipeId);
-    const isId1 = tipeId === 1;
+    var tabsHtml = '<ul class="nav nav-tabs" id="previewTabs" role="tablist">';
+    var contentHtml = '<div class="tab-content border border-top-0 p-3 bg-white" id="previewTabContent">';
+    var first = true;
 
-    // Collect Omset
-    let totalOmset = 0;
-    let omsetDetails = '';
+    Object.keys(tabData).forEach(function(prefix) {
+        var td = tabData[prefix];
+        if (!td) return;
+        var tabId = 'prev_' + prefix;
+        var label = td.npwp || (prefix === 'induk' ? 'Induk' : 'Cabang');
+        var isActive = first ? 'active show' : '';
 
-    if (isId1) {
-        const omsetVal = document.getElementById('omsetTahunan').value || '0';
-        totalOmset = Number(omsetVal.replace(/[^0-9]/g, '') || 0);
-        if (totalOmset > 0) {
-            omsetDetails = `<tr><td class="text-muted">Tahunan</td><td class="text-end">Rp ${formatNum(String(totalOmset))}</td></tr>`;
-        }
-    } else {
-        for (let mo = 1; mo <= 12; mo++) {
-            const bulan = bulanList[mo - 1];
-            const omsetVal = document.querySelector(`.omset-input[data-month="${mo}"]`)?.value || '0';
-            const omsetNum = Number(omsetVal.replace(/[^0-9]/g, '') || 0);
-            totalOmset += omsetNum;
-            if (omsetNum > 0) {
-                omsetDetails += `<tr><td class="text-muted ps-4">${bulan}</td><td class="text-end">Rp ${formatNum(String(omsetNum))}</td></tr>`;
+        tabsHtml += '<li class="nav-item"><button class="nav-link ' + (first ? 'active' : '') + '" data-bs-toggle="tab" data-bs-target="#' + tabId + '" type="button" role="tab"><i class="bi ' + (prefix === 'induk' ? 'bi-building' : 'bi-diagram-2') + ' me-1"></i> ' + label + '</button></li>';
+
+        var isId1 = td.tipeId === 1;
+        var omsetDetails = '';
+        var totalOmset = 0;
+
+        if (isId1) {
+            totalOmset = Number((td.omsetTahunan || '').replace(/[^0-9]/g, '') || 0);
+            if (totalOmset > 0) omsetDetails = '<tr><td class="text-muted">Tahunan</td><td class="text-end">Rp ' + formatNum(String(totalOmset)) + '</td></tr>';
+        } else {
+            for (let mo = 1; mo <= 12; mo++) {
+                var omsetVal = (td.omsetBulanan && td.omsetBulanan[mo]) || '0';
+                var omsetNum = Number(omsetVal.replace(/[^0-9]/g, '') || 0);
+                totalOmset += omsetNum;
+                if (omsetNum > 0) omsetDetails += '<tr><td class="text-muted ps-4">' + bulanList[mo - 1] + '</td><td class="text-end">Rp ' + formatNum(String(omsetNum)) + '</td></tr>';
             }
         }
-    }
 
-    let html = `
-        <div class="mb-4">
-            <h6 class="fw-semibold text-primary border-bottom pb-2">Data Client</h6>
-            <table class="table table-sm small mb-0">
-                <tr><td style="width:140px" class="text-muted">Nama</td><td class="fw-medium">${client.nama_client}</td></tr>
-                <tr><td class="text-muted">NPWP</td><td>${client.npwp || '-'}</td></tr>
-                <tr><td class="text-muted">Tipe</td><td>${tipeName || '-'}</td></tr>
-                <tr><td class="text-muted">KPP</td><td>${client.kpp || '-'}</td></tr>
-                <tr><td class="text-muted">No. Telp</td><td>${client.no_telephone || '-'}</td></tr>
-                <tr><td class="text-muted">Alamat NPWP</td><td>${client.alamat_npwp || '-'}</td></tr>
-                <tr><td class="text-muted">Periode</td><td class="fw-medium">Tahun ${tahun}</td></tr>
-            </table>
-        </div>`;
+        var paneHtml = '<div class="table-responsive mb-3"><table class="table table-sm small mb-0">' +
+            '<tr><td style="width:140px" class="text-muted">Nama</td><td class="fw-medium">' + (td.nama || '-') + '</td></tr>' +
+            '<tr><td class="text-muted">NPWP</td><td>' + (td.npwp || '-') + '</td></tr>' +
+            '<tr><td class="text-muted">Tipe</td><td>' + (tipeName || '-') + '</td></tr>' +
+            '<tr><td class="text-muted">KPP</td><td>' + (td.kpp || '-') + '</td></tr>' +
+            '<tr><td class="text-muted">No. Telp</td><td>' + (td.no_telephone || '-') + '</td></tr>' +
+            '<tr><td class="text-muted">Alamat NPWP</td><td>' + (td.alamat_npwp || '-') + '</td></tr>' +
+            '<tr><td class="text-muted">Periode</td><td class="fw-medium">Tahun ' + tahun + '</td></tr>' +
+            '</table></div>';
 
-    if (omsetDetails && isId1) {
-        html += `
-            <div class="mb-4">
-                <h6 class="fw-semibold text-warning border-bottom pb-2">Omset Tahunan</h6>
-                <table class="table table-sm small mb-0">
-                    <thead><tr><th>Periode</th><th class="text-end">Omset</th></tr></thead>
-                    <tbody>
-                        ${omsetDetails}
-                        <tr class="fw-bold"><td>Total</td><td class="text-end">Rp ${formatNum(String(totalOmset))}</td></tr>
-                    </tbody>
-                </table>
-            </div>`;
-    }
-
-    // Calculation result in preview
-    if (!isId1) {
-        const rumus = rumusList.find(r => String(r.tipe_badan) === '7');
-        const maxVal = Number(rumus?.max_value || 0);
-        const persen = Number(rumus?.potongan_persentase || 0);
-        let cumulative = 0;
-        let totalPotongan = 0;
-        let calcRows = '';
-
-        for (let mo = 1; mo <= 12; mo++) {
-            const bulan = bulanList[mo - 1];
-            const omsetVal = document.querySelector(`.omset-input[data-month="${mo}"]`)?.value || '0';
-            const current = Number(omsetVal.replace(/[^0-9]/g, '') || 0);
-            if (current === 0) { cumulative += current; continue; }
-
-            const totalWithCurrent = cumulative + current;
-            let status, mark;
-            let pphStatus, pphMark;
-
-            if (cumulative >= maxVal) {
-                const potongan = current * persen / 100;
-                totalPotongan += potongan;
-                status = `Rp ${formatNum(String(potongan))}`;
-                mark = 'text-danger';
-            } else if (totalWithCurrent > maxVal) {
-                const kelebihan = totalWithCurrent - maxVal;
-                const potongan = kelebihan * persen / 100;
-                totalPotongan += potongan;
-                status = `Rp ${formatNum(String(potongan))}`;
-                mark = 'text-warning';
-            } else {
-                status = 'Free';
-                mark = 'text-success';
-            }
-
-            if (current < 500) {
-                pphStatus = 'Free';
-                pphMark = 'text-success';
-            } else {
-                pphStatus = 'Rp ' + formatNum(String(current * persen / 100));
-                pphMark = 'text-danger';
-            }
-
-            calcRows += `<tr><td class="text-muted ps-4">${bulan}</td><td class="text-end">Rp ${formatNum(String(current))}</td><td class="text-end">Rp ${formatNum(String(totalWithCurrent))}</td><td class="text-end ${pphMark} fw-semibold">${pphStatus}</td><td class="text-end ${mark} fw-semibold">${status}</td></tr>`;
-            cumulative += current;
+        if (omsetDetails && isId1) {
+            paneHtml += '<div class="mb-3"><h6 class="fw-semibold text-warning border-bottom pb-2">Omset Tahunan</h6>' +
+                '<table class="table table-sm small mb-0"><thead><tr><th>Periode</th><th class="text-end">Omset</th></tr></thead><tbody>' +
+                omsetDetails +
+                '<tr class="fw-bold"><td>Total</td><td class="text-end">Rp ' + formatNum(String(totalOmset)) + '</td></tr>' +
+                '</tbody></table></div>';
         }
 
-        html += `
-            <div class="mb-4">
-                <h6 class="fw-semibold text-secondary border-bottom pb-2">Hasil Perhitungan Per Bulan</h6>
-                <table class="table table-sm small mb-0">
-                    <thead><tr><th>Bulan</th><th class="text-end">Omset</th><th class="text-end">Total Peredaran Bruto</th><th class="text-end">PPH Final 0.5%</th><th class="text-end">PPh Final yg harus dibayar</th></tr></thead>
-                    <tbody>
-                        ${calcRows}
-                        <tr class="fw-bold table-secondary">
-                            <td>Total PPh Final yg harus dibayar</td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
-                            <td class="text-end text-danger">Rp ${formatNum(String(totalPotongan))}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>`;
-    }
+        if (!isId1) {
+            const rumus = rumusList.find(function(r) { return String(r.tipe_badan) === String(td.tipeId); });
+            const maxVal = Number(rumus?.max_value || 0);
+            const persen = Number(rumus?.potongan_persentase || 0);
+            let cumulative = 0, totalPotongan = 0, calcRows = '';
 
-    html += `
-        <div class="mb-4">
-            <h6 class="fw-semibold text-secondary border-bottom pb-2">Total Keseluruhan</h6>
-            <table class="table table-sm small mb-0">
-                <tr><td class="fw-semibold text-warning">Total Omset</td><td class="text-end fw-bold">Rp ${formatNum(String(totalOmset))}</td></tr>
-            </table>
-        </div>`;
+            for (let mo = 1; mo <= 12; mo++) {
+                var omsetVal = (td.omsetBulanan && td.omsetBulanan[mo]) || '0';
+                var current = Number(omsetVal.replace(/[^0-9]/g, '') || 0);
+                if (current === 0) { cumulative += current; continue; }
+                const tot = cumulative + current;
+                let ppb, ppc, ppf;
+                if (cumulative >= maxVal) {
+                    const p = current * persen / 100; totalPotongan += p; ppb = 'Rp ' + formatNum(String(p)); ppc = 'text-danger';
+                } else if (tot > maxVal) {
+                    const kelebihan = tot - maxVal; const p = kelebihan * persen / 100; totalPotongan += p; ppb = 'Rp ' + formatNum(String(p)); ppc = 'text-warning';
+                } else { ppb = 'Free'; ppc = 'text-success'; }
+                ppf = 'Rp ' + formatNum(String(current * persen / 100));
+                calcRows += '<tr><td class="text-muted ps-4">' + bulanList[mo - 1] + '</td><td class="text-end">Rp ' + formatNum(String(current)) + '</td><td class="text-end">Rp ' + formatNum(String(tot)) + '</td><td class="text-end text-danger fw-semibold">' + ppf + '</td><td class="text-end ' + ppc + ' fw-semibold">' + ppb + '</td></tr>';
+                cumulative += current;
+            }
 
-    document.getElementById('previewContent').innerHTML = html;
+            paneHtml += '<h6 class="fw-semibold text-secondary border-bottom pb-2">Hasil Perhitungan</h6>' +
+                '<div class="table-responsive"><table class="table table-sm small mb-0"><thead><tr><th>Bulan</th><th class="text-end">Omset</th><th class="text-end">Total Bruto</th><th class="text-end">PPH Final 0.5%</th><th class="text-end">PPh Final yg harus dibayar</th></tr></thead><tbody>' +
+                calcRows +
+                '<tr class="fw-bold table-secondary"><td>Total PPh Final yg harus dibayar</td><td></td><td></td><td></td><td class="text-end text-danger">Rp ' + formatNum(String(totalPotongan)) + '</td></tr>' +
+                '</tbody></table></div>';
+        }
 
-    const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+        paneHtml += '<div class="mt-3 pt-2 border-top"><strong>Total Omset:</strong> <span class="text-warning fw-bold">Rp ' + formatNum(String(totalOmset)) + '</span></div>';
+        contentHtml += '<div class="tab-pane fade ' + isActive + '" id="' + tabId + '" role="tabpanel">' + paneHtml + '</div>';
+        first = false;
+    });
+
+    document.getElementById('previewContent').innerHTML = tabsHtml + contentHtml + '</div>';
+    var modal = new bootstrap.Modal(document.getElementById('previewModal'));
     modal.show();
 });
 
-// --- Format Rupiah otomatis ---
-document.getElementById('formTransaksi').addEventListener('input', function(e) {
-    if (e.target.classList.contains('format-currency')) {
-        const cleaned = e.target.value.replace(/[^0-9]/g, '');
-        e.target.value = cleaned ? parseInt(cleaned, 10).toLocaleString('id-ID') : '';
-    }
-    toggleButtons();
-});
+// --- Helper: prepare form data for submission ---
+function prepareFormData() {
+    saveCurrentInputs();
+    // Remove name from visible omset inputs so they don't duplicate hidden per-tab fields
+    document.querySelectorAll('#omsetTahunan, #omsetInputContainer input.omset-input').forEach(function(el) { el.removeAttribute('name'); });
+    // Remove old per-tab hidden fields
+    document.querySelectorAll('[data-tabhidden]').forEach(function(el) { el.remove(); });
+    var form = document.getElementById('formTransaksi');
+    var totalOmset = 0;
+    Object.keys(tabData).forEach(function(p) {
+        var td = tabData[p]; if (!td) return;
+        var prefix = p;
+        var isTahunan = td.tipeId === 1;
+        if (td.npwp_cabang_id) {
+            var h = document.createElement('input');
+            h.type = 'hidden'; h.name = prefix + '[npwp_cabang_id]'; h.value = td.npwp_cabang_id;
+            h.setAttribute('data-tabhidden', '1');
+            form.appendChild(h);
+        }
+        if (isTahunan) {
+            var raw = td.omsetTahunan || '';
+            var num = Number(raw.replace(/[^0-9]/g, '') || 0);
+            totalOmset += num;
+            if (num > 0) {
+                var h = document.createElement('input');
+                h.type = 'hidden'; h.name = prefix + '[omset_tahunan]'; h.value = raw;
+                h.setAttribute('data-tabhidden', '1');
+                form.appendChild(h);
+            }
+        } else {
+            for (let mo = 1; mo <= 12; mo++) {
+                var raw = td.omsetBulanan[mo] || '';
+                var num = Number(raw.replace(/[^0-9]/g, '') || 0);
+                totalOmset += num;
+                if (num > 0) {
+                    var h = document.createElement('input');
+                    h.type = 'hidden'; h.name = prefix + '[omset_bulanan][' + mo + ']'; h.value = raw;
+                    h.setAttribute('data-tabhidden', '1');
+                    form.appendChild(h);
+                }
+            }
+        }
+    });
+    const rumus = rumusList.find(function(r) { return String(r.tipe_badan) === String(tabData['induk'].tipeId); });
+    var persen = rumus ? Number(rumus.potongan_persentase) : 0;
+    document.getElementById('totalOmsetHidden').value = totalOmset;
+    document.getElementById('totalPphHidden').value = totalOmset * persen / 100;
+}
 
 // --- Form submit ---
-document.getElementById('formTransaksi').addEventListener('submit', function() {
+document.getElementById('formTransaksi').addEventListener('submit', function(e) {
     const clientId = parseInt(document.getElementById('clientSelect').value);
     const tahun = document.getElementById('tahunSelect').value;
-    if (!clientId || !tahun) {
-        alert('Pilih client dan tahun terlebih dahulu.');
-        return false;
-    }
-
-    const opt = document.querySelector(`#clientSelect option[value="${clientId}"]`);
-    const tipeId = parseInt(opt.dataset.tipeId);
-    const isId1 = tipeId === 1;
-
-    let totalOmset = 0;
-    if (isId1) {
-        const val = document.getElementById('omsetTahunan').value || '0';
-        totalOmset = Number(val.replace(/[^0-9]/g, '') || 0);
-    } else {
-        for (let mo = 1; mo <= 12; mo++) {
-            const val = document.querySelector(`.omset-input[data-month="${mo}"]`)?.value || '0';
-            totalOmset += Number(val.replace(/[^0-9]/g, '') || 0);
-        }
-    }
-
-    const rumus = rumusList.find(r => String(r.tipe_badan) === String(tipeId));
-    const persen = rumus ? Number(rumus.potongan_persentase) : 0;
-    const totalPph = totalOmset * persen / 100;
-
-    document.getElementById('totalOmsetHidden').value = totalOmset;
-    document.getElementById('totalPphHidden').value = totalPph;
+    if (!clientId || !tahun) { alert('Pilih client dan tahun terlebih dahulu.'); return false; }
+    prepareFormData();
 });
 
 function formatNum(v) {
     return Number(v.replace(/[^0-9]/g, '') || 0).toLocaleString('id-ID');
 }
 
-// --- Export buttons ---
 document.getElementById('btnExportPdf').addEventListener('click', function() {
-    const form = document.getElementById('formTransaksi');
-    form.action = '{{ route("cms.transaksi.export-pdf") }}';
-    form.submit();
-    form.action = '{{ route("cms.transaksi.store") }}';
+    prepareFormData();
+    var f = document.getElementById('formTransaksi');
+    f.action = '{{ route("cms.transaksi.export-pdf") }}'; f.submit();
+    f.action = '{{ route("cms.transaksi.store") }}';
 });
 
 document.getElementById('btnExportExcel').addEventListener('click', function() {
-    const form = document.getElementById('formTransaksi');
-    form.action = '{{ route("cms.transaksi.export-excel") }}';
-    form.submit();
-    form.action = '{{ route("cms.transaksi.store") }}';
+    prepareFormData();
+    var f = document.getElementById('formTransaksi');
+    f.action = '{{ route("cms.transaksi.export-excel") }}'; f.submit();
+    f.action = '{{ route("cms.transaksi.store") }}';
+});
+
+document.querySelector('button[type="reset"]').addEventListener('click', function(e) {
+    e.preventDefault();
+    Object.keys(tabData).forEach(function(p) {
+        tabData[p].omsetTahunan = '';
+        for (let mo = 1; mo <= 12; mo++) tabData[p].omsetBulanan[mo] = '';
+    });
+    clearInputs();
+    restoreCurrentInputs();
 });
 </script>
 @endpush

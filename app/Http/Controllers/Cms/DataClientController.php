@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Cms\DataClient;
 use App\Models\Cms\Badan;
 use App\Models\Cms\ClientRole;
+use App\Models\Cms\NpwpCabang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
@@ -15,10 +16,20 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class DataClientController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $dataClients = DataClient::with('badan', 'clientRole')->latest()->paginate(15);
-        return view('cms::data-client.index', compact('dataClients'));
+        $search = $request->get('search');
+        $query = DataClient::with('badan', 'clientRole')->withCount('cabangs');
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_client', 'like', "%{$search}%")
+                  ->orWhere('npwp', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('kpp', 'like', "%{$search}%");
+            });
+        }
+        $dataClients = $query->latest()->paginate(15);
+        return view('cms::data-client.index', compact('dataClients', 'search'));
     }
 
     public function create()
@@ -62,7 +73,9 @@ class DataClientController extends Controller
             $data['client_role_id'] = $defaultRole ? $defaultRole->id : null;
         }
 
-        DataClient::create($data);
+        $client = DataClient::create($data);
+
+        $this->saveCabangs($request, $client);
 
         return redirect()->route('cms.data-client.index')
             ->with('success', 'Data client created.');
@@ -70,7 +83,8 @@ class DataClientController extends Controller
 
     public function show(DataClient $dataClient)
     {
-        $dataClient->load('badan', 'clientRole');
+        $dataClient->load('badan', 'clientRole')->loadCount('cabangs');
+        $dataClient->load('cabangs');
         return view('cms::data-client.show', compact('dataClient'));
     }
 
@@ -151,14 +165,19 @@ class DataClientController extends Controller
         $preview = [];
         $newCount = 0;
         $updateCount = 0;
+        $cabangCount = 0;
         $invalidNpwp = [];
+        $lastPreviewNpwp = null;
         for ($r = 1; $r < count($rows); $r++) {
             $row = $rows[$r];
             $kpp = isset($row[1]) ? trim((string) $row[1]) : '';
             $nama = isset($row[2]) ? trim((string) $row[2]) : '';
             $npwp = isset($row[3]) ? ltrim(trim((string) $row[3]), "'") : '';
+            $npwpCabang = isset($row[4]) ? ltrim(trim((string) $row[4]), "'") : '';
 
             if (!$nama && !$npwp) continue;
+
+            $npwpKey = $npwp ? strtolower(trim($npwp)) : '';
 
             $npwpValid = true;
             if ($npwp !== '' && !preg_match('/^\d{15,16}$/', $npwp)) {
@@ -166,9 +185,12 @@ class DataClientController extends Controller
                 $invalidNpwp[] = $nama ?: $npwp;
             }
 
-            $exists = $npwp !== '' && in_array(strtolower(trim($npwp)), $existingNPs);
+            $isCabang = $lastPreviewNpwp !== null && $npwpKey === $lastPreviewNpwp && $npwpCabang !== '';
+            $exists = !$isCabang && $npwp !== '' && in_array($npwpKey, $existingNPs);
 
-            if ($exists) {
+            if ($isCabang) {
+                $cabangCount++;
+            } elseif ($exists) {
                 $updateCount++;
             } else {
                 $newCount++;
@@ -178,7 +200,7 @@ class DataClientController extends Controller
                 'kpp' => $kpp,
                 'nama' => $nama,
                 'npwp' => $npwp,
-                'npwp_cabang' => isset($row[4]) ? ltrim(trim((string) $row[4]), "'") : '',
+                'npwp_cabang' => $npwpCabang ?: '',
                 'email' => isset($row[5]) ? trim((string) $row[5]) : '',
                 'hp' => isset($row[6]) ? trim((string) $row[6]) : '',
                 'alamat_npwp' => isset($row[7]) ? trim((string) $row[7]) : '',
@@ -186,9 +208,20 @@ class DataClientController extends Controller
                 'ar' => isset($row[9]) ? trim((string) $row[9]) : '',
                 'ptkp' => isset($row[10]) ? trim((string) $row[10]) : '',
                 'exists' => $exists,
+                'is_cabang' => $isCabang,
                 'npwp_valid' => $npwpValid,
             ];
+
+            if (!$isCabang) {
+                $lastPreviewNpwp = $npwpKey;
+            }
         }
+
+        $badan = Badan::all();
+
+        return view('cms::data-client.import', compact(
+            'badan', 'headers', 'totalRows', 'preview', 'newCount', 'updateCount', 'cabangCount', 'tipeBadan', 'tempPath'
+        ));
 
         if (count($invalidNpwp)) {
             @unlink($fullPath);
@@ -231,6 +264,7 @@ class DataClientController extends Controller
         $imported = 0;
         $updated = 0;
         $skipped = 0;
+        $cabangCreated = 0;
         $errors = [];
 
         $existingClients = DataClient::whereNotNull('npwp')->get()->keyBy(function ($d) {
@@ -242,15 +276,48 @@ class DataClientController extends Controller
         $defaultRole = \App\Models\Cms\ClientRole::where('slug', 'client')->first();
         $defaultRoleId = $defaultRole ? $defaultRole->id : null;
 
+        $lastNpwp = null;
+        $lastClientId = null;
+
         for ($r = 1; $r < count($rows); $r++) {
             $row = $rows[$r];
             $kpp = isset($row[1]) ? trim((string) $row[1]) : '';
             $nama = isset($row[2]) ? trim((string) $row[2]) : '';
             $npwp = isset($row[3]) ? ltrim(trim((string) $row[3]), "'") : '';
+            $npwpCabang = isset($row[4]) ? ltrim(trim((string) $row[4]), "'") : '';
 
             if (!$nama && !$npwp) continue;
 
             $npwpKey = $npwp ? strtolower(trim($npwp)) : '';
+
+            if ($lastNpwp !== null && $npwpKey === $lastNpwp && $npwpCabang !== '') {
+                $cabangData = [
+                    'data_client_id' => $lastClientId,
+                    'nama_client' => $nama ?: '-',
+                    'tipe_badan' => $tipeBadan,
+                    'client_role_id' => $defaultRoleId,
+                    'npwp' => $npwpCabang ?: null,
+                    'kpp' => $kpp ?: null,
+                    'email' => isset($row[5]) ? trim((string) $row[5]) : null,
+                    'no_telephone' => isset($row[6]) ? trim((string) $row[6]) : null,
+                    'alamat_npwp' => isset($row[7]) ? trim((string) $row[7]) : null,
+                    'alamat_tagihan' => isset($row[8]) ? trim((string) $row[8]) : null,
+                    'AR' => isset($row[9]) ? trim((string) $row[9]) : null,
+                    'ptkp' => isset($row[10]) ? trim((string) $row[10]) : null,
+                    'password' => Hash::make(Str::random(12)),
+                ];
+
+                if ($cabangData['email'] === '') $cabangData['email'] = null;
+
+                try {
+                    $cabang = NpwpCabang::create($cabangData);
+                    DataClient::where('id', $lastClientId)->update(['npwp_cabang_id' => $cabang->id]);
+                    $cabangCreated++;
+                } catch (\Exception $e) {
+                    $errors[] = "Baris " . ($r + 1) . " ({$nama} - cabang): " . $e->getMessage();
+                }
+                continue;
+            }
 
             $email = isset($row[5]) ? trim((string) $row[5]) : '';
             if ($email === '') $email = null;
@@ -260,7 +327,7 @@ class DataClientController extends Controller
                 'tipe_badan' => $tipeBadan,
                 'client_role_id' => $defaultRoleId,
                 'npwp' => $npwp ?: null,
-                'npwp_cabang' => isset($row[4]) ? ltrim(trim((string) $row[4]), "'") : null,
+                'npwp_cabang' => $npwpCabang ?: null,
                 'kpp' => $kpp ?: null,
                 'email' => $email,
                 'no_telephone' => isset($row[6]) ? trim((string) $row[6]) : null,
@@ -284,12 +351,15 @@ class DataClientController extends Controller
                     try {
                         $client->update($rowData);
                         $updated++;
+                        $lastClientId = $client->id;
                     } catch (\Exception $e) {
                         $errors[] = "Baris " . ($r + 1) . " ({$nama}): " . $e->getMessage();
                     }
                 } else {
                     $skipped++;
+                    $lastClientId = $existingClients[$npwpKey]->id;
                 }
+                $lastNpwp = $npwpKey;
                 continue;
             }
 
@@ -301,23 +371,29 @@ class DataClientController extends Controller
             $rowData['password'] = Hash::make(Str::random(12));
 
             try {
-                DataClient::create($rowData);
+                $client = DataClient::create($rowData);
                 $imported++;
                 $existingNpwps[] = $npwpKey;
                 if ($email) $existingEmails[] = strtolower($email);
+                $lastClientId = $client->id;
             } catch (\Exception $e) {
                 if ($email && str_contains($e->getMessage(), 'email_unique')) {
                     $rowData['email'] = null;
                     try {
-                        DataClient::create($rowData);
+                        $client = DataClient::create($rowData);
                         $imported++;
+                        $lastClientId = $client->id;
                     } catch (\Exception $e2) {
                         $errors[] = "Baris " . ($r + 1) . " ({$nama}): " . $e2->getMessage();
+                        $lastClientId = null;
                     }
                 } else {
                     $errors[] = "Baris " . ($r + 1) . " ({$nama}): " . $e->getMessage();
+                    $lastClientId = null;
                 }
             }
+
+            $lastNpwp = $npwpKey;
         }
 
         @unlink($fullPath);
@@ -326,6 +402,7 @@ class DataClientController extends Controller
         if ($imported > 0) $parts[] = "{$imported} data baru ditambahkan";
         if ($updated > 0) $parts[] = "{$updated} data diupdate";
         if ($skipped > 0) $parts[] = "{$skipped} data dilewati";
+        if ($cabangCreated > 0) $parts[] = "{$cabangCreated} cabang ditambahkan";
         $message = "Import selesai. " . implode(', ', $parts) . ".";
         if (count($errors)) {
             $message .= " " . count($errors) . " error: " . implode('; ', array_slice($errors, 0, 5));
@@ -337,6 +414,8 @@ class DataClientController extends Controller
 
     public function edit(DataClient $dataClient)
     {
+        $dataClient->loadCount('cabangs');
+        $dataClient->load('cabangs');
         $badan = Badan::all();
         $clientRoles = ClientRole::all();
         return view('cms::data-client.edit', compact('dataClient', 'badan', 'clientRoles'));
@@ -370,6 +449,8 @@ class DataClientController extends Controller
 
         $dataClient->update($data);
 
+        $this->saveCabangs($request, $dataClient);
+
         return redirect()->route('cms.data-client.index')
             ->with('success', 'Data client updated.');
     }
@@ -379,6 +460,59 @@ class DataClientController extends Controller
         $dataClient->delete();
         return redirect()->route('cms.data-client.index')
             ->with('success', 'Data client deleted.');
+    }
+
+    protected function saveCabangs(Request $request, DataClient $client)
+    {
+        $ids = $request->cabang_id ?? [];
+        $names = $request->cabang_nama ?? [];
+        $npwps = $request->cabang_npwp ?? [];
+        $kpps = $request->cabang_kpp ?? [];
+        $emails = $request->cabang_email ?? [];
+        $phones = $request->cabang_no_telephone ?? [];
+        $ars = $request->cabang_AR ?? [];
+        $ptkps = $request->cabang_ptkp ?? [];
+
+        $existingIds = $client->cabangs()->pluck('id')->toArray();
+        $submittedIds = [];
+
+        foreach ($names as $i => $name) {
+            $name = trim($name);
+            if (!$name) continue;
+
+            $cabangId = isset($ids[$i]) && $ids[$i] ? (int) $ids[$i] : null;
+            $data = [
+                'nama_client' => $name,
+                'npwp' => isset($npwps[$i]) ? ltrim(trim($npwps[$i]), "'") : null,
+                'kpp' => isset($kpps[$i]) ? trim($kpps[$i]) : null,
+                'email' => isset($emails[$i]) ? trim($emails[$i]) : null,
+                'no_telephone' => isset($phones[$i]) ? trim($phones[$i]) : null,
+                'AR' => isset($ars[$i]) ? trim($ars[$i]) : null,
+                'ptkp' => isset($ptkps[$i]) ? trim($ptkps[$i]) : null,
+            ];
+
+            if ($cabangId && in_array($cabangId, $existingIds)) {
+                NpwpCabang::where('id', $cabangId)->update($data);
+                $submittedIds[] = $cabangId;
+            } else {
+                $data['data_client_id'] = $client->id;
+                $data['tipe_badan'] = $client->tipe_badan;
+                $data['client_role_id'] = $client->client_role_id;
+                $data['alamat_npwp'] = $client->alamat_npwp;
+                $data['alamat_tagihan'] = $client->alamat_tagihan;
+                $data['password'] = Hash::make(Str::random(12));
+                $cabang = NpwpCabang::create($data);
+                $submittedIds[] = $cabang->id;
+            }
+        }
+
+        $toDelete = array_diff($existingIds, $submittedIds);
+        if (count($toDelete)) {
+            NpwpCabang::whereIn('id', $toDelete)->delete();
+        }
+
+        $firstCabang = NpwpCabang::where('data_client_id', $client->id)->first();
+        $client->update(['npwp_cabang_id' => $firstCabang ? $firstCabang->id : null]);
     }
 
     protected function resolveTipeBadan($value)

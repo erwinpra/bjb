@@ -98,7 +98,7 @@
         </nav>
 
         {{-- Main Content --}}
-        <div class="flex-grow-1 d-flex flex-column" style="margin-left: 260px;">
+        <div class="flex-grow-1 d-flex flex-column" style="margin-left: 260px; overflow-x: hidden; min-width: 0;">
             <header class="bg-white shadow-sm border-bottom py-3 px-4">
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="mb-0 fw-bold">@yield('title')</h5>
@@ -111,7 +111,7 @@
                 </div>
             </header>
 
-            <main class="flex-grow-1 p-4">
+            <main class="flex-grow-1 p-4" style="min-width: 0;">
                 @if(session('success'))
                     <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2">
                         <i class="bi bi-check-circle-fill"></i> {{ session('success') }}
