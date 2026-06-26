@@ -25,7 +25,7 @@
                     <select id="clientSelect" name="client_id" class="form-select" required>
                         <option value="">-- Pilih Client --</option>
                         @foreach($clients as $c)
-                            <option value="{{ $c->id }}" data-nama="{{ $c->nama_client }}" data-npwp="{{ $c->npwp }}" data-phone="{{ $c->no_telephone }}" data-alamat="{{ $c->alamat }}" data-kpp="{{ $c->kpp }}" data-tipe-id="{{ $c->tipe_badan }}">
+                            <option value="{{ $c->id }}" data-nama="{{ $c->nama_client }}" data-npwp="{{ $c->npwp }}" data-phone="{{ $c->no_telephone }}" data-alamat-npwp="{{ $c->alamat_npwp }}" data-kpp="{{ $c->kpp }}" data-tipe-id="{{ $c->tipe_badan }}">
                                 {{ $c->nama_client }} — {{ $c->npwp ?: 'NPWP: -' }}
                             </option>
                         @endforeach
@@ -43,7 +43,7 @@
                                 <div class="col-md-2"><span class="text-muted">Tipe:</span> <span id="detailTipe"></span></div>
                                 <div class="col-md-2"><span class="text-muted">KPP:</span> <span id="detailKpp"></span></div>
                                 <div class="col-md-2"><span class="text-muted">No. Telp:</span> <span id="detailPhone"></span></div>
-                                <div class="col-12 mt-2"><span class="text-muted">Alamat:</span> <span id="detailAlamat"></span></div>
+                                <div class="col-12 mt-2"><span class="text-muted">Alamat NPWP:</span> <span id="detailAlamatNpwp"></span></div>
                             </div>
                         </div>
                     </div>
@@ -332,7 +332,7 @@ document.getElementById('clientSelect').addEventListener('change', function() {
         document.getElementById('detailTipe').textContent = tipeName || '-';
         document.getElementById('detailKpp').textContent = c.kpp || '-';
         document.getElementById('detailPhone').textContent = c.no_telephone || '-';
-        document.getElementById('detailAlamat').textContent = c.alamat || '-';
+        document.getElementById('detailAlamatNpwp').textContent = c.alamat_npwp || '-';
         detail.classList.remove('d-none');
     }
 
@@ -379,7 +379,7 @@ function loadDataFromDb() {
                 document.getElementById('detailTipe').textContent = tipeName || '-';
                 document.getElementById('detailKpp').textContent = c.kpp || '-';
                 document.getElementById('detailPhone').textContent = c.no_telephone || '-';
-                document.getElementById('detailAlamat').textContent = c.alamat || '-';
+                document.getElementById('detailAlamatNpwp').textContent = c.alamat_npwp || '-';
                 document.getElementById('clientDetail').classList.remove('d-none');
             }
 
@@ -607,7 +607,7 @@ document.getElementById('btnPreview').addEventListener('click', function() {
                 <tr><td class="text-muted">Tipe</td><td>${tipeName || '-'}</td></tr>
                 <tr><td class="text-muted">KPP</td><td>${client.kpp || '-'}</td></tr>
                 <tr><td class="text-muted">No. Telp</td><td>${client.no_telephone || '-'}</td></tr>
-                <tr><td class="text-muted">Alamat</td><td>${client.alamat || '-'}</td></tr>
+                <tr><td class="text-muted">Alamat NPWP</td><td>${client.alamat_npwp || '-'}</td></tr>
                 <tr><td class="text-muted">Periode</td><td class="fw-medium">Tahun ${tahun}</td></tr>
             </table>
         </div>`;

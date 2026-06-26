@@ -36,13 +36,20 @@ class DataClientController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge([
+            'npwp' => ltrim($request->npwp ?? '', "'"),
+            'npwp_cabang' => ltrim($request->npwp_cabang ?? '', "'"),
+        ]);
+
         $data = $request->validate([
             'nama_client' => 'required|max:255',
             'tipe_badan' => 'nullable',
             'client_role_id' => 'nullable|exists:cms_client_roles,id',
-            'npwp' => 'nullable|digits:16',
+            'npwp' => 'nullable|digits_between:15,16',
+            'npwp_cabang' => 'nullable|digits_between:15,33',
             'kpp' => 'nullable|max:50',
-            'alamat' => 'nullable',
+            'alamat_npwp' => 'nullable',
+            'alamat_tagihan' => 'nullable',
             'no_telephone' => 'nullable|max:30',
             'email' => 'nullable|email|max:255|unique:cms_data_client,email',
         ]);
@@ -61,12 +68,18 @@ class DataClientController extends Controller
             ->with('success', 'Data client created.');
     }
 
+    public function show(DataClient $dataClient)
+    {
+        $dataClient->load('badan', 'clientRole');
+        return view('cms::data-client.show', compact('dataClient'));
+    }
+
     public function downloadTemplate()
     {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        $headers = ['No', 'KPP', 'Nama', 'NIK', 'Email', 'HP', 'Alamat NPWP', 'AR', 'PTKP'];
+        $headers = ['No', 'KPP', 'Nama', 'NIK', 'NPWP Cabang', 'Email', 'HP', 'Alamat NPWP', 'Alamat Tagihan', 'AR', 'PTKP'];
         foreach ($headers as $i => $header) {
             $col = chr(65 + $i);
             $sheet->setCellValue($col . '1', $header);
@@ -77,11 +90,13 @@ class DataClientController extends Controller
         $sheet->getColumnDimension('B')->setWidth(15);
         $sheet->getColumnDimension('C')->setWidth(30);
         $sheet->getColumnDimension('D')->setWidth(20);
-        $sheet->getColumnDimension('E')->setWidth(30);
-        $sheet->getColumnDimension('F')->setWidth(20);
-        $sheet->getColumnDimension('G')->setWidth(40);
-        $sheet->getColumnDimension('H')->setWidth(15);
-        $sheet->getColumnDimension('I')->setWidth(15);
+        $sheet->getColumnDimension('E')->setWidth(20);
+        $sheet->getColumnDimension('F')->setWidth(30);
+        $sheet->getColumnDimension('G')->setWidth(20);
+        $sheet->getColumnDimension('H')->setWidth(40);
+        $sheet->getColumnDimension('I')->setWidth(40);
+        $sheet->getColumnDimension('J')->setWidth(15);
+        $sheet->getColumnDimension('K')->setWidth(15);
 
         $writer = new Xlsx($spreadsheet);
         $filename = 'Template_Import_Data_Client.xlsx';
@@ -141,12 +156,12 @@ class DataClientController extends Controller
             $row = $rows[$r];
             $kpp = isset($row[1]) ? trim((string) $row[1]) : '';
             $nama = isset($row[2]) ? trim((string) $row[2]) : '';
-            $npwp = isset($row[3]) ? trim((string) $row[3]) : '';
+            $npwp = isset($row[3]) ? ltrim(trim((string) $row[3]), "'") : '';
 
             if (!$nama && !$npwp) continue;
 
             $npwpValid = true;
-            if ($npwp !== '' && !preg_match('/^\d{16}$/', $npwp)) {
+            if ($npwp !== '' && !preg_match('/^\d{15,16}$/', $npwp)) {
                 $npwpValid = false;
                 $invalidNpwp[] = $nama ?: $npwp;
             }
@@ -163,11 +178,13 @@ class DataClientController extends Controller
                 'kpp' => $kpp,
                 'nama' => $nama,
                 'npwp' => $npwp,
-                'email' => isset($row[4]) ? trim((string) $row[4]) : '',
-                'hp' => isset($row[5]) ? trim((string) $row[5]) : '',
-                'alamat' => isset($row[6]) ? trim((string) $row[6]) : '',
-                'ar' => isset($row[7]) ? trim((string) $row[7]) : '',
-                'ptkp' => isset($row[8]) ? trim((string) $row[8]) : '',
+                'npwp_cabang' => isset($row[4]) ? ltrim(trim((string) $row[4]), "'") : '',
+                'email' => isset($row[5]) ? trim((string) $row[5]) : '',
+                'hp' => isset($row[6]) ? trim((string) $row[6]) : '',
+                'alamat_npwp' => isset($row[7]) ? trim((string) $row[7]) : '',
+                'alamat_tagihan' => isset($row[8]) ? trim((string) $row[8]) : '',
+                'ar' => isset($row[9]) ? trim((string) $row[9]) : '',
+                'ptkp' => isset($row[10]) ? trim((string) $row[10]) : '',
                 'exists' => $exists,
                 'npwp_valid' => $npwpValid,
             ];
@@ -176,7 +193,7 @@ class DataClientController extends Controller
         if (count($invalidNpwp)) {
             @unlink($fullPath);
             return redirect()->route('cms.data-client.import')
-                ->with('error', 'NPWP harus 16 digit angka. Data berikut memiliki NPWP tidak valid: ' . implode(', ', array_slice($invalidNpwp, 0, 10)));
+                ->with('error', 'NPWP harus 15-16 digit angka. Data berikut memiliki NPWP tidak valid: ' . implode(', ', array_slice($invalidNpwp, 0, 10)));
         }
 
         $badan = Badan::all();
@@ -229,13 +246,13 @@ class DataClientController extends Controller
             $row = $rows[$r];
             $kpp = isset($row[1]) ? trim((string) $row[1]) : '';
             $nama = isset($row[2]) ? trim((string) $row[2]) : '';
-            $npwp = isset($row[3]) ? trim((string) $row[3]) : '';
+            $npwp = isset($row[3]) ? ltrim(trim((string) $row[3]), "'") : '';
 
             if (!$nama && !$npwp) continue;
 
             $npwpKey = $npwp ? strtolower(trim($npwp)) : '';
 
-            $email = isset($row[4]) ? trim((string) $row[4]) : '';
+            $email = isset($row[5]) ? trim((string) $row[5]) : '';
             if ($email === '') $email = null;
 
             $rowData = [
@@ -243,12 +260,14 @@ class DataClientController extends Controller
                 'tipe_badan' => $tipeBadan,
                 'client_role_id' => $defaultRoleId,
                 'npwp' => $npwp ?: null,
+                'npwp_cabang' => isset($row[4]) ? ltrim(trim((string) $row[4]), "'") : null,
                 'kpp' => $kpp ?: null,
                 'email' => $email,
-                'no_telephone' => isset($row[5]) ? trim((string) $row[5]) : null,
-                'alamat' => isset($row[6]) ? trim((string) $row[6]) : null,
-                'AR' => isset($row[7]) ? trim((string) $row[7]) : null,
-                'ptkp' => isset($row[8]) ? trim((string) $row[8]) : null,
+                'no_telephone' => isset($row[6]) ? trim((string) $row[6]) : null,
+                'alamat_npwp' => isset($row[7]) ? trim((string) $row[7]) : null,
+                'alamat_tagihan' => isset($row[8]) ? trim((string) $row[8]) : null,
+                'AR' => isset($row[9]) ? trim((string) $row[9]) : null,
+                'ptkp' => isset($row[10]) ? trim((string) $row[10]) : null,
             ];
 
             if ($npwpKey && isset($existingClients[$npwpKey])) {
@@ -325,13 +344,20 @@ class DataClientController extends Controller
 
     public function update(Request $request, DataClient $dataClient)
     {
+        $request->merge([
+            'npwp' => ltrim($request->npwp ?? '', "'"),
+            'npwp_cabang' => ltrim($request->npwp_cabang ?? '', "'"),
+        ]);
+
         $data = $request->validate([
             'nama_client' => 'required|max:255',
             'tipe_badan' => 'nullable',
             'client_role_id' => 'nullable|exists:cms_client_roles,id',
-            'npwp' => 'nullable|digits:16',
+            'npwp' => 'nullable|digits_between:15,16',
+            'npwp_cabang' => 'nullable|digits_between:15,33',
             'kpp' => 'nullable|max:50',
-            'alamat' => 'nullable',
+            'alamat_npwp' => 'nullable',
+            'alamat_tagihan' => 'nullable',
             'no_telephone' => 'nullable|max:30',
             'email' => 'nullable|email|max:255|unique:cms_data_client,email,' . $dataClient->id,
         ]);

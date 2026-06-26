@@ -36,11 +36,11 @@ Route::prefix($prefix)
         }
 
         if (config('cms.modules.data_client.enabled', true)) {
-            Route::resource('data-client', DataClientController::class)->except(['show'])->names('data-client');
             Route::get('data-client/import/template', [DataClientController::class, 'downloadTemplate'])->name('data-client.import.template');
             Route::get('data-client/import', [DataClientController::class, 'showImport'])->name('data-client.import');
             Route::post('data-client/import/preview', [DataClientController::class, 'previewImport'])->name('data-client.import.preview');
             Route::post('data-client/import/confirm', [DataClientController::class, 'confirmImport'])->name('data-client.import.confirm');
+            Route::resource('data-client', DataClientController::class)->names('data-client');
         }
 
         Route::resource('client-roles', ClientRoleController::class)->except(['show'])->names('client-roles');

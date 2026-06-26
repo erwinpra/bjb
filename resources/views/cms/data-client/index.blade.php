@@ -49,7 +49,10 @@
                             <td><span class="small">{{ $d->email ?: '-' }}</span></td>
                             <td><span class="small">{{ $d->kpp ?: '-' }}</span></td>
                             <td class="text-end pe-4">
-                                <a href="{{ route('cms.data-client.edit', $d) }}" class="btn btn-sm btn-outline-primary">
+                                <a href="{{ route('cms.data-client.show', $d) }}" class="btn btn-sm btn-outline-info" title="Lihat Detail">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ route('cms.data-client.edit', $d) }}" class="btn btn-sm btn-outline-primary" title="Edit">
                                     <i class="bi bi-pencil"></i>
                                 </a>
                                 <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteDC{{ $d->id }}">

@@ -44,7 +44,7 @@ class DemoSeeder extends Seeder
                 [
                     'npwp' => $c[1],
                     'kpp' => $c[2],
-                    'alamat' => $c[3],
+                    'alamat_npwp' => $c[3],
                     'no_telephone' => $c[4],
                 ]
             );

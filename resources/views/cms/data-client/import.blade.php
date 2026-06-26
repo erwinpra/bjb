@@ -112,9 +112,11 @@
                             <th>KPP</th>
                             <th>Nama</th>
                             <th>NPWP</th>
+                            <th>NPWP Cabang</th>
                             <th>Email</th>
                             <th>HP</th>
                             <th>Alamat NPWP</th>
+                            <th>Alamat Tagihan</th>
                             <th>AR</th>
                             <th>PTKP</th>
                             <th>Status</th>
@@ -127,9 +129,11 @@
                             <td>{{ $item['kpp'] ?: '-' }}</td>
                             <td>{{ $item['nama'] }}</td>
                             <td><code>{{ $item['npwp'] ?: '-' }}</code></td>
+                            <td><code>{{ $item['npwp_cabang'] ?: '-' }}</code></td>
                             <td><small>{{ $item['email'] ?: '-' }}</small></td>
                             <td>{{ $item['hp'] ?: '-' }}</td>
-                            <td><small class="text-muted">{{ Str::limit($item['alamat'], 40) ?: '-' }}</small></td>
+                            <td><small class="text-muted">{{ Str::limit($item['alamat_npwp'], 40) ?: '-' }}</small></td>
+                            <td><small class="text-muted">{{ Str::limit($item['alamat_tagihan'] ?? '', 40) ?: '-' }}</small></td>
                             <td>{{ $item['ar'] ?: '-' }}</td>
                             <td>{{ $item['ptkp'] ?: '-' }}</td>
                             <td>
@@ -141,7 +145,7 @@
                             </td>
                         </tr>
                         @empty
-                        <tr><td colspan="10" class="text-center text-muted py-4">Tidak ada data.</td></tr>
+                        <tr><td colspan="12" class="text-center text-muted py-4">Tidak ada data.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

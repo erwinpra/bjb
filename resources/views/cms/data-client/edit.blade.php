@@ -39,7 +39,8 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold small" id="npwpLabel">NPWP</label>
-                        <input type="text" name="npwp" id="npwpField" value="{{ old('npwp', $dataClient->npwp ?? '') }}" class="form-control @error('npwp') is-invalid @enderror" placeholder="16 digit angka" maxlength="16" inputmode="numeric">
+                        <input type="text" name="npwp" id="npwpField" value="{{ old('npwp', $dataClient->npwp ?? '') }}" class="form-control @error('npwp') is-invalid @enderror" placeholder="15-16 digit angka" maxlength="16" inputmode="numeric">
+                        <div id="npwpWarning" class="text-danger small mt-1 d-none"><i class="bi bi-exclamation-triangle me-1"></i><span id="npwpWarningText"></span></div>
                         @error('npwp') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-6">
@@ -58,6 +59,10 @@
                     <div class="col-md-6">
                         <label class="form-label fw-semibold small">KPP</label>
                         <input type="text" name="kpp" value="{{ old('kpp', $dataClient->kpp ?? '') }}" class="form-control" placeholder="Kantor Pelayanan Pajak">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small">NPWP Cabang</label>
+                        <input type="text" name="npwp_cabang" value="{{ old('npwp_cabang', $dataClient->npwp_cabang ?? '') }}" class="form-control" placeholder="NPWP Cabang (opsional)">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold small">No. Telephone</label>
@@ -86,9 +91,13 @@
                             <div class="form-text small text-info">Simpan password ini dan bagikan ke client.</div>
                         </div>
                     @endif
-                    <div class="col-12">
-                        <label class="form-label fw-semibold small">Alamat</label>
-                        <textarea name="alamat" rows="3" class="form-control" placeholder="Alamat lengkap">{{ old('alamat', $dataClient->alamat ?? '') }}</textarea>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small">Alamat NPWP</label>
+                        <textarea name="alamat_npwp" rows="3" class="form-control" placeholder="Alamat sesuai NPWP">{{ old('alamat_npwp', $dataClient->alamat_npwp ?? '') }}</textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small">Alamat Tagihan</label>
+                        <textarea name="alamat_tagihan" rows="3" class="form-control" placeholder="Alamat untuk penagihan">{{ old('alamat_tagihan', $dataClient->alamat_tagihan ?? '') }}</textarea>
                     </div>
                 </div>
 
@@ -115,14 +124,43 @@
 
         if (peroranganList.includes(tipe)) {
             label.textContent = 'NIK';
-            input.placeholder = '16 digit angka';
+            input.placeholder = '15-16 digit angka';
             input.maxLength = 16;
         } else {
             label.textContent = 'NPWP';
-            input.placeholder = '16 digit angka';
+            input.placeholder = '15-16 digit angka';
             input.maxLength = 16;
         }
+        validateNpwpField();
     });
+
+    document.getElementById('npwpField').addEventListener('input', validateNpwpField);
+    document.getElementById('npwpField').addEventListener('blur', validateNpwpField);
+
+    function validateNpwpField() {
+        const input = document.getElementById('npwpField');
+        const warning = document.getElementById('npwpWarning');
+        const warningText = document.getElementById('npwpWarningText');
+        const val = input.value;
+
+        if (!val) {
+            warning.classList.add('d-none');
+            return;
+        }
+
+        const hasNonDigit = /[^0-9]/.test(val);
+
+        if (hasNonDigit) {
+            warningText.textContent = 'NPWP/NIK hanya boleh terdiri dari 15-16 digit angka. Simbol atau huruf tidak diperbolehkan.';
+            warning.classList.remove('d-none');
+        } else if (val.length > 0 && val.length < 15) {
+            warningText.textContent = 'NPWP/NIK minimal 15 digit angka (saat ini ' + val.length + ' digit).';
+            warning.classList.remove('d-none');
+        } else {
+            warning.classList.add('d-none');
+        }
+    }
+
     function generatePassword() {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
         let pwd = '';
