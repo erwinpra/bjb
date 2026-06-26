@@ -15,6 +15,7 @@ class DataClient extends Model implements AuthenticatableContract
     protected $fillable = [
         'nama_client',
         'tipe_badan',
+        'client_role_id',
         'npwp',
         'kpp',
         'AR',
@@ -37,5 +38,20 @@ class DataClient extends Model implements AuthenticatableContract
     public function transaksi()
     {
         return $this->hasMany(Transaksi::class, 'client_id');
+    }
+
+    public function clientRole()
+    {
+        return $this->belongsTo(ClientRole::class, 'client_role_id');
+    }
+
+    public function hasClientPermission($permission)
+    {
+        return $this->clientRole && $this->clientRole->hasPermission($permission);
+    }
+
+    public function isClientRole($slug)
+    {
+        return $this->clientRole && $this->clientRole->slug === $slug;
     }
 }

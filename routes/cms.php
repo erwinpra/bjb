@@ -8,6 +8,8 @@ use App\Http\Controllers\Cms\PasalController;
 use App\Http\Controllers\Cms\DataClientController;
 use App\Http\Controllers\Cms\BadanController;
 use App\Http\Controllers\Cms\MasterRumusController;
+use App\Http\Controllers\Cms\ClientRoleController;
+use App\Http\Controllers\Cms\LampiranSptController;
 
 $prefix = config('cms.prefix', 'admin');
 $middleware = config('cms.middleware', ['web', 'auth']);
@@ -41,6 +43,11 @@ Route::prefix($prefix)
             Route::post('data-client/import/confirm', [DataClientController::class, 'confirmImport'])->name('data-client.import.confirm');
         }
 
+        Route::resource('client-roles', ClientRoleController::class)->except(['show'])->names('client-roles');
+
+        Route::get('dokumentasi', [\App\Http\Controllers\Cms\DokumentasiController::class, 'index'])->name('dokumentasi.index');
+        Route::get('dokumentasi/{file}', [\App\Http\Controllers\Cms\DokumentasiController::class, 'show'])->name('dokumentasi.show')->where('file', '.*');
+
         if (config('cms.modules.badan.enabled', true)) {
             Route::get('badan', [BadanController::class, 'index'])->name('badan.index');
             Route::get('badan/{badan}/edit', [BadanController::class, 'edit'])->name('badan.edit');
@@ -51,6 +58,13 @@ Route::prefix($prefix)
             Route::get('master-rumus', [MasterRumusController::class, 'index'])->name('master-rumus.index');
             Route::get('master-rumus/{masterRumus}/edit', [MasterRumusController::class, 'edit'])->name('master-rumus.edit');
             Route::put('master-rumus/{masterRumus}', [MasterRumusController::class, 'update'])->name('master-rumus.update');
+        }
+
+        if (config('cms.modules.lampiran_spt.enabled', true)) {
+            Route::get('lampiran-spt', [LampiranSptController::class, 'index'])->name('lampiran-spt.index');
+            Route::post('lampiran-spt', [LampiranSptController::class, 'store'])->name('lampiran-spt.store');
+            Route::get('lampiran-spt/master', [LampiranSptController::class, 'editMaster'])->name('lampiran-spt.master');
+            Route::get('lampiran-spt/dashboard', [LampiranSptController::class, 'dashboard'])->name('lampiran-spt.dashboard');
         }
 
         if (config('cms.modules.transaksi.enabled', true)) {

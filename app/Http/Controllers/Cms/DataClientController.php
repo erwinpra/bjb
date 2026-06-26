@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Cms;
 use App\Http\Controllers\Controller;
 use App\Models\Cms\DataClient;
 use App\Models\Cms\Badan;
+use App\Models\Cms\ClientRole;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
@@ -16,17 +17,19 @@ class DataClientController extends Controller
 {
     public function index()
     {
-        $dataClients = DataClient::with('badan')->latest()->paginate(15);
+        $dataClients = DataClient::with('badan', 'clientRole')->latest()->paginate(15);
         return view('cms::data-client.index', compact('dataClients'));
     }
 
     public function create()
     {
         $badan = Badan::all();
+        $clientRoles = ClientRole::all();
         $generatedPassword = Str::random(12);
         return view('cms::data-client.edit', [
             'dataClient' => null,
             'badan' => $badan,
+            'clientRoles' => $clientRoles,
             'generatedPassword' => $generatedPassword,
         ]);
     }
@@ -36,6 +39,7 @@ class DataClientController extends Controller
         $data = $request->validate([
             'nama_client' => 'required|max:255',
             'tipe_badan' => 'nullable',
+            'client_role_id' => 'nullable|exists:cms_client_roles,id',
             'npwp' => 'nullable|digits:16',
             'kpp' => 'nullable|max:50',
             'alamat' => 'nullable',
@@ -45,6 +49,11 @@ class DataClientController extends Controller
 
         $data['tipe_badan'] = $this->resolveTipeBadan($request->tipe_badan);
         $data['password'] = Hash::make($request->password ?? Str::random(12));
+
+        if (empty($data['client_role_id'])) {
+            $defaultRole = \App\Models\Cms\ClientRole::where('slug', 'client')->first();
+            $data['client_role_id'] = $defaultRole ? $defaultRole->id : null;
+        }
 
         DataClient::create($data);
 
@@ -120,13 +129,14 @@ class DataClientController extends Controller
                 ->with('error', 'File Excel kosong.');
         }
 
-        $existing = DataClient::select('kpp', 'nama_client', 'npwp')->get()->map(function ($d) {
-            return strtolower(trim((string) $d->kpp)) . '|' . strtolower(trim((string) $d->nama_client)) . '|' . strtolower(trim((string) $d->npwp));
-        })->toArray();
+        $existingNPs = DataClient::whereNotNull('npwp')->pluck('npwp')->map(function ($v) {
+            return strtolower(trim($v));
+        })->filter()->values()->toArray();
 
         $preview = [];
         $newCount = 0;
-        $skipCount = 0;
+        $updateCount = 0;
+        $invalidNpwp = [];
         for ($r = 1; $r < count($rows); $r++) {
             $row = $rows[$r];
             $kpp = isset($row[1]) ? trim((string) $row[1]) : '';
@@ -135,11 +145,16 @@ class DataClientController extends Controller
 
             if (!$nama && !$npwp) continue;
 
-            $key = strtolower($kpp) . '|' . strtolower($nama) . '|' . strtolower($npwp);
-            $exists = in_array($key, $existing);
+            $npwpValid = true;
+            if ($npwp !== '' && !preg_match('/^\d{16}$/', $npwp)) {
+                $npwpValid = false;
+                $invalidNpwp[] = $nama ?: $npwp;
+            }
+
+            $exists = $npwp !== '' && in_array(strtolower(trim($npwp)), $existingNPs);
 
             if ($exists) {
-                $skipCount++;
+                $updateCount++;
             } else {
                 $newCount++;
             }
@@ -154,14 +169,20 @@ class DataClientController extends Controller
                 'ar' => isset($row[7]) ? trim((string) $row[7]) : '',
                 'ptkp' => isset($row[8]) ? trim((string) $row[8]) : '',
                 'exists' => $exists,
+                'npwp_valid' => $npwpValid,
             ];
+        }
 
+        if (count($invalidNpwp)) {
+            @unlink($fullPath);
+            return redirect()->route('cms.data-client.import')
+                ->with('error', 'NPWP harus 16 digit angka. Data berikut memiliki NPWP tidak valid: ' . implode(', ', array_slice($invalidNpwp, 0, 10)));
         }
 
         $badan = Badan::all();
 
         return view('cms::data-client.import', compact(
-            'badan', 'headers', 'totalRows', 'preview', 'newCount', 'skipCount', 'tipeBadan', 'tempPath'
+            'badan', 'headers', 'totalRows', 'preview', 'newCount', 'updateCount', 'tipeBadan', 'tempPath'
         ));
     }
 
@@ -170,8 +191,10 @@ class DataClientController extends Controller
         $request->validate([
             'tipe_badan' => 'required',
             'temp_path' => 'required|string',
+            'import_mode' => 'required|in:skip,update',
         ]);
 
+        $importMode = $request->import_mode;
         $tipeBadan = $request->tipe_badan;
         $fullPath = storage_path('app/' . $request->temp_path);
 
@@ -189,14 +212,18 @@ class DataClientController extends Controller
 
         $rows = $xlsx->rows();
         $imported = 0;
+        $updated = 0;
         $skipped = 0;
         $errors = [];
 
-        $existing = DataClient::select('kpp', 'nama_client', 'npwp', 'email')->get();
-        $existingKeys = $existing->map(function ($d) {
-            return strtolower(trim((string) $d->kpp)) . '|' . strtolower(trim((string) $d->nama_client)) . '|' . strtolower(trim((string) $d->npwp));
-        })->toArray();
-        $existingEmails = $existing->pluck('email')->filter()->map(function ($v) { return strtolower($v); })->toArray();
+        $existingClients = DataClient::whereNotNull('npwp')->get()->keyBy(function ($d) {
+            return strtolower(trim($d->npwp));
+        });
+        $existingEmails = $existingClients->pluck('email')->filter()->map(function ($v) { return strtolower($v); })->toArray();
+        $existingNpwps = $existingClients->keys()->toArray();
+
+        $defaultRole = \App\Models\Cms\ClientRole::where('slug', 'client')->first();
+        $defaultRoleId = $defaultRole ? $defaultRole->id : null;
 
         for ($r = 1; $r < count($rows); $r++) {
             $row = $rows[$r];
@@ -206,22 +233,15 @@ class DataClientController extends Controller
 
             if (!$nama && !$npwp) continue;
 
-            $key = strtolower($kpp) . '|' . strtolower($nama) . '|' . strtolower($npwp);
-            if (in_array($key, $existingKeys)) {
-                $skipped++;
-                continue;
-            }
+            $npwpKey = $npwp ? strtolower(trim($npwp)) : '';
 
             $email = isset($row[4]) ? trim((string) $row[4]) : '';
             if ($email === '') $email = null;
 
-            if ($email && in_array(strtolower($email), $existingEmails)) {
-                $email = null;
-            }
-
-            $insertData = [
+            $rowData = [
                 'nama_client' => $nama ?: '-',
                 'tipe_badan' => $tipeBadan,
+                'client_role_id' => $defaultRoleId,
                 'npwp' => $npwp ?: null,
                 'kpp' => $kpp ?: null,
                 'email' => $email,
@@ -229,21 +249,49 @@ class DataClientController extends Controller
                 'alamat' => isset($row[6]) ? trim((string) $row[6]) : null,
                 'AR' => isset($row[7]) ? trim((string) $row[7]) : null,
                 'ptkp' => isset($row[8]) ? trim((string) $row[8]) : null,
-                'password' => Hash::make(Str::random(12)),
             ];
 
+            if ($npwpKey && isset($existingClients[$npwpKey])) {
+                if ($importMode === 'update') {
+                    $client = $existingClients[$npwpKey];
+
+                    if ($email && strtolower($email) !== strtolower(trim($client->email ?? ''))) {
+                        $dupCheck = DataClient::where('email', $email)->where('id', '!=', $client->id)->exists();
+                        if ($dupCheck) {
+                            $rowData['email'] = $client->email;
+                        }
+                    }
+
+                    try {
+                        $client->update($rowData);
+                        $updated++;
+                    } catch (\Exception $e) {
+                        $errors[] = "Baris " . ($r + 1) . " ({$nama}): " . $e->getMessage();
+                    }
+                } else {
+                    $skipped++;
+                }
+                continue;
+            }
+
+            if ($email && in_array(strtolower($email), $existingEmails)) {
+                $email = null;
+                $rowData['email'] = null;
+            }
+
+            $rowData['password'] = Hash::make(Str::random(12));
+
             try {
-                DataClient::create($insertData);
+                DataClient::create($rowData);
                 $imported++;
-                $existingKeys[] = $key;
+                $existingNpwps[] = $npwpKey;
                 if ($email) $existingEmails[] = strtolower($email);
             } catch (\Exception $e) {
                 if ($email && str_contains($e->getMessage(), 'email_unique')) {
-                    $insertData['email'] = null;
+                    $rowData['email'] = null;
                     try {
-                        DataClient::create($insertData);
+                        DataClient::create($rowData);
                         $imported++;
-                        $existingKeys[] = $key;
                     } catch (\Exception $e2) {
                         $errors[] = "Baris " . ($r + 1) . " ({$nama}): " . $e2->getMessage();
                     }
@@ -255,7 +303,11 @@ class DataClientController extends Controller
 
         @unlink($fullPath);
 
-        $message = "Import selesai. {$imported} data baru ditambahkan, {$skipped} data sudah ada.";
+        $parts = [];
+        if ($imported > 0) $parts[] = "{$imported} data baru ditambahkan";
+        if ($updated > 0) $parts[] = "{$updated} data diupdate";
+        if ($skipped > 0) $parts[] = "{$skipped} data dilewati";
+        $message = "Import selesai. " . implode(', ', $parts) . ".";
         if (count($errors)) {
             $message .= " " . count($errors) . " error: " . implode('; ', array_slice($errors, 0, 5));
         }
@@ -267,7 +319,8 @@ class DataClientController extends Controller
     public function edit(DataClient $dataClient)
     {
         $badan = Badan::all();
-        return view('cms::data-client.edit', compact('dataClient', 'badan'));
+        $clientRoles = ClientRole::all();
+        return view('cms::data-client.edit', compact('dataClient', 'badan', 'clientRoles'));
     }
 
     public function update(Request $request, DataClient $dataClient)
@@ -275,6 +328,7 @@ class DataClientController extends Controller
         $data = $request->validate([
             'nama_client' => 'required|max:255',
             'tipe_badan' => 'nullable',
+            'client_role_id' => 'nullable|exists:cms_client_roles,id',
             'npwp' => 'nullable|digits:16',
             'kpp' => 'nullable|max:50',
             'alamat' => 'nullable',

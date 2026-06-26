@@ -14,12 +14,17 @@
         <div class="container">
             <a class="navbar-brand fw-semibold" href="#">
                 <i class="bi bi-person-badge me-2"></i>{{ $client->nama_client }}
+                @if($clientRole)
+                    <span class="badge bg-light text-success ms-2 small">{{ $clientRole->name }}</span>
+                @endif
             </a>
             <div class="d-flex align-items-center gap-2">
                 <span class="text-white-50 small d-none d-md-inline">NPWP: {{ $client->npwp ?? '-' }}</span>
+                @if($client->hasClientPermission('dashboard.change-password'))
                 <button type="button" class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
                     <i class="bi bi-key me-1"></i>Ganti Password
                 </button>
+                @endif
                 <a href="{{ route('client.logout') }}" class="btn btn-sm btn-outline-light"
                    onclick="event.preventDefault(); document.getElementById('logoutForm').submit();">
                     <i class="bi bi-box-arrow-right me-1"></i>Logout
@@ -42,6 +47,22 @@
                     @endfor
                 </select>
             </div>
+            @if($allClients->isNotEmpty())
+            <div class="col-md-3">
+                <label class="form-label fw-semibold small text-muted">Lihat Client</label>
+                <select id="viewClientFilter" class="form-select">
+                    @if($client->hasClientPermission('client.view-all'))
+                        <option value="{{ Auth::guard('client')->user()->id }}">-- Akun Saya --</option>
+                        @foreach($allClients as $c)
+                            <option value="{{ $c->id }}" {{ request('view_client_id') == $c->id ? 'selected' : '' }}>
+                                {{ $c->nama_client }} ({{ $c->npwp ?? '-' }})
+                            </option>
+                        @endforeach
+                    @endif
+                </select>
+            </div>
+            @endif
+            @if($client->hasClientPermission('dashboard.export'))
             <div class="col-md-auto d-flex gap-2">
                 <a href="{{ route('client.dashboard.export-pdf', ['tahun' => $tahun]) }}" class="btn btn-sm btn-danger export-link">
                     <i class="bi bi-filetype-pdf me-1"></i> PDF
@@ -50,6 +71,7 @@
                     <i class="bi bi-file-earmark-spreadsheet me-1"></i> Excel
                 </a>
             </div>
+            @endif
         </div>
 
         {{-- Summary Cards --}}
@@ -166,15 +188,29 @@
         return Number(v || 0).toLocaleString('id-ID');
     }
 
+    function getParams() {
+        const tahun = document.getElementById('tahunFilter').value;
+        const viewClient = document.getElementById('viewClientFilter');
+        let params = 'tahun=' + tahun;
+        if (viewClient && viewClient.value) {
+            params += '&view_client_id=' + viewClient.value;
+        }
+        return params;
+    }
+
     function loadData(tahun) {
-        fetch('/client/dashboard/data?tahun=' + tahun)
+        const viewClient = document.getElementById('viewClientFilter');
+        let url = '/client/dashboard/data?tahun=' + tahun;
+        if (viewClient && viewClient.value) {
+            url += '&view_client_id=' + viewClient.value;
+        }
+        fetch(url)
             .then(res => res.json())
             .then(data => {
                 document.getElementById('totalHarta').textContent = formatNum(data.total_harta);
                 document.getElementById('totalOmset').textContent = formatNum(data.total_omset);
                 document.getElementById('totalPph').textContent = formatNum(data.total_pph);
 
-                // Harta detail
                 const hartaDiv = document.getElementById('hartaDetailContent');
                 if (data.harta_detail && data.harta_detail.length) {
                     let table = `<table class="table table-sm table-hover mb-0"><thead class="table-light"><tr><th class="ps-4">Nama</th><th class="text-end pe-4">Nilai</th></tr></thead><tbody>`;
@@ -248,9 +284,25 @@
         document.querySelectorAll('.export-link').forEach(a => {
             const url = new URL(a.href);
             url.searchParams.set('tahun', tahun);
+            const vc = document.getElementById('viewClientFilter');
+            if (vc && vc.value) url.searchParams.set('view_client_id', vc.value);
             a.href = url.toString();
         });
     });
+
+    const viewClientFilter = document.getElementById('viewClientFilter');
+    if (viewClientFilter) {
+        viewClientFilter.addEventListener('change', function() {
+            const tahun = document.getElementById('tahunFilter').value;
+            loadData(tahun);
+            document.querySelectorAll('.export-link').forEach(a => {
+                const url = new URL(a.href);
+                url.searchParams.set('tahun', tahun);
+                if (this.value) url.searchParams.set('view_client_id', this.value);
+                a.href = url.toString();
+            });
+        });
+    }
 
     loadData({{ $tahun }});
     </script>

@@ -55,25 +55,53 @@
             </div>
 
             <div class="row g-4 mb-4">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="card bg-primary bg-opacity-10 border-0 text-center py-3">
                         <div class="fs-2 fw-bold text-primary">{{ $totalRows }}</div>
                         <small class="text-muted">Total Baris Data</small>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="card bg-success bg-opacity-10 border-0 text-center py-3">
                         <div class="fs-2 fw-bold text-success">{{ $newCount }}</div>
-                        <small class="text-muted">Data Baru (akan diimport)</small>
+                        <small class="text-muted">Data Baru</small>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
+                    <div class="card bg-warning bg-opacity-10 border-0 text-center py-3">
+                        <div class="fs-2 fw-bold text-warning">{{ $updateCount }}</div>
+                        <small class="text-muted">Sudah Ada (NPWP sama)</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
                     <div class="card bg-secondary bg-opacity-10 border-0 text-center py-3">
-                        <div class="fs-2 fw-bold text-secondary">{{ $skipCount }}</div>
-                        <small class="text-muted">Sudah Ada (akan dilewati)</small>
+                        <div class="fs-2 fw-bold text-secondary">{{ $totalRows - $newCount - $updateCount }}</div>
+                        <small class="text-muted">Tanpa NPWP</small>
                     </div>
                 </div>
             </div>
+
+            {{-- Pilih Mode Import --}}
+            @if($updateCount > 0)
+            <div class="alert alert-warning py-3 mb-4">
+                <h6 class="fw-semibold mb-2"><i class="bi bi-exclamation-triangle me-1"></i>Pilihan Mode Import</h6>
+                <p class="mb-2 small">Ditemukan <strong>{{ $updateCount }}</strong> data dengan NPWP yang sudah terdaftar. Pilih tindakan:</p>
+                <div class="d-flex gap-4">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="import_mode" id="modeSkip" value="skip" checked>
+                        <label class="form-check-label small" for="modeSkip">
+                            <strong>Skip / Lewati</strong> &mdash; Data yang sudah ada tidak diubah
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="import_mode" id="modeUpdate" value="update">
+                        <label class="form-check-label small" for="modeUpdate">
+                            <strong>Update / Perbarui</strong> &mdash; Data yang sudah akan diperbarui dengan data dari Excel
+                        </label>
+                    </div>
+                </div>
+            </div>
+            @endif
 
             <h6 class="fw-semibold mb-3">Preview Data</h6>
             <div class="table-responsive" style="max-height:400px">
@@ -83,7 +111,7 @@
                             <th>#</th>
                             <th>KPP</th>
                             <th>Nama</th>
-                            <th>NIK</th>
+                            <th>NPWP</th>
                             <th>Email</th>
                             <th>HP</th>
                             <th>Alamat NPWP</th>
@@ -94,7 +122,7 @@
                     </thead>
                     <tbody>
                         @forelse($preview as $i => $item)
-                        <tr class="{{ $item['exists'] ? 'table-secondary' : '' }}">
+                        <tr class="{{ $item['exists'] ? 'table-warning' : '' }}">
                             <td>{{ $i + 1 }}</td>
                             <td>{{ $item['kpp'] ?: '-' }}</td>
                             <td>{{ $item['nama'] }}</td>
@@ -106,7 +134,7 @@
                             <td>{{ $item['ptkp'] ?: '-' }}</td>
                             <td>
                                 @if($item['exists'])
-                                    <span class="badge bg-secondary">Sudah Ada</span>
+                                    <span class="badge bg-warning text-dark">Akan Diupdate</span>
                                 @else
                                     <span class="badge bg-success">Baru</span>
                                 @endif
@@ -123,15 +151,39 @@
                 <a href="{{ route('cms.data-client.import') }}" class="btn btn-light">
                     <i class="bi bi-arrow-left me-1"></i> Upload Ulang
                 </a>
-                <form method="POST" action="{{ route('cms.data-client.import.confirm') }}">
+                <form method="POST" action="{{ route('cms.data-client.import.confirm') }}" id="confirmForm">
                     @csrf
                     <input type="hidden" name="tipe_badan" value="{{ $tipeBadan }}">
                     <input type="hidden" name="temp_path" value="{{ $tempPath }}">
-                    <button type="submit" class="btn btn-primary px-4" onclick="return confirm('Import {{ $newCount }} data baru dengan tipe {{ optional(\App\Models\Cms\Badan::find($tipeBadan))->tipe ?? '-' }}? Data yang sudah ada akan dilewati.')">
+                    <input type="hidden" name="import_mode" id="importModeInput" value="skip">
+                    <button type="submit" class="btn btn-primary px-4" id="confirmBtn">
                         <i class="bi bi-check-lg me-1"></i> Import {{ $newCount }} Data Baru
                     </button>
                 </form>
             </div>
+            @push('scripts')
+            <script>
+            document.querySelectorAll('input[name="import_mode"]').forEach(function(el) {
+                el.addEventListener('change', function() {
+                    document.getElementById('importModeInput').value = this.value;
+                    var btn = document.getElementById('confirmBtn');
+                    if (this.value === 'update') {
+                        btn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Import & Update {{ $updateCount }} Data';
+                    } else {
+                        btn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Import {{ $newCount }} Data Baru';
+                    }
+                });
+            });
+            document.getElementById('confirmForm').addEventListener('submit', function(e) {
+                var mode = document.getElementById('importModeInput').value;
+                if (mode === 'update' && !confirm('Data dengan NPWP yang sama akan diperbarui. Lanjutkan?')) {
+                    e.preventDefault();
+                } else if (mode === 'skip' && !confirm('Import {{ $newCount }} data baru? Data yang sudah ada akan dilewati.')) {
+                    e.preventDefault();
+                }
+            });
+            </script>
+            @endpush
         @endif
     </div>
 </div>

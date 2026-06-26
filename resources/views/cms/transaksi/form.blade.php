@@ -70,19 +70,23 @@
 
             <hr>
 
-            {{-- Harta / Inventaris (per tahun) --}}
+            {{-- Lampiran SPT Tahunan --}}
             <div class="row g-4 mb-4">
                 <div class="col-12">
                     <h6 class="fw-semibold text-success border-bottom pb-2">
-                        <i class="bi bi-building me-2"></i><span id="hartaLabel">Harta</span>
-                        <button type="button" class="btn btn-sm btn-outline-success float-end" id="addHarta">
-                            <i class="bi bi-plus-lg"></i> <span id="addHartaLabel">Tambah Harta</span>
-                        </button>
+                        <i class="bi bi-building me-2"></i>Harta / Aktiva
+                        <a href="{{ route('cms.lampiran-spt.index') }}?client_id={{ old('client_id', '') }}&tahun={{ old('tahun', date('Y')) }}"
+                           class="btn btn-sm btn-outline-primary float-end" id="btnLampiranSpt" target="_blank">
+                            <i class="bi bi-pencil-square me-1"></i> Update / Import Harta
+                        </a>
                     </h6>
+                    <div class="alert alert-info small py-2 mb-0">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Input harta/aktiva sekarang dikelola melalui menu 
+                        <strong>Lampiran SPT Tahunan</strong>. 
+                        Klik tombol <strong>"Update / Import Harta"</strong> di atas untuk mengisi data harta.
+                    </div>
                 </div>
-            </div>
-            <div id="hartaContainer" class="row g-3 mb-4">
-                {{-- Dynamic rows inserted here --}}
             </div>
 
             {{-- Omset Per Tahun (untuk PT) --}}
@@ -102,9 +106,14 @@
             {{-- Omset Per Bulan (untuk Perorangan) --}}
             <div id="omsetBulananSection" class="row g-4 mb-4">
                 <div class="col-12">
-                    <h6 class="fw-semibold text-warning border-bottom pb-2"><i class="bi bi-calendar-month me-2"></i>Omset Per Bulan</h6>
+                    <h6 class="fw-semibold text-warning border-bottom pb-2">
+                        <i class="bi bi-calendar-month me-2"></i>Omset Per Bulan
+                        <button type="button" class="btn btn-sm btn-outline-warning float-end" id="toggleOmsetInput">
+                            <i class="bi bi-eye-slash me-1"></i> <span id="toggleOmsetInputLabel">Sembunyikan</span>
+                        </button>
+                    </h6>
                 </div>
-                <div class="col-12">
+                <div id="omsetInputContainer" class="col-12">
                     <ul class="nav nav-tabs nav-fill" id="monthTabs" role="tablist">
                         @php $months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']; @endphp
                         @foreach($months as $i => $monthName)
@@ -131,12 +140,57 @@
                                             <input type="text" class="form-control format-currency omset-input" name="omset_bulanan[{{ $mo }}]" data-month="{{ $mo }}" placeholder="0">
                                         </div>
                                     </div>
-                                    <div class="col-12">
-                                        <div id="omsetResult-{{ $mo }}" class="p-3 rounded d-none"></div>
-                                    </div>
                                 </div>
                             </div>
                         @endforeach
+                    </div>
+                </div>
+            </div>
+
+            {{-- Hasil Perhitungan Per Bulan --}}
+            <div id="hasilPerhitunganSection" class="row g-4 mb-4 d-none">
+                <div class="col-12">
+                    <h6 class="fw-semibold text-info border-bottom pb-2">
+                        <i class="bi bi-table me-2"></i>Hasil Perhitungan Per Bulan
+                        <button type="button" class="btn btn-sm btn-outline-info float-end" id="toggleHasilTable">
+                            <i class="bi bi-eye-slash me-1"></i> <span id="toggleHasilTableLabel">Sembunyikan</span>
+                        </button>
+                    </h6>
+                </div>
+                <div id="hasilTableContainer" class="col-12">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0" id="hasilPerhitunganTable">
+                            <thead class="table-info">
+                                <tr>
+                                    <th style="width:80px">Bulan</th>
+                                    <th class="text-end">Omset</th>
+                                    <th class="text-end">Total Peredaran Bruto</th>
+                                    <th class="text-end">PPH Final 0.5%</th>
+                                    <th class="text-end">PPh Final yg harus dibayar</th>
+                                    <th style="width:40px" class="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="hasilTableBody">
+                                @foreach(['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'] as $i => $bulan)
+                                <tr id="hasilRow-{{ $i + 1 }}" class="d-none">
+                                    <td class="text-muted">{{ $bulan }}</td>
+                                    <td class="text-end" id="hasilOmset-{{ $i + 1 }}">-</td>
+                                    <td class="text-end" id="hasilBruto-{{ $i + 1 }}">-</td>
+                                    <td class="text-end" id="hasilPph-{{ $i + 1 }}">-</td>
+                                    <td class="text-end" id="hasilFinal-{{ $i + 1 }}">-</td>
+                                    <td class="text-center" id="hasilStatus-{{ $i + 1 }}">-</td>
+                                </tr>
+                                @endforeach
+                                <tr class="fw-bold table-secondary" id="hasilTotalRow">
+                                    <td>Total PPh Final yg harus dibayar</td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td class="text-end text-danger" id="hasilTotalPph">Rp 0</td>
+                                    <td></td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -226,9 +280,6 @@ function toggleButtons() {
     const clientId = parseInt(document.getElementById('clientSelect').value);
     const hasClient = !!clientId;
 
-    const hartaFilled = document.querySelectorAll('#hartaContainer [name="harta_nama[]"]').length > 0
-        && Array.from(document.querySelectorAll('#hartaContainer [name="harta_nama[]"]')).some(inp => inp.value.trim());
-
     const isId1 = !document.getElementById('omsetTahunanSection').classList.contains('d-none');
     const omsetTahunanVal = document.getElementById('omsetTahunan').value.replace(/[^0-9]/g, '') || '0';
     const omsetBulananFilled = Array.from(document.querySelectorAll('.omset-input')).some(inp => {
@@ -236,7 +287,7 @@ function toggleButtons() {
     });
 
     const hasOmset = isId1 ? parseInt(omsetTahunanVal) > 0 : omsetBulananFilled;
-    const hasData = hasClient && (hartaFilled || hasOmset);
+    const hasData = hasClient && hasOmset;
 
     document.getElementById('btnPreview').disabled = !hasData;
     document.getElementById('btnExportPdf').disabled = !hasData;
@@ -246,13 +297,15 @@ function toggleButtons() {
 
 // --- Reset form ---
 function resetForm() {
-    document.getElementById('hartaContainer').innerHTML = '';
-    hartaIndex = 0;
     document.querySelectorAll('.omset-input').forEach(el => el.value = '');
     document.getElementById('omsetTahunan').value = '';
     for (let mo = 1; mo <= 12; mo++) {
-        document.getElementById(`omsetResult-${mo}`).classList.add('d-none');
+        document.getElementById(`hasilRow-${mo}`).classList.add('d-none');
     }
+    document.getElementById('hasilPerhitunganSection').classList.add('d-none');
+    document.getElementById('hasilTotalPph').textContent = 'Rp 0';
+    let alert4M = document.getElementById('alert4M');
+    if (alert4M) alert4M.remove();
     toggleButtons();
 }
 
@@ -283,16 +336,14 @@ document.getElementById('clientSelect').addEventListener('change', function() {
         detail.classList.remove('d-none');
     }
 
+    const lampiranUrl = document.getElementById('btnLampiranSpt').href.split('?')[0];
+    document.getElementById('btnLampiranSpt').href = lampiranUrl + '?client_id=' + id + '&tahun=' + (document.getElementById('tahunSelect').value || '{{ date("Y") }}');
+
     const isId1 = tipeId === 1;
-    document.getElementById('hartaLabel').textContent = isId1 ? 'Inventaris' : 'Harta';
-    document.getElementById('addHartaLabel').textContent = isId1 ? 'Tambah Inventaris' : 'Tambah Harta';
 
     if (isId1) {
         document.getElementById('omsetTahunanSection').classList.remove('d-none');
         document.getElementById('omsetBulananSection').classList.add('d-none');
-        for (let mo = 1; mo <= 12; mo++) {
-            document.getElementById(`omsetResult-${mo}`).classList.add('d-none');
-        }
     } else {
         document.getElementById('omsetTahunanSection').classList.add('d-none');
         document.getElementById('omsetBulananSection').classList.remove('d-none');
@@ -333,8 +384,6 @@ function loadDataFromDb() {
             }
 
             const isId1 = tipeId === 1;
-            document.getElementById('hartaLabel').textContent = isId1 ? 'Inventaris' : 'Harta';
-            document.getElementById('addHartaLabel').textContent = isId1 ? 'Tambah Inventaris' : 'Tambah Harta';
 
             if (isId1) {
                 document.getElementById('omsetTahunanSection').classList.remove('d-none');
@@ -343,37 +392,6 @@ function loadDataFromDb() {
                 document.getElementById('omsetTahunanSection').classList.add('d-none');
                 document.getElementById('omsetBulananSection').classList.remove('d-none');
             }
-
-            // Load harta
-            data.harta.forEach(h => {
-                const isId1 = tipeId === 1;
-                const label = isId1 ? 'Inventaris' : 'Harta';
-                hartaIndex++;
-                const div = document.createElement('div');
-                div.className = 'col-md-6';
-                div.innerHTML = `
-                    <div class="card border h-100">
-                        <div class="card-body py-3 px-4">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="small fw-semibold">${label} #${hartaIndex}</span>
-                                <button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-x-lg"></i></button>
-                            </div>
-                            <div class="row g-2">
-                                <div class="col-7">
-                                    <input type="text" class="form-control form-control-sm" name="harta_nama[]" value="${h.nama}" placeholder="Nama ${label.toLowerCase()}">
-                                </div>
-                                <div class="col-5">
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text">Rp</span>
-                                        <input type="text" class="form-control format-currency" name="harta_nilai[]" value="${Number(h.nilai).toLocaleString('id-ID')}" placeholder="Nilai">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>`;
-                document.getElementById('hartaContainer').appendChild(div);
-                attachRemove(div);
-            });
 
             // Load omset
             if (isId1) {
@@ -396,79 +414,137 @@ function loadDataFromDb() {
         .catch(err => console.error('Load data error:', err));
 }
 
+// --- Toggle Omset Input ---
+document.getElementById('toggleOmsetInput').addEventListener('click', function() {
+    const container = document.getElementById('omsetInputContainer');
+    const isHidden = container.classList.toggle('d-none');
+    this.querySelector('i').className = isHidden ? 'bi bi-eye me-1' : 'bi bi-eye-slash me-1';
+    document.getElementById('toggleOmsetInputLabel').textContent = isHidden ? 'Tampilkan' : 'Sembunyikan';
+});
+
+// --- Toggle Hasil Perhitungan Table ---
+document.getElementById('toggleHasilTable').addEventListener('click', function() {
+    const container = document.getElementById('hasilTableContainer');
+    const isHidden = container.classList.toggle('d-none');
+    this.querySelector('i').className = isHidden ? 'bi bi-eye me-1' : 'bi bi-eye-slash me-1';
+    document.getElementById('toggleHasilTableLabel').textContent = isHidden ? 'Tampilkan' : 'Sembunyikan';
+});
+
 // --- Omset calculation per bulan ---
 function hitungOmset() {
     const rumus = rumusList.find(r => String(r.tipe_badan) === '7');
-    if (!rumus) {
-        for (let mo = 1; mo <= 12; mo++) {
-            document.getElementById(`omsetResult-${mo}`).classList.add('d-none');
-        }
-        return;
-    }
+    const maxVal = Number(rumus?.max_value || 0);
+    const persen = Number(rumus?.potongan_persentase || 0);
+    const LIMIT_400JT = 400000000;
+    const LIMIT_4M = 4000000000;
 
-    const maxVal = Number(rumus.max_value);
-    const persen = Number(rumus.potongan_persentase);
     let cumulative = 0;
+    let totalPotongan = 0;
+    let cumulativeExceeds4M = false;
 
     for (let mo = 1; mo <= 12; mo++) {
         const val = document.querySelector(`.omset-input[data-month="${mo}"]`)?.value || '0';
         const current = Number(val.replace(/[^0-9]/g, '') || 0);
-        const display = document.getElementById(`omsetResult-${mo}`);
+        const row = document.getElementById(`hasilRow-${mo}`);
 
         if (current === 0) {
-            display.classList.add('d-none');
+            row.classList.add('d-none');
             cumulative += current;
             continue;
         }
 
         const totalWithCurrent = cumulative + current;
-        let cumulativeStatus = '';
-        let cumulativeClass = '';
 
-        if (cumulative >= maxVal) {
-            const potongan = current * persen / 100;
-            cumulativeStatus = `Rp ${formatNum(String(potongan))}`;
-            cumulativeClass = 'text-danger';
-        } else if (totalWithCurrent > maxVal) {
-            const kelebihan = totalWithCurrent - maxVal;
-            const potongan = kelebihan * persen / 100;
-            cumulativeStatus = `Rp ${formatNum(String(potongan))}`;
-            cumulativeClass = 'text-warning';
+        // --- Validasi > 400jt per bulan (Item 6) ---
+        const exceeds400 = current > LIMIT_400JT;
+        const omsetCell = document.getElementById(`hasilOmset-${mo}`);
+        if (exceeds400) {
+            omsetCell.innerHTML = `<span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-1"></i>Rp ${formatNum(String(current))} <span class="badge bg-danger ms-1">>400JT</span></span>`;
         } else {
-            cumulativeStatus = 'Free';
-            cumulativeClass = 'text-success';
+            omsetCell.textContent = 'Rp ' + formatNum(String(current));
         }
 
-        // PPH Final per bulan
-        const pphStatus = current < 500 ? 'Free' : 'Rp ' + formatNum(String(current * persen / 100));
+        // --- Validasi akumulasi 4 Milyar (Item 7) ---
+        if (totalWithCurrent >= LIMIT_4M) {
+            cumulativeExceeds4M = true;
+        }
 
-        display.className = 'p-3 rounded bg-light border';
-        display.innerHTML = `
-            <div class="row g-2">
-                <div class="col-4">
-                    <span class="text-muted small">Total Peredaran Bruto</span>
-                    <div class="fw-semibold">Rp ${formatNum(String(totalWithCurrent))}</div>
-                </div>
-                <div class="col-4">
-                    <span class="text-muted small">PPH Final 0.5%</span>
-                    <div class="fw-semibold ${current < 500 ? 'text-success' : 'text-danger'}">${pphStatus}</div>
-                </div>
-                <div class="col-4">
-                    <span class="text-muted small">PPh Final yang harus di bayar</span>
-                    <div class="fw-semibold ${cumulativeClass}">
-                        <i class="bi bi-${cumulative >= maxVal ? 'exclamation-triangle' : totalWithCurrent > maxVal ? 'exclamation-triangle' : 'check-circle'} me-1"></i>${cumulativeStatus}
-                    </div>
-                </div>
-            </div>`;
-        display.classList.remove('d-none');
+        // --- PPh Calculation ---
+        let finalStatus = '';
+        let finalClass = '';
 
+        if (rumus) {
+            if (cumulative >= maxVal) {
+                const potongan = current * persen / 100;
+                totalPotongan += potongan;
+                finalStatus = `Rp ${formatNum(String(potongan))}`;
+                finalClass = 'text-danger';
+            } else if (totalWithCurrent > maxVal) {
+                const kelebihan = totalWithCurrent - maxVal;
+                const potongan = kelebihan * persen / 100;
+                totalPotongan += potongan;
+                finalStatus = `Rp ${formatNum(String(potongan))}`;
+                finalClass = 'text-warning';
+            } else {
+                finalStatus = 'Free';
+                finalClass = 'text-success';
+            }
+        } else {
+            finalStatus = '-';
+            finalClass = '';
+        }
+
+        const pphStatus = !rumus ? '-' : (current < 500 ? 'Free' : 'Rp ' + formatNum(String(current * persen / 100)));
+
+        // --- Populate table ---
+        document.getElementById(`hasilBruto-${mo}`).textContent = 'Rp ' + formatNum(String(totalWithCurrent));
+        document.getElementById(`hasilPph-${mo}`).innerHTML = pphStatus === 'Free'
+            ? '<span class="text-success">Free</span>'
+            : '<span class="text-danger fw-semibold">' + pphStatus + '</span>';
+        document.getElementById(`hasilFinal-${mo}`).innerHTML = `<span class="fw-semibold ${finalClass}">${finalStatus}</span>`;
+
+        // Status column
+        const statusCell = document.getElementById(`hasilStatus-${mo}`);
+        let statusIcons = '';
+        if (exceeds400) statusIcons += '<span class="text-danger" title="Omset > 400 Juta"><i class="bi bi-exclamation-triangle-fill"></i></span>';
+        if (totalWithCurrent >= LIMIT_4M) statusIcons += ' <span class="text-danger" title="Akumulasi >= 4 Milyar"><i class="bi bi-arrow-up-circle-fill"></i></span>';
+        if (!statusIcons) statusIcons = '<span class="text-success"><i class="bi bi-check-circle"></i></span>';
+        statusCell.innerHTML = statusIcons;
+
+        row.classList.remove('d-none');
         cumulative += current;
+    }
+
+    // Total Row
+    document.getElementById('hasilTotalPph').textContent = 'Rp ' + formatNum(String(totalPotongan));
+
+    // Show/hide section
+    const hasData = cumulative > 0;
+    document.getElementById('hasilPerhitunganSection').classList.toggle('d-none', !hasData);
+    if (hasData) {
+        document.getElementById('omsetBulananSection').classList.remove('d-none');
+    }
+
+    // Alert for cumulative > 4 Milyar
+    let existingAlert = document.getElementById('alert4M');
+    if (cumulativeExceeds4M) {
+        if (!existingAlert) {
+            const alertDiv = document.createElement('div');
+            alertDiv.id = 'alert4M';
+            alertDiv.className = 'alert alert-danger d-flex align-items-center gap-2 py-2 mb-3';
+            alertDiv.innerHTML = '<i class="bi bi-exclamation-triangle-fill"></i> <strong>Perhatian!</strong> Omset telah mencapai atau melebihi <strong>Rp 4.000.000.000</strong>.';
+            document.getElementById('omsetBulananSection').querySelector('.border-bottom').after(alertDiv);
+        }
+    } else if (existingAlert) {
+        existingAlert.remove();
     }
 }
 
 document.getElementById('tahunSelect').addEventListener('change', function() {
     const clientId = parseInt(document.getElementById('clientSelect').value);
     if (clientId && this.value) {
+        const lampiranUrl = document.getElementById('btnLampiranSpt').href.split('?')[0];
+        document.getElementById('btnLampiranSpt').href = lampiranUrl + '?client_id=' + clientId + '&tahun=' + this.value;
         loadDataFromDb();
     }
 });
@@ -479,49 +555,6 @@ document.querySelectorAll('.omset-input').forEach(input => {
         toggleButtons();
     });
 });
-
-// --- Harta Dynamic Rows ---
-let hartaIndex = 0;
-document.getElementById('addHarta').addEventListener('click', function() {
-    hartaIndex++;
-    const isId1 = !document.getElementById('omsetTahunanSection').classList.contains('d-none');
-    const label = isId1 ? 'Inventaris' : 'Harta';
-    const div = document.createElement('div');
-    div.className = 'col-md-6';
-    div.innerHTML = `
-        <div class="card border h-100">
-            <div class="card-body py-3 px-4">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="small fw-semibold">${label} #${hartaIndex}</span>
-                    <button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-x-lg"></i></button>
-                </div>
-                <div class="row g-2">
-                    <div class="col-7">
-                        <input type="text" class="form-control form-control-sm" name="harta_nama[]" placeholder="Nama ${label.toLowerCase()}">
-                    </div>
-                    <div class="col-5">
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text">Rp</span>
-                            <input type="text" class="form-control format-currency" name="harta_nilai[]" placeholder="Nilai">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>`;
-    document.getElementById('hartaContainer').appendChild(div);
-    attachRemove(div);
-    toggleButtons();
-});
-
-function attachRemove(el) {
-    el.querySelector('.remove-row').addEventListener('click', function() {
-        el.remove();
-        toggleButtons();
-    });
-    el.querySelectorAll('input').forEach(inp => {
-        inp.addEventListener('input', toggleButtons);
-    });
-}
 
 // --- Preview ---
 document.getElementById('btnPreview').addEventListener('click', function() {
@@ -542,16 +575,6 @@ document.getElementById('btnPreview').addEventListener('click', function() {
     const tipeId = parseInt(opt.dataset.tipeId);
     const tipeName = getTipeName(tipeId);
     const isId1 = tipeId === 1;
-
-    const hartaLabel = isId1 ? 'Inventaris' : 'Harta';
-
-    // Collect Harta (per tahun)
-    const harta = [];
-    document.querySelectorAll('#hartaContainer .card').forEach(card => {
-        const nama = card.querySelector('[name="harta_nama[]"]').value;
-        const nilai = card.querySelector('[name="harta_nilai[]"]').value || '0';
-        if (nama) harta.push({ nama, nilai: Number(nilai.replace(/[^0-9]/g, '') || 0) });
-    });
 
     // Collect Omset
     let totalOmset = 0;
@@ -589,26 +612,12 @@ document.getElementById('btnPreview').addEventListener('click', function() {
             </table>
         </div>`;
 
-    if (harta.length) {
+    if (omsetDetails && isId1) {
         html += `
             <div class="mb-4">
-                <h6 class="fw-semibold text-success border-bottom pb-2">${hartaLabel}</h6>
+                <h6 class="fw-semibold text-warning border-bottom pb-2">Omset Tahunan</h6>
                 <table class="table table-sm small mb-0">
-                    <thead><tr><th>Nama</th><th class="text-end">Nilai</th></tr></thead>
-                    <tbody>
-                        ${harta.map(h => `<tr><td>${h.nama}</td><td class="text-end">Rp ${formatNum(String(h.nilai))}</td></tr>`).join('')}
-                    </tbody>
-                </table>
-            </div>`;
-    }
-
-    if (omsetDetails) {
-        const title = isId1 ? 'Omset Tahunan' : 'Omset Per Bulan';
-        html += `
-            <div class="mb-4">
-                <h6 class="fw-semibold text-warning border-bottom pb-2">${title}</h6>
-                <table class="table table-sm small mb-0">
-                    <thead><tr><th>${isId1 ? 'Periode' : 'Bulan'}</th><th class="text-end">Omset</th></tr></thead>
+                    <thead><tr><th>Periode</th><th class="text-end">Omset</th></tr></thead>
                     <tbody>
                         ${omsetDetails}
                         <tr class="fw-bold"><td>Total</td><td class="text-end">Rp ${formatNum(String(totalOmset))}</td></tr>
@@ -620,76 +629,73 @@ document.getElementById('btnPreview').addEventListener('click', function() {
     // Calculation result in preview
     if (!isId1) {
         const rumus = rumusList.find(r => String(r.tipe_badan) === '7');
-        if (rumus) {
-            const maxVal = Number(rumus.max_value);
-            const persen = Number(rumus.potongan_persentase);
-            let cumulative = 0;
-            let totalPotongan = 0;
-            let calcRows = '';
+        const maxVal = Number(rumus?.max_value || 0);
+        const persen = Number(rumus?.potongan_persentase || 0);
+        let cumulative = 0;
+        let totalPotongan = 0;
+        let calcRows = '';
 
-            for (let mo = 1; mo <= 12; mo++) {
-                const bulan = bulanList[mo - 1];
-                const omsetVal = document.querySelector(`.omset-input[data-month="${mo}"]`)?.value || '0';
-                const current = Number(omsetVal.replace(/[^0-9]/g, '') || 0);
-                if (current === 0) { cumulative += current; continue; }
+        for (let mo = 1; mo <= 12; mo++) {
+            const bulan = bulanList[mo - 1];
+            const omsetVal = document.querySelector(`.omset-input[data-month="${mo}"]`)?.value || '0';
+            const current = Number(omsetVal.replace(/[^0-9]/g, '') || 0);
+            if (current === 0) { cumulative += current; continue; }
 
-                const totalWithCurrent = cumulative + current;
-                let status, mark;
-                let pphStatus, pphMark;
+            const totalWithCurrent = cumulative + current;
+            let status, mark;
+            let pphStatus, pphMark;
 
-                if (cumulative >= maxVal) {
-                    const potongan = current * persen / 100;
-                    totalPotongan += potongan;
-                    status = `Rp ${formatNum(String(potongan))}`;
-                    mark = 'text-danger';
-                } else if (totalWithCurrent > maxVal) {
-                    const kelebihan = totalWithCurrent - maxVal;
-                    const potongan = kelebihan * persen / 100;
-                    totalPotongan += potongan;
-                    status = `Rp ${formatNum(String(potongan))}`;
-                    mark = 'text-warning';
-                } else {
-                    status = 'Free';
-                    mark = 'text-success';
-                }
-
-                if (current < 500) {
-                    pphStatus = 'Free';
-                    pphMark = 'text-success';
-                } else {
-                    pphStatus = 'Rp ' + formatNum(String(current * persen / 100));
-                    pphMark = 'text-danger';
-                }
-
-                calcRows += `<tr><td class="text-muted ps-4">${bulan}</td><td class="text-end">Rp ${formatNum(String(current))}</td><td class="text-end">Rp ${formatNum(String(totalWithCurrent))}</td><td class="text-end ${pphMark} fw-semibold">${pphStatus}</td><td class="text-end ${mark} fw-semibold">${status}</td></tr>`;
-                cumulative += current;
+            if (cumulative >= maxVal) {
+                const potongan = current * persen / 100;
+                totalPotongan += potongan;
+                status = `Rp ${formatNum(String(potongan))}`;
+                mark = 'text-danger';
+            } else if (totalWithCurrent > maxVal) {
+                const kelebihan = totalWithCurrent - maxVal;
+                const potongan = kelebihan * persen / 100;
+                totalPotongan += potongan;
+                status = `Rp ${formatNum(String(potongan))}`;
+                mark = 'text-warning';
+            } else {
+                status = 'Free';
+                mark = 'text-success';
             }
 
-            html += `
-                <div class="mb-4">
-                    <h6 class="fw-semibold text-secondary border-bottom pb-2">Hasil Perhitungan Per Bulan</h6>
-                    <table class="table table-sm small mb-0">
-                        <thead><tr><th>Bulan</th><th class="text-end">Omset</th><th class="text-end">Total Peredaran Bruto</th><th class="text-end">PPH Final 0.5%</th><th class="text-end">PPh Final yg harus dibayar</th></tr></thead>
-                        <tbody>
-                            ${calcRows}
-                            <tr class="fw-bold table-secondary">
-                                <td>Total PPh Final yg harus dibayar</td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td class="text-end text-danger">Rp ${formatNum(String(totalPotongan))}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>`;
+            if (current < 500) {
+                pphStatus = 'Free';
+                pphMark = 'text-success';
+            } else {
+                pphStatus = 'Rp ' + formatNum(String(current * persen / 100));
+                pphMark = 'text-danger';
+            }
+
+            calcRows += `<tr><td class="text-muted ps-4">${bulan}</td><td class="text-end">Rp ${formatNum(String(current))}</td><td class="text-end">Rp ${formatNum(String(totalWithCurrent))}</td><td class="text-end ${pphMark} fw-semibold">${pphStatus}</td><td class="text-end ${mark} fw-semibold">${status}</td></tr>`;
+            cumulative += current;
         }
+
+        html += `
+            <div class="mb-4">
+                <h6 class="fw-semibold text-secondary border-bottom pb-2">Hasil Perhitungan Per Bulan</h6>
+                <table class="table table-sm small mb-0">
+                    <thead><tr><th>Bulan</th><th class="text-end">Omset</th><th class="text-end">Total Peredaran Bruto</th><th class="text-end">PPH Final 0.5%</th><th class="text-end">PPh Final yg harus dibayar</th></tr></thead>
+                    <tbody>
+                        ${calcRows}
+                        <tr class="fw-bold table-secondary">
+                            <td>Total PPh Final yg harus dibayar</td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td class="text-end text-danger">Rp ${formatNum(String(totalPotongan))}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>`;
     }
 
     html += `
         <div class="mb-4">
             <h6 class="fw-semibold text-secondary border-bottom pb-2">Total Keseluruhan</h6>
             <table class="table table-sm small mb-0">
-                <tr><td class="fw-semibold text-success">Total ${hartaLabel}</td><td class="text-end">Rp ${formatNum(String(harta.reduce((s, h) => s + h.nilai, 0)))}</td></tr>
                 <tr><td class="fw-semibold text-warning">Total Omset</td><td class="text-end fw-bold">Rp ${formatNum(String(totalOmset))}</td></tr>
             </table>
         </div>`;

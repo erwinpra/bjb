@@ -1,65 +1,229 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
+# BJB - CMS & PPh Final Calculator
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplikasi **CMS (Content Management System) + Tax PPh Final Calculator** berbasis Laravel 8 untuk menghitung Pajak Penghasilan Final (PP 23/2018) untuk wajib pajak di Indonesia.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Fitur Utama
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+| Fitur | Description |
+|-------|-------------|
+| **Dual Authentication** | CMS Admin (email) + Client Wajib Pajak (NPWP) |
+| **Role-Based Access Control** | CMS: roles/permissions, Client: multi-level roles |
+| **Data Client Management** | CRUD, import XLSX, template download |
+| **Tax Transaction** | Input harta + omset, kalkulasi PPh Final otomatis |
+| **Client Dashboard** | Chart.js, export PDF & CSV, multi-client view |
+| **CMS Module System** | Dynamic sidebar, module enable/disable |
+| **Page Builder** | CMS pages with templates |
+| **Menu Manager** | Nested menu items |
+| **Media Manager** | File upload & management |
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Tech Stack
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+| Component | Technology |
+|-----------|------------|
+| Framework | Laravel 8 |
+| PHP | 7.3.33 |
+| Database | MySQL 8.0 (Docker) |
+| PDF | barryvdh/laravel-dompdf |
+| Excel | phpoffice/phpspreadsheet, shuchkin/simplexlsx |
+| Markdown | erusev/parsedown |
+| UI | Bootstrap 5.3.3 (CDN) |
+| Charts | Chart.js 4.4.1 (CDN) |
+| Auth API | Laravel Sanctum |
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-## Laravel Sponsors
+## Database Schema
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+### Core Tables
 
-### Premium Partners
+| Table | Key Columns | Relationships |
+|-------|-------------|---------------|
+| `users` | id, name, email, password | CMS admin users |
+| `cms_data_client` | id, nama_client, tipe_badan, client_role_id, npwp, kpp, AR, ptkp, alamat, no_telephone, email, password | `client_role_id -> cms_client_roles`, `tipe_badan -> cms_badan` |
+| `cms_client_roles` | id, name, slug, description, permissions (JSON) | - |
+| `cms_transaksi` | id, client_id, tahun, tipe_badan_id, total_omset, total_harta, total_pph | `client_id -> cms_data_client (CASCADE)` |
+| `cms_transaksi_harta` | id, transaksi_id, nama, nilai | `transaksi_id -> cms_transaksi (CASCADE)` |
+| `cms_transaksi_omset` | id, transaksi_id, bulan, nominal | `transaksi_id -> cms_transaksi (CASCADE)` |
+| `cms_badan` | id, tipe | Entity types: Badan, Perorangan |
+| `cms_master_rumus` | id, tipe_badan, max_value, potongan_persentase | Tax formula rates |
+| `cms_pasal` | id, nama_pasal, is_active | Tax articles |
+| `cms_roles` | id, name, slug, description | CMS roles |
+| `cms_permissions` | id, role_id, module, action | `role_id -> cms_roles (CASCADE)` |
+| `cms_role_user` | role_id, user_id | Pivot: roles ↔ users |
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+### CMS Content Tables
 
-## Contributing
+| Table | Key Columns |
+|-------|-------------|
+| `cms_menus` | id, name, slug, description |
+| `cms_menu_items` | id, menu_id, parent_id, label, url, route, icon, order, status |
+| `cms_pages` | id, title, slug, content, meta_title, meta_description, template, status, published_at, author_id |
+| `cms_media` | id, name, file_name, mime_type, size, disk, path, alt_text, uploaded_by |
+| `cms_settings` | id, key (unique), value, group, type |
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
 
-## Code of Conduct
+## Client Roles
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+| Role | Slug | Permissions | Deskripsi |
+|------|------|-------------|-----------|
+| Super Admin Kantor | `super_admin` | `dashboard.view`, `dashboard.export`, `dashboard.change-password`, `client.view-all`, `client.manage-staff` | Pimpinan KKP - lihat semua client & transaksi staff |
+| Staff/Operator | `staff` | `dashboard.view`, `dashboard.export`, `dashboard.change-password`, `client.view-all` | Staff admin - input/edit transaksi |
+| Viewer | `viewer` | `dashboard.view` | Pemilik usaha - hanya lihat dashboard sendiri |
+| Client | `client` | `dashboard.view`, `dashboard.export`, `dashboard.change-password` | Wajib Pajak - akses dashboard standar |
 
-## Security Vulnerabilities
+---
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Docker Setup
 
-## License
+```bash
+# MySQL 8.0 container
+docker run --name my-mysql-container \
+  -p 3301:3306 \
+  -e MYSQL_ROOT_PASSWORD=root123 \
+  -d mysql:8.0
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-# bjb
+# Connect
+mysql -h 127.0.0.1 -P 3301 -u root -proot123
+```
+
+**Environment** (`.env`):
+```
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3301
+DB_DATABASE=ajb
+DB_USERNAME=root
+DB_PASSWORD=root123
+```
+
+---
+
+## Routes
+
+### Client Area (`/client/*`)
+
+| Method | URI | Controller | Middleware |
+|--------|-----|------------|-----------|
+| GET/POST | `/client/login` | `Client\AuthController` | `guest:client` |
+| POST | `/client/logout` | `Client\AuthController` | `auth:client` |
+| POST | `/client/change-password` | `Client\AuthController` | `auth:client`, `client.permission:dashboard.change-password` |
+| GET | `/client/dashboard` | `Client\DashboardController@index` | `auth:client` |
+| GET | `/client/dashboard/data` | `Client\DashboardController@data` | `auth:client` |
+| GET | `/client/dashboard/export-pdf` | `Client\DashboardController@exportPdf` | `auth:client`, `client.permission:dashboard.export` |
+| GET | `/client/dashboard/export-excel` | `Client\DashboardController@exportExcel` | `auth:client`, `client.permission:dashboard.export` |
+
+### CMS Admin (`/admin/*`)
+
+| Method | URI | Controller | Middleware |
+|--------|-----|------------|-----------|
+| GET | `/admin` | `Cms\DashboardController@index` | `auth`, `cms.auth` |
+| GET/POST | `/admin/login` | `AuthController` | `guest` |
+| POST | `/admin/logout` | `AuthController` | - |
+| Resource | `/admin/roles` | `Cms\RoleController` | `auth`, `cms.auth` |
+| Resource | `/admin/users` | `Cms\UserController` | `auth`, `cms.auth` |
+| Resource | `/admin/client-roles` | `Cms\ClientRoleController` | `auth`, `cms.auth` |
+| Resource | `/admin/data-client` | `Cms\DataClientController` | `auth`, `cms.auth` |
+| Resource | `/admin/pasal` | `Cms\PasalController` | `auth`, `cms.auth` |
+| GET/PUT | `/admin/badan` | `Cms\BadanController` | `auth`, `cms.auth` |
+| GET/PUT | `/admin/master-rumus` | `Cms\MasterRumusController` | `auth`, `cms.auth` |
+| GET/POST | `/admin/transaksi` | `Cms\TransaksiController` | `auth`, `cms.auth` |
+
+---
+
+## PPh Final Calculation Logic
+
+**Entity Types:**
+- **Badan** (PT): Annual omset, assets labeled "Inventaris", threshold Rp 1.000.000.000, rate 10%
+- **Perorangan**: Monthly omset, assets labeled "Harta", threshold Rp 500.000.000, rate 0.5%
+
+**Calculation per month:**
+```
+PPH Final = monthly_omset × rate_percentage
+
+If cumulative_omset < threshold → PPh = "Free"
+If cumulative_omset >= threshold → PPh = omset × rate
+If crossing threshold this month → partial tax on excess
+```
+
+---
+
+## Installation
+
+```bash
+# Clone & install dependencies
+git clone <repo> bjb
+cd bjb
+composer install
+cp .env.example .env
+# edit .env with your DB config
+
+# Start Docker MySQL
+docker run --name my-mysql-container \
+  -p 3301:3306 \
+  -e MYSQL_ROOT_PASSWORD=root123 \
+  -d mysql:8.0
+
+# Import database
+docker exec -i my-mysql-container mysql -u root -proot123 -e "CREATE DATABASE IF NOT EXISTS ajb;"
+docker exec -i my-mysql-container mysql -u root -proot123 ajb < bjb.sql
+
+# Or use Laravel migrations
+php artisan migrate
+php artisan db:seed --class=ClientRolesSeeder
+
+# Start development server
+php artisan serve
+```
+
+---
+
+## Estimasi Harga Jual
+
+| Model | Paket | Harga | Target |
+|-------|-------|-------|--------|
+| Putus | Basic (single client) | Rp 15-30 Juta | Konsultan pajak kecil |
+| Putus | Professional (multi-client) | Rp 50-100 Juta | Kantor konsultan pajak |
+| Putus | Enterprise (full source + hak cipta) | Rp 150-300 Juta | Perusahaan/koperasi |
+| SaaS | Per client/bulan | Rp 200-500rb | Hosting + support |
+| SaaS | Per client/tahun | Rp 2-5 Juta | Diskon tahunan |
+| SaaS | Unlimited client/tahun | Rp 15-30 Juta | Kantor pajak |
+
+---
+
+## Struktur Direktori
+
+```
+app/
+├── Cms/
+│   ├── Acl/            # PermissionRegistry
+│   ├── Modules/        # ModuleManager, BaseModule
+│   └── CmsServiceProvider.php
+├── Http/
+│   ├── Controllers/
+│   │   ├── Cms/        # Admin controllers
+│   │   └── Client/     # Client controllers
+│   └── Middleware/
+│       ├── CmsAuth.php
+│       └── ClientPermission.php
+└── Models/
+    └── Cms/            # All CMS models
+config/
+├── cms.php             # CMS module configuration
+└── auth.php            # Guards: web + client
+database/
+├── migrations/
+└── seeders/
+resources/views/
+├── cms/                # Admin views
+├── client/             # Client views (login, dashboard)
+└── dokumentasi/        # Documentation viewer
+routes/
+├── web.php             # Client routes
+├── cms.php             # Admin CMS routes
+└── api.php             # API routes
+```

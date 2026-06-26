@@ -9,9 +9,9 @@
     @stack('styles')
 </head>
 <body class="bg-light">
-    <div class="d-flex min-vh-100">
+    <div class="d-flex min-vh-100 position-relative">
         {{-- Sidebar --}}
-        <nav class="sidebar d-flex flex-column bg-dark text-white flex-shrink-0" style="width: 260px;">
+        <nav class="sidebar d-flex flex-column bg-dark text-white flex-shrink-0 position-fixed h-100" style="width: 260px;">
             <div class="p-3 border-bottom border-secondary">
                 <a href="{{ route('cms.dashboard') }}" class="text-white text-decoration-none d-flex align-items-center gap-2">
                     <i class="bi bi-grid-3x3-gap-fill fs-4"></i>
@@ -98,7 +98,7 @@
         </nav>
 
         {{-- Main Content --}}
-        <div class="flex-grow-1 d-flex flex-column">
+        <div class="flex-grow-1 d-flex flex-column" style="margin-left: 260px;">
             <header class="bg-white shadow-sm border-bottom py-3 px-4">
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="mb-0 fw-bold">@yield('title')</h5>

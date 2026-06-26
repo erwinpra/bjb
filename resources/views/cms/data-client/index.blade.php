@@ -26,10 +26,10 @@
                         <tr>
                             <th>Nama Client</th>
                             <th>Tipe Badan</th>
+                            <th>Client Role</th>
                             <th>NPWP/NIK</th>
                             <th>Email</th>
                             <th>KPP</th>
-                            <th>No. Telephone</th>
                             <th class="text-end pe-4">Actions</th>
                         </tr>
                     </thead>
@@ -38,10 +38,16 @@
                         <tr>
                             <td class="fw-medium">{{ $d->nama_client }}</td>
                             <td><span class="badge bg-secondary bg-opacity-10 text-secondary">{{ $d->badan->tipe ?? '-' }}</span></td>
+                            <td>
+                                @if($d->clientRole)
+                                    <span class="badge bg-info bg-opacity-10 text-info">{{ $d->clientRole->name }}</span>
+                                @else
+                                    <span class="text-muted small">-</span>
+                                @endif
+                            </td>
                             <td><code class="small">{{ $d->npwp ?: '-' }}</code></td>
                             <td><span class="small">{{ $d->email ?: '-' }}</span></td>
                             <td><span class="small">{{ $d->kpp ?: '-' }}</span></td>
-                            <td><span class="small">{{ $d->no_telephone ?: '-' }}</span></td>
                             <td class="text-end pe-4">
                                 <a href="{{ route('cms.data-client.edit', $d) }}" class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-pencil"></i>

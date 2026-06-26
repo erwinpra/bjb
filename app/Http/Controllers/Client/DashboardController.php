@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cms\Badan;
+use App\Models\Cms\DataClient;
 use App\Models\Cms\MasterRumus;
 use App\Models\Cms\Transaksi;
 use Illuminate\Http\Request;
@@ -12,16 +13,42 @@ use PDF;
 
 class DashboardController extends Controller
 {
-    public function index()
+    protected function resolveClient()
     {
         $client = Auth::guard('client')->user();
+        $viewClientId = request('view_client_id', $client->id);
+
+        if ($viewClientId != $client->id && $client->hasClientPermission('client.view-all')) {
+            $viewClient = DataClient::find($viewClientId);
+            if ($viewClient) {
+                return $viewClient;
+            }
+        }
+
+        return $client;
+    }
+
+    public function index()
+    {
+        $client = $this->resolveClient();
         $tahun = request('tahun', date('Y'));
-        return view('client.dashboard', compact('client', 'tahun'));
+        $clientRole = $client->clientRole;
+        $allClients = collect();
+
+        $loggedClient = Auth::guard('client')->user();
+        if ($loggedClient->hasClientPermission('client.view-all')) {
+            $allClients = DataClient::with('badan')
+                ->where('id', '!=', $loggedClient->id)
+                ->orderBy('nama_client')
+                ->get();
+        }
+
+        return view('client.dashboard', compact('client', 'tahun', 'clientRole', 'allClients'));
     }
 
     public function data(Request $request)
     {
-        $client = Auth::guard('client')->user();
+        $client = $this->resolveClient();
         $tahun = $request->tahun ?? date('Y');
 
         $transaksi = Transaksi::where('client_id', $client->id)
@@ -61,7 +88,7 @@ class DashboardController extends Controller
 
     public function exportPdf(Request $request)
     {
-        $client = Auth::guard('client')->user();
+        $client = $this->resolveClient();
         $tahun = $request->tahun ?? date('Y');
         $data = $this->buildDashboardExport($client, $tahun);
 
@@ -71,7 +98,7 @@ class DashboardController extends Controller
 
     public function exportExcel(Request $request)
     {
-        $client = Auth::guard('client')->user();
+        $client = $this->resolveClient();
         $tahun = $request->tahun ?? date('Y');
         $data = $this->buildDashboardExport($client, $tahun);
 

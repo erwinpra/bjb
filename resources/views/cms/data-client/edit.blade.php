@@ -43,6 +43,19 @@
                         @error('npwp') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-6">
+                        <label class="form-label fw-semibold small">Client Role</label>
+                        <select name="client_role_id" class="form-select">
+                            <option value="">-- Default Client --</option>
+                            @foreach($clientRoles as $role)
+                                <option value="{{ $role->id }}"
+                                    {{ old('client_role_id', optional($dataClient)->client_role_id ?? '') == $role->id ? 'selected' : '' }}>
+                                    {{ $role->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <div class="form-text small">Tentukan level akses untuk client ini.</div>
+                    </div>
+                    <div class="col-md-6">
                         <label class="form-label fw-semibold small">KPP</label>
                         <input type="text" name="kpp" value="{{ old('kpp', $dataClient->kpp ?? '') }}" class="form-control" placeholder="Kantor Pelayanan Pajak">
                     </div>

@@ -40,6 +40,9 @@ class ModuleManager
             'transaksi' => TransaksiModule::class,
             'badan' => BadanModule::class,
             'master_rumus' => MasterRumusModule::class,
+            'client_roles' => ClientRoleModule::class,
+            'dokumentasi' => DokumentasiModule::class,
+            'lampiran_spt' => LampiranSptModule::class,
         ];
 
         foreach ($config as $key => $cfg) {

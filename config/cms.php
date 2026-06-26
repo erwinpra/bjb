@@ -78,6 +78,27 @@ return [
             'label' => 'Transaksi',
             'group' => 'client',
         ],
+        'client_roles' => [
+            'enabled' => true,
+            'route' => 'client-roles',
+            'icon' => 'person-lock',
+            'label' => 'Client Roles',
+            'group' => 'setting',
+        ],
+        'dokumentasi' => [
+            'enabled' => true,
+            'route' => 'dokumentasi',
+            'icon' => 'journal-code',
+            'label' => 'Dokumentasi',
+            'group' => 'setting',
+        ],
+        'lampiran_spt' => [
+            'enabled' => true,
+            'route' => 'lampiran-spt',
+            'icon' => 'file-earmark-text',
+            'label' => 'Lampiran SPT',
+            'group' => 'client',
+        ],
     ],
 
     'upload' => [
