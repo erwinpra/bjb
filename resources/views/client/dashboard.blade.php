@@ -107,13 +107,16 @@
 
         {{-- Harta Detail Modal --}}
         <div class="modal fade" id="hartaModal" tabindex="-1">
-            <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header bg-primary text-white">
                         <h6 class="fw-semibold mb-0"><i class="bi bi-building me-2"></i>Detail Harta</h6>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body p-0">
+                        <div id="hartaModalTabs" class="d-none border-bottom">
+                            <ul class="nav nav-tabs px-3 pt-2" id="hartaModalTabNav" role="tablist" style="font-size:0.85rem"></ul>
+                        </div>
                         <div id="hartaDetailContent" class="text-center text-muted py-5">
                             <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                             Tidak ada data harta.
@@ -165,16 +168,47 @@
             </div>
         </div>
 
-        {{-- Chart --}}
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white py-3">
-                <h6 class="fw-semibold mb-0"><i class="bi bi-bar-chart-line me-2"></i>Omset Per Bulan</h6>
+        {{-- Cabang Tabs --}}
+        <div id="cabangSection" class="mb-4 d-none">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-2 d-flex align-items-center gap-2 flex-wrap">
+                    <small class="fw-semibold text-muted me-2">Rincian Omset:</small>
+                    <ul class="nav nav-pills" id="cabangTab" role="tablist" style="font-size:0.85rem"></ul>
+                </div>
+                <div class="card-body p-0">
+                    <div class="tab-content" id="cabangTabContent"></div>
+                </div>
             </div>
-            <div class="card-body">
-                <canvas id="omsetChart" height="300"></canvas>
-                <div id="noData" class="text-center text-muted py-5 d-none">
-                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                    Belum ada data transaksi untuk tahun ini.
+        </div>
+
+        {{-- Charts --}}
+        <div class="row g-4">
+            <div class="col-md-7">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white py-3">
+                        <h6 class="fw-semibold mb-0"><i class="bi bi-bar-chart-line me-2"></i>Omset Per Bulan</h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="omsetChart" height="250"></canvas>
+                        <div id="noData" class="text-center text-muted py-5 d-none">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            Belum ada data transaksi untuk tahun ini.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-5">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white py-3">
+                        <h6 class="fw-semibold mb-0"><i class="bi bi-pie-chart me-2"></i>Komposisi Harta</h6>
+                    </div>
+                    <div class="card-body d-flex align-items-center justify-content-center">
+                        <canvas id="hartaChart" height="250"></canvas>
+                        <div id="noHarta" class="text-center text-muted py-5 d-none">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            Belum ada data harta.
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -182,21 +216,19 @@
 
     <script>
     const bulanLabels = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-    let chart = null;
+    let omsetChart = null;
+    let hartaChart = null;
 
     function formatNum(v) {
         return Number(v || 0).toLocaleString('id-ID');
     }
 
-    function getParams() {
-        const tahun = document.getElementById('tahunFilter').value;
-        const viewClient = document.getElementById('viewClientFilter');
-        let params = 'tahun=' + tahun;
-        if (viewClient && viewClient.value) {
-            params += '&view_client_id=' + viewClient.value;
-        }
-        return params;
+    function formatRp(v) {
+        if (!v || v === 0) return '';
+        return 'Rp ' + formatNum(v);
     }
+
+    let _dashboardData = null;
 
     function loadData(tahun) {
         const viewClient = document.getElementById('viewClientFilter');
@@ -207,81 +239,349 @@
         fetch(url)
             .then(res => res.json())
             .then(data => {
+                _dashboardData = data;
                 document.getElementById('totalHarta').textContent = formatNum(data.total_harta);
                 document.getElementById('totalOmset').textContent = formatNum(data.total_omset);
                 document.getElementById('totalPph').textContent = formatNum(data.total_pph);
 
-                const hartaDiv = document.getElementById('hartaDetailContent');
-                if (data.harta_detail && data.harta_detail.length) {
-                    let table = `<table class="table table-sm table-hover mb-0"><thead class="table-light"><tr><th class="ps-4">Nama</th><th class="text-end pe-4">Nilai</th></tr></thead><tbody>`;
-                    data.harta_detail.forEach(h => {
-                        table += `<tr><td class="ps-4">${h.nama}</td><td class="text-end pe-4">Rp ${formatNum(h.nilai)}</td></tr>`;
-                    });
-                    table += `</tbody></table>`;
-                    hartaDiv.innerHTML = table;
-                } else {
-                    hartaDiv.innerHTML = `<div class="text-center text-muted py-5"><i class="bi bi-inbox fs-1 d-block mb-2"></i>Tidak ada data harta.</div>`;
+                renderCabangTabs(data);
+                // Show charts for first tab (induk) by default
+                updateChartsForTab(data, 0);
+            });
+    }
+
+    function updateChartsForTab(data, idx) {
+        var tabs = data.tabs || [];
+        if (!tabs.length) {
+            renderOmsetChart(data);
+            renderHartaChart(data);
+            return;
+        }
+        var tab = tabs[idx] || tabs[0];
+        var tabHarta = tab.harta || { total: 0, detail: [], by_kategori: { labels: [], values: [], colors: [] } };
+        // Build per-tab data object for chart rendering
+        var tabData = {
+            exists: tab.detail_bulan && tab.detail_bulan.some(function(r) { return r.omset; }),
+            omset_per_bulan: tab.detail_bulan ? tab.detail_bulan.map(function(r) { return parseNum(r.omset); }) : [],
+            total_omset: tab.total_omset,
+            total_pph: tab.total_potongan,
+            total_harta: tabHarta.total,
+            harta_detail: tabHarta.detail,
+            harta_by_kategori: tabHarta.by_kategori,
+        };
+        renderOmsetChart(tabData);
+        renderHartaChart(tabData);
+    }
+
+    function renderHartaModal() {
+        var data = _dashboardData;
+        var tabNav = document.getElementById('hartaModalTabNav');
+        var hartaDiv = document.getElementById('hartaDetailContent');
+        var tabsContainer = document.getElementById('hartaModalTabs');
+        var allTabs = data.tabs || [];
+
+        // Remove stale tab panes from previous render
+        document.querySelectorAll('.harta-modal-pane').forEach(function(el) { el.remove(); });
+
+        tabNav.innerHTML = '';
+        tabsContainer.classList.add('d-none');
+
+        if (!allTabs.length) {
+            renderHartaDetailContent(hartaDiv, []);
+            return;
+        }
+
+        // Show tabs if there are cabangs (more than 1 tab)
+        if (allTabs.length > 1) {
+            tabsContainer.classList.remove('d-none');
+        }
+
+        allTabs.forEach(function(tab, idx) {
+            var isActive = idx === 0;
+            var tabId = 'hartaModal-tab-' + idx;
+            var tabLabel = tab.npwp || tab.label || '-';
+
+            var li = document.createElement('li');
+            li.className = 'nav-item';
+            var btn = document.createElement('button');
+            btn.className = 'nav-link' + (isActive ? ' active' : '');
+            btn.id = tabId + '-btn';
+            btn.setAttribute('data-bs-toggle', 'tab');
+            btn.setAttribute('data-bs-target', '#' + tabId);
+            btn.setAttribute('type', 'button');
+            btn.setAttribute('role', 'tab');
+            btn.textContent = tabLabel;
+            li.appendChild(btn);
+            tabNav.appendChild(li);
+
+            // Create tab pane (dummy, used by Bootstrap tab plugin to trigger events)
+            var pane = document.createElement('div');
+            pane.className = 'harta-modal-pane tab-pane fade' + (isActive ? ' show active' : '');
+            pane.id = tabId;
+            pane.setAttribute('role', 'tabpanel');
+            hartaDiv.parentNode.insertBefore(pane, hartaDiv);
+        });
+
+        // Render initial content for first tab
+        var firstTab = allTabs[0];
+        renderHartaDetailContent(hartaDiv, firstTab.harta ? firstTab.harta.detail : []);
+
+        // Tab change handler
+        allTabs.forEach(function(tab, idx) {
+            var btn = document.getElementById('hartaModal-tab-' + idx + '-btn');
+            if (!btn) return;
+            btn.addEventListener('shown.bs.tab', function() {
+                renderHartaDetailContent(hartaDiv, tab.harta ? tab.harta.detail : []);
+            });
+        });
+    }
+
+    function renderHartaDetailContent(container, detail) {
+        if (detail && detail.length) {
+            var groups = {};
+            detail.forEach(function(h) {
+                if (!groups[h.kategori]) groups[h.kategori] = [];
+                groups[h.kategori].push(h);
+            });
+            var html = '<div class="p-0">';
+            Object.keys(groups).forEach(function(kat) {
+                var items = groups[kat];
+                var katTotal = items.reduce(function(s, h) { return s + h.nilai; }, 0);
+                html += '<div class="card border-0 border-bottom rounded-0"><div class="card-header bg-light py-1"><h6 class="fw-semibold mb-0 small">' + kat + '</h6></div><div class="card-body p-0"><table class="table table-sm mb-0"><thead class="table-light"><tr><th class="ps-4">Item</th><th class="text-end pe-4">Nilai</th></tr></thead><tbody>';
+                items.forEach(function(h) {
+                    html += '<tr><td class="ps-4">' + h.nama + '</td><td class="text-end pe-4">Rp ' + formatNum(h.nilai) + '</td></tr>';
+                });
+                html += '<tr class="table-secondary fw-bold"><td class="ps-4">Total</td><td class="text-end pe-4">Rp ' + formatNum(katTotal) + '</td></tr>';
+                html += '</tbody></table></div></div>';
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<div class="text-center text-muted py-5"><i class="bi bi-inbox fs-1 d-block mb-2"></i>Tidak ada data harta.</div>';
+        }
+    }
+
+    function renderCabangTabs(data) {
+        var tabs = data.tabs || [];
+        var section = document.getElementById('cabangSection');
+        var tabNav = document.getElementById('cabangTab');
+        var tabContent = document.getElementById('cabangTabContent');
+
+        tabNav.innerHTML = '';
+        tabContent.innerHTML = '';
+
+        if (!tabs.length) { section.classList.add('d-none'); return; }
+
+        section.classList.remove('d-none');
+
+        var cabangCount = data.cabang_count || 0;
+
+        tabs.forEach(function(tab, idx) {
+            var isActive = idx === 0;
+            var tabId = 'tab-' + idx;
+            var isInduk = tab.key === 'induk';
+
+            // Nav pill — use NPWP as label
+            var tabLabel = tab.npwp || tab.label || '-';
+            var li = document.createElement('li');
+            li.className = 'nav-item';
+            var btn = document.createElement('button');
+            btn.className = 'nav-link' + (isActive ? ' active' : '');
+            btn.id = tabId + '-tab';
+            btn.setAttribute('data-bs-toggle', 'pill');
+            btn.setAttribute('data-bs-target', '#' + tabId);
+            btn.setAttribute('type', 'button');
+            btn.setAttribute('role', 'tab');
+            btn.textContent = tabLabel;
+            btn.addEventListener('click', function() {
+                updateChartsForTab(_dashboardData, idx);
+            });
+            li.appendChild(btn);
+            tabNav.appendChild(li);
+
+            // Tab content
+            var html = '<div class="tab-pane' + (isActive ? ' show active' : '') + '" id="' + tabId + '" role="tabpanel">';
+            html += '<div class="p-3">';
+            html += '<div class="mb-2"><small class="text-muted">' + escHtml(tab.label) + ' &middot; NPWP: ' + escHtml(tab.npwp || '-') + ' &middot; KPP: ' + escHtml(tab.kpp || '-') + '</small></div>';
+            html += '<table class="table table-sm table-bordered mb-0"><thead class="table-light"><tr>';
+            html += '<th>Bulan</th><th class="text-end">Omset</th><th class="text-end">Total Peredaran Bruto</th>';
+            if (isInduk) {
+                html += '<th class="text-end">Total Peredaran Bruto Akum' + (cabangCount > 0 ? ' (' + cabangCount + ' Cabang)' : '') + '</th>';
+            }
+            html += '<th class="text-end">PPH Final</th><th class="text-end">PPh Final yg harus dibayar</th>';
+            html += '</tr></thead><tbody>';
+
+            var tabOmset = 0;
+            var tabPotongan = 0;
+            (tab.detail_bulan || []).forEach(function(row) {
+                tabOmset += parseNum(row.omset);
+                tabPotongan += parseNum(row.pphBayar);
+                html += '<tr>';
+                html += '<td>' + row.bulan + '</td>';
+                html += '<td class="text-end">' + (row.omset || '-') + '</td>';
+                html += '<td class="text-end">' + (row.totalBruto || '-') + '</td>';
+                if (isInduk) {
+                    html += '<td class="text-end">' + (row.omset ? (row.totalBrutoAkum || '-') : '-') + '</td>';
                 }
+                html += '<td class="text-end">' + (row.pphFinal || '-') + '</td>';
+                html += '<td class="text-end">' + (row.pphBayar || '-') + '</td>';
+                html += '</tr>';
+            });
 
-                const canvas = document.getElementById('omsetChart');
-                const noData = document.getElementById('noData');
+            html += '<tr class="table-secondary fw-bold"><td>Total</td><td class="text-end">Rp ' + formatNum(tabOmset) + '</td><td></td>';
+            if (isInduk) { html += '<td></td>'; }
+            html += '<td></td><td class="text-end">Rp ' + formatNum(tabPotongan) + '</td></tr>';
+            html += '</tbody></table></div></div>';
+            tabContent.innerHTML += html;
+        });
+    }
 
-                if (!data.exists || data.omset_per_bulan.every(v => v === 0)) {
-                    canvas.classList.add('d-none');
-                    noData.classList.remove('d-none');
-                    return;
-                }
+    function parseNum(str) {
+        if (!str) return 0;
+        var m = str.replace(/[^0-9]/g, '');
+        return parseInt(m || '0', 10);
+    }
 
-                canvas.classList.remove('d-none');
-                noData.classList.add('d-none');
+    function escHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
 
-                if (chart) chart.destroy();
+    function renderHartaDetail(data) {
+        const hartaDiv = document.getElementById('hartaDetailContent');
+        if (data.harta_detail && data.harta_detail.length) {
+            var groups = {};
+            data.harta_detail.forEach(function(h) {
+                if (!groups[h.kategori]) groups[h.kategori] = [];
+                groups[h.kategori].push(h);
+            });
+            var html = '<div class="p-0">';
+            Object.keys(groups).forEach(function(kat) {
+                var items = groups[kat];
+                var katTotal = items.reduce(function(s, h) { return s + h.nilai; }, 0);
+                html += '<div class="card border-0 border-bottom rounded-0"><div class="card-header bg-light py-1"><h6 class="fw-semibold mb-0 small">' + kat + '</h6></div><div class="card-body p-0"><table class="table table-sm mb-0"><thead class="table-light"><tr><th class="ps-4">Item</th><th class="text-end pe-4">Nilai</th></tr></thead><tbody>';
+                items.forEach(function(h) {
+                    html += '<tr><td class="ps-4">' + h.nama + '</td><td class="text-end pe-4">Rp ' + formatNum(h.nilai) + '</td></tr>';
+                });
+                html += '<tr class="table-secondary fw-bold"><td class="ps-4">Total</td><td class="text-end pe-4">Rp ' + formatNum(katTotal) + '</td></tr>';
+                html += '</tbody></table></div></div>';
+            });
+            html += '</div>';
+            hartaDiv.innerHTML = html;
+        } else {
+            hartaDiv.innerHTML = '<div class="text-center text-muted py-5"><i class="bi bi-inbox fs-1 d-block mb-2"></i>Tidak ada data harta.</div>';
+        }
+    }
 
-                chart = new Chart(canvas, {
-                    type: 'line',
-                    data: {
-                        labels: bulanLabels,
-                        datasets: [{
-                            label: 'Omset (Rp)',
-                            data: data.omset_per_bulan,
-                            borderColor: '#198754',
-                            backgroundColor: 'rgba(25, 135, 84, 0.1)',
-                            fill: true,
-                            tension: 0.3,
-                            pointBackgroundColor: '#198754',
-                            pointRadius: 4,
-                            borderWidth: 2,
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(ctx) {
-                                        return 'Rp ' + formatNum(ctx.parsed.y);
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    callback: function(v) { return 'Rp' + formatNum(v); }
-                                }
+    function renderOmsetChart(data) {
+        const canvas = document.getElementById('omsetChart');
+        const noData = document.getElementById('noData');
+
+        if (!data.exists || data.omset_per_bulan.every(function(v) { return v === 0; })) {
+            canvas.classList.add('d-none');
+            noData.classList.remove('d-none');
+            return;
+        }
+
+        canvas.classList.remove('d-none');
+        noData.classList.add('d-none');
+
+        if (omsetChart) omsetChart.destroy();
+
+        omsetChart = new Chart(canvas, {
+            type: 'line',
+            data: {
+                labels: bulanLabels,
+                datasets: [{
+                    label: 'Omset (Rp)',
+                    data: data.omset_per_bulan,
+                    borderColor: '#198754',
+                    backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    pointBackgroundColor: '#198754',
+                    pointRadius: 4,
+                    borderWidth: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                return 'Rp ' + formatNum(ctx.parsed.y);
                             }
                         }
                     }
-                });
-            });
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(v) { return 'Rp' + formatNum(v); }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderHartaChart(data) {
+        const canvas = document.getElementById('hartaChart');
+        const noHarta = document.getElementById('noHarta');
+
+        if (!data.harta_by_kategori || !data.harta_by_kategori.values || data.harta_by_kategori.values.every(function(v) { return v === 0; })) {
+            canvas.classList.add('d-none');
+            noHarta.classList.remove('d-none');
+            return;
+        }
+
+        canvas.classList.remove('d-none');
+        noHarta.classList.add('d-none');
+
+        if (hartaChart) hartaChart.destroy();
+
+        hartaChart = new Chart(canvas, {
+            type: 'doughnut',
+            data: {
+                labels: data.harta_by_kategori.labels,
+                datasets: [{
+                    data: data.harta_by_kategori.values,
+                    backgroundColor: data.harta_by_kategori.colors,
+                    borderWidth: 2,
+                    borderColor: '#fff',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 12, padding: 12, font: { size: 11 } }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                var total = ctx.dataset.data.reduce(function(a, b) { return a + b; }, 0);
+                                var pct = ((ctx.parsed / total) * 100).toFixed(1);
+                                return ctx.label + ': Rp ' + formatNum(ctx.parsed) + ' (' + pct + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
     }
 
     document.getElementById('tahunFilter').addEventListener('change', function() {
         const tahun = this.value;
         loadData(tahun);
-        document.querySelectorAll('.export-link').forEach(a => {
+        document.querySelectorAll('.export-link').forEach(function(a) {
             const url = new URL(a.href);
             url.searchParams.set('tahun', tahun);
             const vc = document.getElementById('viewClientFilter');
@@ -295,7 +595,7 @@
         viewClientFilter.addEventListener('change', function() {
             const tahun = document.getElementById('tahunFilter').value;
             loadData(tahun);
-            document.querySelectorAll('.export-link').forEach(a => {
+            document.querySelectorAll('.export-link').forEach(function(a) {
                 const url = new URL(a.href);
                 url.searchParams.set('tahun', tahun);
                 if (this.value) url.searchParams.set('view_client_id', this.value);
@@ -303,6 +603,11 @@
             });
         });
     }
+
+    // Render harta modal with cabang tabs when opened
+    document.getElementById('hartaModal').addEventListener('shown.bs.modal', function() {
+        renderHartaModal();
+    });
 
     loadData({{ $tahun }});
     </script>

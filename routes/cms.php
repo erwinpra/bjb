@@ -10,6 +10,8 @@ use App\Http\Controllers\Cms\BadanController;
 use App\Http\Controllers\Cms\MasterRumusController;
 use App\Http\Controllers\Cms\ClientRoleController;
 use App\Http\Controllers\Cms\LampiranSptController;
+use App\Http\Controllers\Cms\KategoriLampiranController;
+use App\Http\Controllers\Cms\MasterLampiranSptController;
 
 $prefix = config('cms.prefix', 'admin');
 $middleware = config('cms.middleware', ['web', 'auth']);
@@ -77,6 +79,19 @@ Route::prefix($prefix)
             Route::post('transaksi/export-pdf', [\App\Http\Controllers\Cms\TransaksiController::class, 'exportPdf'])->name('transaksi.export-pdf');
             Route::post('transaksi/export-excel', [\App\Http\Controllers\Cms\TransaksiController::class, 'exportExcel'])->name('transaksi.export-excel');
             Route::get('transaksi/load-data', [\App\Http\Controllers\Cms\TransaksiController::class, 'loadData'])->name('transaksi.load-data');
+            Route::get('transaksi/check-harta', [\App\Http\Controllers\Cms\TransaksiController::class, 'checkHarta'])->name('transaksi.check-harta');
+            Route::post('transaksi/save-harta-ajax', [\App\Http\Controllers\Cms\TransaksiController::class, 'saveHartaAjax'])->name('transaksi.save-harta-ajax');
             Route::get('transaksi/cabangs/{client}', [\App\Http\Controllers\Cms\TransaksiController::class, 'getCabangs'])->name('transaksi.cabangs');
+            Route::get('transaksi/import/template', [\App\Http\Controllers\Cms\TransaksiController::class, 'downloadTemplate'])->name('transaksi.import.template');
+            Route::get('transaksi/import', [\App\Http\Controllers\Cms\TransaksiController::class, 'showImport'])->name('transaksi.import');
+            Route::post('transaksi/import/preview', [\App\Http\Controllers\Cms\TransaksiController::class, 'previewImport'])->name('transaksi.import.preview');
+            Route::post('transaksi/import/confirm', [\App\Http\Controllers\Cms\TransaksiController::class, 'confirmImport'])->name('transaksi.import.confirm');
+        }
+
+        if (config('cms.modules.kategori_lampiran.enabled', true)) {
+            Route::resource('kategori-lampiran', KategoriLampiranController::class)->names('kategori-lampiran');
+        }
+        if (config('cms.modules.master_lampiran_spt.enabled', true)) {
+            Route::resource('master-lampiran-spt', MasterLampiranSptController::class)->names('master-lampiran-spt');
         }
     });

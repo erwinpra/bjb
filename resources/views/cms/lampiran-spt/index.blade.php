@@ -43,62 +43,96 @@
         </form>
 
         @if($clientId)
-            <form method="POST" action="{{ route('cms.lampiran-spt.store') }}">
+            <form method="POST" action="{{ route('cms.lampiran-spt.store') }}" id="formLampiran">
                 @csrf
                 <input type="hidden" name="client_id" value="{{ $clientId }}">
                 <input type="hidden" name="tahun" value="{{ $tahun }}">
+                <input type="hidden" name="active_tab" id="activeTab" value="{{ $activeTab }}">
 
-                @forelse($items as $kategori => $subItems)
-                <div class="card border mb-3">
-                    <div class="card-header bg-light py-2">
-                        <h6 class="fw-semibold mb-0">
-                            {{ $kategoriLabels[$kategori] ?? $kategori }}
-                        </h6>
-                    </div>
-                    <div class="card-body p-0">
-                        <table class="table table-sm mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="ps-4" style="width:100px">Kode</th>
-                                    <th>Nama</th>
-                                    <th class="text-end pe-4" style="width:250px">Nilai (Rp)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($subItems as $item)
-                                <tr>
-                                    <td class="ps-4"><code>{{ $item['sub_kode'] }}</code></td>
-                                    <td>{{ $item['sub_nama'] }}</td>
-                                    <td class="pe-4">
-                                        <input type="text" class="form-control form-control-sm format-currency text-end"
-                                            name="nilai[{{ $item['kategori'] . '|' . $item['sub_kode'] }}]"
-                                            value="{{ $item['nilai'] > 0 ? number_format($item['nilai'], 0, ',', '.') : '' }}"
-                                            data-month="0">
-                                    </td>
-                                </tr>
-                                @endforeach
-                                @php
-                                    $total = $subItems->sum('nilai');
-                                @endphp
-                                <tr class="table-secondary fw-bold">
-                                    <td class="ps-4" colspan="2">Total {{ $kategoriLabels[$kategori] ?? $kategori }}</td>
-                                    <td class="text-end pe-4">
-                                        Rp {{ number_format($total, 0, ',', '.') }}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                @empty
-                <div class="text-center text-muted py-4">
-                    <i class="bi bi-inbox display-4 d-block mb-2 text-secondary opacity-50"></i>
-                    Belum ada master kategori. 
-                    <a href="{{ route('cms.lampiran-spt.master') }}">Kelola Master</a>
-                </div>
-                @endforelse
+                @if($tabs->count() > 1)
+                {{-- Cabang Tabs --}}
+                <ul class="nav nav-tabs mb-3" id="lampiranTabs" role="tablist">
+                    @foreach($tabs as $key => $tab)
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {{ $key === $activeTab ? 'active' : '' }}"
+                            id="tab-{{ $key }}" data-bs-toggle="tab"
+                            data-bs-target="#tabContent-{{ $key }}"
+                            type="button" role="tab"
+                            data-prefix="{{ $key }}">
+                            <i class="bi {{ $key === 'induk' ? 'bi-building' : 'bi-diagram-2' }} me-1"></i>
+                            {{ $tab['npwp'] }}
+                        </button>
+                    </li>
+                    @endforeach
+                </ul>
+                @endif
 
-                @if(count($items) > 0)
+                <div class="tab-content" id="lampiranTabContent">
+                    @foreach($tabs as $key => $tab)
+                    @php $prefix = $key === 'induk' ? 'induk' : $key; @endphp
+                    <div class="tab-pane fade {{ $key === $activeTab ? 'show active' : '' }}"
+                        id="tabContent-{{ $key }}" role="tabpanel">
+                        <div class="mb-2">
+                            <small class="text-muted">{{ $tab['label'] }} &middot; NPWP: {{ $tab['npwp'] }}</small>
+                        </div>
+
+                        <input type="hidden" name="{{ $prefix }}[npwp_cabang_id]"
+                            value="{{ $tab['npwp_cabang_id'] ?? '' }}">
+
+                        @forelse($tab['items'] as $kategori => $subItems)
+                        <div class="card border mb-3">
+                            <div class="card-header bg-light py-2">
+                                <h6 class="fw-semibold mb-0">
+                                    {{ $kategoriLabels[$kategori] ?? $kategori }}
+                                </h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <table class="table table-sm mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="ps-4" style="width:100px">Kode</th>
+                                            <th>Nama</th>
+                                            <th class="text-end pe-4" style="width:250px">Nilai (Rp)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($subItems as $item)
+                                        <tr>
+                                            <td class="ps-4"><code>{{ $item['sub_kode'] }}</code></td>
+                                            <td>{{ $item['sub_nama'] }}</td>
+                                            <td class="pe-4">
+                                                <input type="text"
+                                                    class="form-control form-control-sm format-currency text-end"
+                                                    name="{{ $prefix }}[nilai][{{ $item['id'] }}]"
+                                                    value="{{ $item['nilai'] > 0 ? number_format($item['nilai'], 0, ',', '.') : '' }}">
+                                            </td>
+                                        </tr>
+                                        @endforeach
+                                        @php
+                                            $totalNilai = $subItems->sum('nilai');
+                                        @endphp
+                                        <tr class="table-secondary fw-bold">
+                                            <td class="ps-4" colspan="2">Total {{ $kategoriLabels[$kategori] ?? $kategori }}</td>
+                                            <td class="text-end pe-4">
+                                                Rp {{ number_format($totalNilai, 0, ',', '.') }}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        @empty
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-inbox display-4 d-block mb-2 text-secondary opacity-50"></i>
+                            Belum ada master kategori.
+                            <a href="{{ route('cms.lampiran-spt.master') }}">Kelola Master</a>
+                        </div>
+                        @endforelse
+                    </div>
+                    @endforeach
+                </div>
+
+                @if($tabs->isNotEmpty())
                 <div class="d-flex justify-content-end mt-3">
                     <button type="submit" class="btn btn-primary px-4">
                         <i class="bi bi-save me-1"></i> Simpan Nilai SPT
@@ -151,6 +185,13 @@ document.querySelectorAll('.format-currency').forEach(function(el) {
     });
     el.addEventListener('blur', function() {
         if (!this.value) this.value = '';
+    });
+});
+
+// Track active tab for redirect after save
+document.querySelectorAll('#lampiranTabs button[data-bs-toggle="tab"]').forEach(function(btn) {
+    btn.addEventListener('shown.bs.tab', function(e) {
+        document.getElementById('activeTab').value = btn.getAttribute('data-prefix');
     });
 });
 </script>

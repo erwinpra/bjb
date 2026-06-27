@@ -32,16 +32,7 @@
                         <td class="text-muted">Tipe Badan</td>
                         <td><span class="badge bg-secondary bg-opacity-10 text-secondary">{{ $dataClient->badan->tipe ?? '-' }}</span></td>
                     </tr>
-                    <tr>
-                        <td class="text-muted">Client Role</td>
-                        <td>
-                            @if($dataClient->clientRole)
-                                <span class="badge bg-info bg-opacity-10 text-info">{{ $dataClient->clientRole->name }}</span>
-                            @else
-                                <span class="text-muted small">-</span>
-                            @endif
-                        </td>
-                    </tr>
+
                     <tr>
                         <td class="text-muted">NPWP/NIK</td>
                         <td><code>{{ $dataClient->npwp ?: '-' }}</code></td>

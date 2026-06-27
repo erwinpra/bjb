@@ -35,12 +35,10 @@ class DataClientController extends Controller
     public function create()
     {
         $badan = Badan::all();
-        $clientRoles = ClientRole::all();
         $generatedPassword = Str::random(12);
         return view('cms::data-client.edit', [
             'dataClient' => null,
             'badan' => $badan,
-            'clientRoles' => $clientRoles,
             'generatedPassword' => $generatedPassword,
         ]);
     }
@@ -55,7 +53,6 @@ class DataClientController extends Controller
         $data = $request->validate([
             'nama_client' => 'required|max:255',
             'tipe_badan' => 'nullable',
-            'client_role_id' => 'nullable|exists:cms_client_roles,id',
             'npwp' => 'nullable|digits_between:15,16',
             'npwp_cabang' => 'nullable|digits_between:15,33',
             'kpp' => 'nullable|max:50',
@@ -67,11 +64,6 @@ class DataClientController extends Controller
 
         $data['tipe_badan'] = $this->resolveTipeBadan($request->tipe_badan);
         $data['password'] = Hash::make($request->password ?? Str::random(12));
-
-        if (empty($data['client_role_id'])) {
-            $defaultRole = \App\Models\Cms\ClientRole::where('slug', 'client')->first();
-            $data['client_role_id'] = $defaultRole ? $defaultRole->id : null;
-        }
 
         $client = DataClient::create($data);
 
@@ -417,8 +409,7 @@ class DataClientController extends Controller
         $dataClient->loadCount('cabangs');
         $dataClient->load('cabangs');
         $badan = Badan::all();
-        $clientRoles = ClientRole::all();
-        return view('cms::data-client.edit', compact('dataClient', 'badan', 'clientRoles'));
+        return view('cms::data-client.edit', compact('dataClient', 'badan'));
     }
 
     public function update(Request $request, DataClient $dataClient)
@@ -431,7 +422,6 @@ class DataClientController extends Controller
         $data = $request->validate([
             'nama_client' => 'required|max:255',
             'tipe_badan' => 'nullable',
-            'client_role_id' => 'nullable|exists:cms_client_roles,id',
             'npwp' => 'nullable|digits_between:15,16',
             'npwp_cabang' => 'nullable|digits_between:15,33',
             'kpp' => 'nullable|max:50',

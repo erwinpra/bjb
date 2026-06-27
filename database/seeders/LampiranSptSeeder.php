@@ -2,13 +2,24 @@
 
 namespace Database\Seeders;
 
+use App\Models\Cms\KategoriLampiran;
+use App\Models\Cms\MasterLampiranSpt;
 use Illuminate\Database\Seeder;
-use App\Models\Cms\LampiranSpt;
 
 class LampiranSptSeeder extends Seeder
 {
     public function run()
     {
+        $kategoris = [
+            'KAS',
+            'PIUTANG',
+            'INVESTASI',
+            'HARTA BERGERAK',
+            'HARTA TIDAK BERGERAK',
+            'HARTA LAINNYA',
+            'TOTAL HUTANG',
+        ];
+
         $data = [
             'KAS' => [
                 ['0101', 'UANG TUNAI'],
@@ -45,7 +56,7 @@ class LampiranSptSeeder extends Seeder
                 ['0323', 'PERSEKUTUAN/FIRMA/CV'],
                 ['0324', 'INVESTASI LAINNYA'],
             ],
-            'HARTA_BERGERAK' => [
+            'HARTA BERGERAK' => [
                 ['0401', 'SEPEDA'],
                 ['0402', 'SEPEDA MOTOR'],
                 ['0403', 'MOBIL PENUMPANG'],
@@ -60,7 +71,7 @@ class LampiranSptSeeder extends Seeder
                 ['0412', 'KAPAL PESIAR'],
                 ['0499', 'HARTA BERGERAK LAINNYA'],
             ],
-            'HARTA_TIDAK_BERGERAK' => [
+            'HARTA TIDAK BERGERAK' => [
                 ['0501', 'TANAH KOSONG'],
                 ['0502', 'TANAH DAN/ATAU BANGUNAN UNTUK TEMPAT TINGGAL'],
                 ['0503', 'APARTEMEN'],
@@ -70,7 +81,7 @@ class LampiranSptSeeder extends Seeder
                 ['0507', 'TANAH DAN/ATAU BANGUNAN YANG DISEWAKAN'],
                 ['0509', 'HARTA TIDAK BERGERAK LAINNYA'],
             ],
-            'HARTA_LAINNYA' => [
+            'HARTA LAINNYA' => [
                 ['0601', 'PATEN'],
                 ['0602', 'ROYALTI'],
                 ['0603', 'MEREK DAGANG'],
@@ -88,7 +99,7 @@ class LampiranSptSeeder extends Seeder
                 ['0711', 'JET SKI'],
                 ['0712', 'PERSEDIAAN USAHA'],
             ],
-            'TOTAL_HUTANG' => [
+            'TOTAL HUTANG' => [
                 ['101', 'UTANG BANK/LEMBAGA KEUANGAN BUKAN BANK'],
                 ['102', 'KARTU KREDIT'],
                 ['103', 'UTANG AFILIASI'],
@@ -96,19 +107,20 @@ class LampiranSptSeeder extends Seeder
             ],
         ];
 
-        foreach ($data as $kategori => $items) {
-            foreach ($items as $item) {
-                LampiranSpt::create([
-                    'client_id' => null,
-                    'tahun' => null,
-                    'kategori' => $kategori,
-                    'sub_kode' => $item[0],
-                    'sub_nama' => $item[1],
-                    'nilai' => 0,
-                ]);
+        foreach ($kategoris as $label) {
+            $kategori = KategoriLampiran::firstOrCreate(['label' => $label]);
+
+            if (isset($data[$label])) {
+                foreach ($data[$label] as [$subKode, $nama]) {
+                    MasterLampiranSpt::firstOrCreate([
+                        'kategori_id' => $kategori->id,
+                        'sub_kode' => $subKode,
+                        'nama' => $nama,
+                    ]);
+                }
             }
         }
 
-        $this->command->info('Lampiran SPT master data seeded successfully.');
+        $this->command->info('Lampiran SPT master data seeded successfully!');
     }
 }

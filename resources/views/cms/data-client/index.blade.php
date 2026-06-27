@@ -35,7 +35,6 @@
                         <tr>
                             <th>Nama Client</th>
                             <th>Tipe Badan</th>
-                            <th>Client Role</th>
                             <th>NPWP/NIK</th>
                             <th>Email</th>
                             <th>KPP</th>
@@ -48,13 +47,6 @@
                         <tr>
                             <td class="fw-medium">{{ $d->nama_client }}</td>
                             <td><span class="badge bg-secondary bg-opacity-10 text-secondary">{{ $d->badan->tipe ?? '-' }}</span></td>
-                            <td>
-                                @if($d->clientRole)
-                                    <span class="badge bg-info bg-opacity-10 text-info">{{ $d->clientRole->name }}</span>
-                                @else
-                                    <span class="text-muted small">-</span>
-                                @endif
-                            </td>
                             <td><code class="small">{{ $d->npwp ?: '-' }}</code></td>
                             <td><span class="small">{{ $d->email ?: '-' }}</span></td>
                             <td><span class="small">{{ $d->kpp ?: '-' }}</span></td>
@@ -96,7 +88,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="8" class="text-center py-5 text-muted">
+                            <td colspan="7" class="text-center py-5 text-muted">
                                 <i class="bi bi-person-badge display-4 d-block mb-2 text-secondary opacity-50"></i>
                                 No data client yet.
                             </td>

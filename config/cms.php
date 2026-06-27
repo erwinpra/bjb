@@ -99,6 +99,20 @@ return [
             'label' => 'Lampiran SPT',
             'group' => 'client',
         ],
+        'kategori_lampiran' => [
+            'enabled' => true,
+            'route' => 'kategori-lampiran',
+            'icon' => 'tags',
+            'label' => 'Kategori Lampiran',
+            'group' => 'master',
+        ],
+        'master_lampiran_spt' => [
+            'enabled' => true,
+            'route' => 'master-lampiran-spt',
+            'icon' => 'list-check',
+            'label' => 'Master Lampiran SPT',
+            'group' => 'master',
+        ],
     ],
 
     'upload' => [

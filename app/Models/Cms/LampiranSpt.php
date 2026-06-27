@@ -10,10 +10,9 @@ class LampiranSpt extends Model
 
     protected $fillable = [
         'client_id',
+        'npwp_cabang_id',
         'tahun',
-        'kategori',
-        'sub_kode',
-        'sub_nama',
+        'lampiran_spt_id',
         'nilai',
     ];
 
@@ -22,9 +21,9 @@ class LampiranSpt extends Model
         return $this->belongsTo(DataClient::class, 'client_id');
     }
 
-    public function scopeMaster($query)
+    public function masterItem()
     {
-        return $query->whereNull('client_id')->whereNull('tahun');
+        return $this->belongsTo(MasterLampiranSpt::class, 'lampiran_spt_id');
     }
 
     public function scopeForClient($query, $clientId, $tahun)

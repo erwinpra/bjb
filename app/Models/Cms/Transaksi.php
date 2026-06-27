@@ -12,6 +12,7 @@ class Transaksi extends Model
         'client_id',
         'tahun',
         'tipe_badan_id',
+        'npwp_cabang_id',
         'total_omset',
         'total_harta',
         'total_pph',

@@ -14,15 +14,15 @@
     </div>
     <div class="card-body p-4">
         <p class="text-muted small mb-4">
-            Berikut adalah daftar kategori dan sub-item Lampiran SPT Tahunan. 
+            Berikut adalah daftar kategori dan sub-item Lampiran SPT Tahunan.
             Data ini adalah referensi master yang digunakan untuk mengisi nilai SPT per client.
         </p>
 
-        @forelse($masterItems as $kategori => $items)
+        @forelse($kategoris as $kat)
         <div class="card border mb-3">
             <div class="card-header bg-light py-2">
                 <h6 class="fw-semibold mb-0">
-                    {{ $kategoriLabels[$kategori] ?? $kategori }}
+                    {{ $kategoriLabels[$kat->label] ?? $kat->label }}
                 </h6>
             </div>
             <div class="card-body p-0">
@@ -34,10 +34,10 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($items as $item)
+                        @foreach($kat->masterLampiranSpts as $item)
                         <tr>
                             <td class="ps-4"><code>{{ $item->sub_kode }}</code></td>
-                            <td>{{ $item->sub_nama }}</td>
+                            <td>{{ $item->nama }}</td>
                         </tr>
                         @endforeach
                     </tbody>

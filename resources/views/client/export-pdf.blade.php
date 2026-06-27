@@ -42,35 +42,70 @@
     </table>
     @endif
 
-    <div class="section-title">Omset Per Bulan & Perhitungan PPh Final</div>
+    @foreach($allTabs as $tab)
+    <div class="section-title">{{ $tab['label'] }}</div>
+
+    @if($tab['npwp'])
+    <table class="client-info">
+        <tr><td style="width:80px"><strong>NPWP</strong></td><td>{{ $tab['npwp'] }}</td></tr>
+    </table>
+    @endif
+
+    @if($isId1)
+    <table>
+        <tr><th>Periode</th><th class="text-end">Omset</th></tr>
+        <tr><td>Tahunan</td><td class="text-end">Rp {{ number_format($tab['total_omset'], 0, ',', '.') }}</td></tr>
+    </table>
+    @else
     <table>
         <thead>
             <tr>
                 <th>Bulan</th>
                 <th class="text-end">Omset</th>
                 <th class="text-end">Total Peredaran Bruto</th>
-                <th class="text-end">PPH Final 0.5%</th>
+                @if($tab['key'] === 'induk')
+                <th class="text-end">Total Peredaran Bruto Akum{{ $cabangCount > 0 ? ' (' . $cabangCount . ' Cabang)' : '' }}</th>
+                @endif
+                <th class="text-end">PPH Final {{ number_format($persen, 1) }}%</th>
                 <th class="text-end">PPh Final yg harus dibayar</th>
             </tr>
         </thead>
         <tbody>
-            @foreach($detailBulan as $row)
+            @foreach($tab['detail_bulan'] as $row)
             <tr>
                 <td>{{ $row['bulan'] }}</td>
-                <td class="text-end">{{ $row['omset'] }}</td>
-                <td class="text-end">{{ $row['totalBruto'] }}</td>
-                <td class="text-end">{{ $row['pphFinal'] }}</td>
-                <td class="text-end">{{ $row['pphBayar'] }}</td>
+                <td class="text-end">{{ $row['omset'] ?: '-' }}</td>
+                <td class="text-end">{{ $row['totalBruto'] ?: '-' }}</td>
+                @if($tab['key'] === 'induk')
+                <td class="text-end">{{ $row['omset'] ? ($row['totalBrutoAkum'] ?: '-') : '-' }}</td>
+                @endif
+                <td class="text-end">{{ $row['pphFinal'] ?: '-' }}</td>
+                <td class="text-end">{{ $row['pphBayar'] ?: '-' }}</td>
             </tr>
             @endforeach
+            <tr class="fw-bold">
+                <td>Total</td>
+                <td class="text-end">Rp {{ number_format($tab['total_omset'], 0, ',', '.') }}</td>
+                <td></td>
+                @if($tab['key'] === 'induk')
+                <td></td>
+                @endif
+                <td></td>
+                <td class="text-end">Rp {{ number_format($tab['total_potongan'], 0, ',', '.') }}</td>
+            </tr>
         </tbody>
     </table>
+    @endif
+    @endforeach
 
     <div class="section-title">Total Keseluruhan</div>
     <table>
         <tr><td style="width:200px"><strong>Total {{ $hartaLabel }}</strong></td><td class="text-end fw-bold">Rp {{ number_format($totalHarta, 0, ',', '.') }}</td></tr>
         <tr><td><strong>Total Omset</strong></td><td class="text-end fw-bold">Rp {{ number_format($totalOmset, 0, ',', '.') }}</td></tr>
         <tr><td><strong>Total PPh Final yg harus dibayar</strong></td><td class="text-end fw-bold">Rp {{ number_format($totalPotongan, 0, ',', '.') }}</td></tr>
+        @foreach($allTabs as $tab)
+        <tr><td class="text-muted" style="padding-left:20px">{{ $tab['npwp'] ?: $tab['label'] }}</td><td class="text-end text-muted">Rp {{ number_format($tab['total_omset'], 0, ',', '.') }}</td></tr>
+        @endforeach
     </table>
 </body>
 </html>

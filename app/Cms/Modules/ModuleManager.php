@@ -43,6 +43,8 @@ class ModuleManager
             'client_roles' => ClientRoleModule::class,
             'dokumentasi' => DokumentasiModule::class,
             'lampiran_spt' => LampiranSptModule::class,
+            'kategori_lampiran' => KategoriLampiranModule::class,
+            'master_lampiran_spt' => MasterLampiranSptModule::class,
         ];
 
         foreach ($config as $key => $cfg) {

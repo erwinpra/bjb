@@ -1,0 +1,57 @@
+<?php
+
+namespace App\Http\Controllers\Cms;
+
+use App\Http\Controllers\Controller;
+use App\Models\Cms\MasterLampiranSpt;
+use App\Models\Cms\KategoriLampiran;
+use Illuminate\Http\Request;
+
+class MasterLampiranSptController extends Controller
+{
+    public function index()
+    {
+        $items = MasterLampiranSpt::with('kategori')->latest()->paginate(15);
+        return view('cms::master-lampiran-spt.index', compact('items'));
+    }
+
+    public function create()
+    {
+        $kategoris = KategoriLampiran::orderBy('label')->get();
+        return view('cms::master-lampiran-spt.edit', ['item' => null, 'kategoris' => $kategoris]);
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'kategori_id' => 'required|exists:cms_kategori_lampiran,id',
+            'sub_kode' => 'required|max:255',
+            'nama' => 'required|max:255',
+        ]);
+        MasterLampiranSpt::create($data);
+        return redirect()->route('cms.master-lampiran-spt.index')->with('success', 'Master item created.');
+    }
+
+    public function edit(MasterLampiranSpt $masterLampiranSpt)
+    {
+        $kategoris = KategoriLampiran::orderBy('label')->get();
+        return view('cms::master-lampiran-spt.edit', ['item' => $masterLampiranSpt, 'kategoris' => $kategoris]);
+    }
+
+    public function update(Request $request, MasterLampiranSpt $masterLampiranSpt)
+    {
+        $data = $request->validate([
+            'kategori_id' => 'required|exists:cms_kategori_lampiran,id',
+            'sub_kode' => 'required|max:255',
+            'nama' => 'required|max:255',
+        ]);
+        $masterLampiranSpt->update($data);
+        return redirect()->route('cms.master-lampiran-spt.index')->with('success', 'Master item updated.');
+    }
+
+    public function destroy(MasterLampiranSpt $masterLampiranSpt)
+    {
+        $masterLampiranSpt->delete();
+        return redirect()->route('cms.master-lampiran-spt.index')->with('success', 'Master item deleted.');
+    }
+}

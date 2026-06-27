@@ -8,8 +8,11 @@
 
 @section('content')
 <div class="card border-0 shadow-sm">
-    <div class="card-header bg-white py-3 border-bottom">
+    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
         <h6 class="fw-semibold mb-0"><i class="bi bi-arrow-left-right me-2"></i>Form Transaksi</h6>
+        <a href="{{ route('cms.transaksi.import') }}" class="btn btn-sm btn-outline-success">
+            <i class="bi bi-upload me-1"></i> Import Excel
+        </a>
     </div>
     <div class="card-body p-4">
         <form id="formTransaksi" method="POST" action="{{ route('cms.transaksi.store') }}">
@@ -62,10 +65,10 @@
             {{-- Lampiran SPT Tahunan --}}
             <div class="row g-4 mb-4">
                 <div class="col-12">
-                    <h6 class="fw-semibold text-success border-bottom pb-2">
-                        <i class="bi bi-building me-2"></i>Harta / Aktiva
+                    <h6 class="fw-semibold text-success border-bottom pb-2 position-relative">
+                        <span style="vertical-align:middle"><i class="bi bi-building me-2"></i>Harta / Aktiva</span>
                         <a href="{{ route('cms.lampiran-spt.index') }}?client_id={{ old('client_id', '') }}&tahun={{ old('tahun', date('Y')) }}"
-                           class="btn btn-sm btn-outline-primary float-end" id="btnLampiranSpt" target="_blank">
+                           class="btn btn-sm btn-outline-primary position-absolute end-0 top-50 translate-middle-y" id="btnLampiranSpt" target="_blank">
                             <i class="bi bi-pencil-square me-1"></i> Update / Import Harta
                         </a>
                     </h6>
@@ -95,9 +98,9 @@
             {{-- Omset Per Bulan (untuk Perorangan) --}}
             <div id="omsetBulananSection" class="row g-4 mb-4">
                 <div class="col-12">
-                    <h6 class="fw-semibold text-warning border-bottom pb-2">
-                        <i class="bi bi-calendar-month me-2"></i>Omset Per Bulan
-                        <button type="button" class="btn btn-sm btn-outline-warning float-end" id="toggleOmsetInput">
+                    <h6 class="fw-semibold text-warning border-bottom pb-2 position-relative">
+                        <span style="vertical-align:middle"><i class="bi bi-calendar-month me-2"></i>Omset Per Bulan</span>
+                        <button type="button" class="btn btn-sm btn-outline-warning position-absolute end-0 top-50 translate-middle-y" id="toggleOmsetInput">
                             <i class="bi bi-eye-slash me-1"></i> <span id="toggleOmsetInputLabel">Sembunyikan</span>
                         </button>
                     </h6>
@@ -139,9 +142,9 @@
             {{-- Hasil Perhitungan Per Bulan --}}
             <div id="hasilPerhitunganSection" class="row g-4 mb-4 d-none">
                 <div class="col-12">
-                    <h6 class="fw-semibold text-info border-bottom pb-2">
-                        <i class="bi bi-table me-2"></i>Hasil Perhitungan Per Bulan
-                        <button type="button" class="btn btn-sm btn-outline-info float-end" id="toggleHasilTable">
+                    <h6 class="fw-semibold text-info border-bottom pb-2 position-relative">
+                        <span style="vertical-align:middle"><i class="bi bi-table me-2"></i>Hasil Perhitungan Per Bulan</span>
+                        <button type="button" class="btn btn-sm btn-outline-info position-absolute end-0 top-50 translate-middle-y" id="toggleHasilTable">
                             <i class="bi bi-eye-slash me-1"></i> <span id="toggleHasilTableLabel">Sembunyikan</span>
                         </button>
                     </h6>
@@ -154,7 +157,8 @@
                                     <th style="width:80px">Bulan</th>
                                     <th class="text-end">Omset</th>
                                     <th class="text-end">Total Peredaran Bruto</th>
-                                    <th class="text-end">PPH Final 0.5%</th>
+                                    <th class="text-end">Total Peredaran Bruto Akum <small class="text-muted fw-normal" id="akumCabangLabel"></small></th>
+                                    <th class="text-end">PPH Final <span id="pphPersenLabel">0.5</span>%</th>
                                     <th class="text-end">PPh Final yg harus dibayar</th>
                                     <th style="width:40px" class="text-center">Status</th>
                                 </tr>
@@ -165,6 +169,7 @@
                                     <td class="text-muted">{{ $bulan }}</td>
                                     <td class="text-end" id="hasilOmset-{{ $i + 1 }}">-</td>
                                     <td class="text-end" id="hasilBruto-{{ $i + 1 }}">-</td>
+                                    <td class="text-end" id="hasilBrutoAkum-{{ $i + 1 }}">-</td>
                                     <td class="text-end" id="hasilPph-{{ $i + 1 }}">-</td>
                                     <td class="text-end" id="hasilFinal-{{ $i + 1 }}">-</td>
                                     <td class="text-center" id="hasilStatus-{{ $i + 1 }}">-</td>
@@ -172,6 +177,7 @@
                                 @endforeach
                                 <tr class="fw-bold table-secondary" id="hasilTotalRow">
                                     <td>Total PPh Final yg harus dibayar</td>
+                                    <td></td>
                                     <td></td>
                                     <td></td>
                                     <td></td>
@@ -200,7 +206,7 @@
                 <button type="button" class="btn btn-info px-4 text-white" id="btnExportExcel" disabled>
                     <i class="bi bi-file-earmark-spreadsheet me-1"></i> Excel
                 </button>
-                <button type="submit" class="btn btn-success px-4" id="btnSimpan" disabled>
+                <button type="button" class="btn btn-success px-4" id="btnSimpan" disabled>
                     <i class="bi bi-check-lg me-1"></i> Simpan
                 </button>
             </div>
@@ -220,6 +226,61 @@
             </div>
             <div class="modal-footer border-top">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Harta Confirmation Modal --}}
+<div class="modal fade" id="hartaConfirmModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h6 class="fw-semibold mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Peringatan</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <i class="bi bi-building-slash display-3 d-block mb-3 text-warning"></i>
+                <p class="fw-semibold mb-0" id="hartaConfirmMsg">DATA AKTIVA BELUM DI INSERT, YAKIN MAU MELANJUTKAN?</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center gap-2">
+                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i> Tutup
+                </button>
+                <button type="button" class="btn btn-success px-4" id="btnHartaLanjutkan">
+                    <i class="bi bi-check-lg me-1"></i> Lanjutkan
+                </button>
+                <button type="button" class="btn btn-primary px-4" id="btnHartaInput">
+                    <i class="bi bi-pencil-square me-1"></i> Input Harta
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Harta Input Modal --}}
+<div class="modal fade" id="hartaInputModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h6 class="fw-semibold mb-0"><i class="bi bi-building me-2"></i>Input Harta / Aktiva</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="hartaInputTabNav" class="border-bottom d-none">
+                    <ul class="nav nav-tabs px-3 pt-2" id="hartaInputTabs" role="tablist" style="font-size:0.85rem"></ul>
+                </div>
+                <div class="p-3" id="hartaInputContainer">
+                    <div class="text-center py-4"><div class="spinner-border text-primary"></div></div>
+                </div>
+            </div>
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-light px-4" id="btnHartaBatal">
+                    <i class="bi bi-arrow-left me-1"></i> Batal
+                </button>
+                <button type="button" class="btn btn-success px-4" id="btnHartaSimpan">
+                    <i class="bi bi-check-lg me-1"></i> Simpan
+                </button>
             </div>
         </div>
     </div>
@@ -316,7 +377,7 @@ function handleClientChange() {
         hasCabang = true;
         tabsContainer.innerHTML = '';
         contentContainer.innerHTML = '';
-        buildTab('induk', c ? c.nama_client : 'Induk', c ? (c.npwp || '-') : '-', null, true);
+        buildTab('induk', c ? c.nama_client : 'Induk', c ? (c.npwp || '-') : '-', null, true, c ? (c.kpp || '-') : '-');
 
         clientCabangs.forEach(function(cabang, i) {
             var pfx = 'cabang_' + i;
@@ -332,12 +393,21 @@ function handleClientChange() {
                 omsetBulanan: {}
             };
             for (let mo = 1; mo <= 12; mo++) tabData[pfx].omsetBulanan[mo] = '';
-            buildTab(pfx, tabData[pfx].nama, tabData[pfx].npwp, cabang.id, false);
+            buildTab(pfx, tabData[pfx].nama, tabData[pfx].npwp, cabang.id, false, cabang.kpp || '-');
         });
         cabangSection.classList.remove('d-none');
     } else {
         cabangSection.classList.add('d-none');
     }
+
+    // Update PPH percentage label from rumus
+    const rumus = rumusList.find(function(r) { return String(r.tipe_badan) === String(tipeId); });
+    document.getElementById('pphPersenLabel').textContent = rumus ? String(rumus.potongan_persentase) : '0';
+
+    // Update akum cabang label
+    var cabangCountLabel = 0;
+    Object.keys(tabData).forEach(function(k) { if (k !== 'induk') cabangCountLabel++; });
+    document.getElementById('akumCabangLabel').textContent = cabangCountLabel > 0 ? '(' + cabangCountLabel + ' Cabang)' : '';
 
     // Show omset section based on tipe
     if (tipeId === 1) {
@@ -354,7 +424,7 @@ function handleClientChange() {
     loadDataFromDb();
 }
 
-function buildTab(prefix, nama, npwp, npwpCabangId, isActive) {
+function buildTab(prefix, nama, npwp, npwpCabangId, isActive, kpp) {
     var tabsContainer = document.getElementById('cabangTabs');
     var contentContainer = document.getElementById('cabangTabContent');
     var tabId = 'cabTab_' + prefix;
@@ -373,6 +443,7 @@ function buildTab(prefix, nama, npwp, npwpCabangId, isActive) {
     pane.innerHTML = '<div class="row g-2 small">' +
         '<div class="col-6"><span class="text-muted">Nama:</span> <span class="fw-medium">' + (nama || '-') + '</span></div>' +
         '<div class="col-6"><span class="text-muted">NPWP:</span> <span>' + (npwp || '-') + '</span></div>' +
+        '<div class="col-6"><span class="text-muted">KPP:</span> <span>' + (kpp || '-') + '</span></div>' +
         (npwpCabangId ? '<div class="col-12"><input type="hidden" name="' + prefix + '[npwp_cabang_id]" value="' + npwpCabangId + '"></div>' : '') +
         '</div>';
     contentContainer.appendChild(pane);
@@ -390,6 +461,7 @@ function clearInputs() {
         document.getElementById('hasilRow-' + mo).classList.add('d-none');
         document.getElementById('hasilOmset-' + mo).textContent = '-';
         document.getElementById('hasilBruto-' + mo).textContent = '-';
+        document.getElementById('hasilBrutoAkum-' + mo).textContent = '-';
         document.getElementById('hasilPph-' + mo).textContent = '-';
         document.getElementById('hasilFinal-' + mo).textContent = '-';
         document.getElementById('hasilStatus-' + mo).textContent = '-';
@@ -481,6 +553,23 @@ function hitungOmset() {
 
     let cumulative = 0, totalPotongan = 0, cumulativeExceeds4M = false;
 
+    // Compute per-month akum = sum of omset across ALL tabs for this month
+    var perMonthAkum = {};
+    for (let mo = 1; mo <= 12; mo++) {
+        var total = 0;
+        Object.keys(tabData).forEach(function(p) {
+            var td = tabData[p]; if (!td) return;
+            if (td.tipeId === 1) {
+                var raw = td.omsetTahunan || '';
+                total += Number(raw.replace(/[^0-9]/g, '') || 0);
+            } else {
+                var raw = td.omsetBulanan[mo] || '';
+                total += Number(raw.replace(/[^0-9]/g, '') || 0);
+            }
+        });
+        perMonthAkum[mo] = total;
+    }
+
     for (let mo = 1; mo <= 12; mo++) {
         var inp = document.querySelector('.omset-input[data-month="' + mo + '"]');
         var val = inp ? inp.value : '0';
@@ -520,6 +609,14 @@ function hitungOmset() {
         const pphFinal = !rumus ? '-' : 'Rp ' + formatNum(String(current * persen / 100));
 
         document.getElementById('hasilBruto-' + mo).textContent = 'Rp ' + formatNum(String(totalWithCurrent));
+        var akumEl = document.getElementById('hasilBrutoAkum-' + mo);
+        if (activeTabPrefix === 'induk') {
+            var akumTotal = 0;
+            for (let am = 1; am <= mo; am++) akumTotal += perMonthAkum[am];
+            akumEl.textContent = 'Rp ' + formatNum(String(akumTotal));
+        } else {
+            akumEl.textContent = '';
+        }
         document.getElementById('hasilPph-' + mo).innerHTML = '<span class="text-danger fw-semibold">' + pphFinal + '</span>';
         document.getElementById('hasilFinal-' + mo).innerHTML = '<span class="fw-semibold ' + pphClass + '">' + pphBayar + '</span>';
 
@@ -549,14 +646,7 @@ function loadDataFromDb() {
     fetch('/admin/transaksi/load-data?client_id=' + clientId + '&tahun=' + tahun)
         .then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
         .then(function(data) {
-            if (!data.exists) {
-                Object.keys(tabData).forEach(function(p) {
-                    tabData[p].omsetTahunan = '';
-                    for (let mo = 1; mo <= 12; mo++) tabData[p].omsetBulanan[mo] = '';
-                });
-                clearInputs();
-                return;
-            }
+            if (!data.exists) return;
             if (data.omset && data.omset.length > 0) {
                 var isTahunan = data.omset[0].bulan === null || data.omset[0].bulan === undefined;
                 if (isTahunan) {
@@ -585,7 +675,26 @@ document.getElementById('tahunSelect').addEventListener('change', function() {
     const clientId = parseInt(document.getElementById('clientSelect').value);
     if (clientId && this.value) {
         document.getElementById('btnLampiranSpt').href = document.getElementById('btnLampiranSpt').href.split('?')[0] + '?client_id=' + clientId + '&tahun=' + this.value;
-        loadDataFromDb();
+    }
+});
+
+document.getElementById('toggleOmsetInput').addEventListener('click', function() {
+    var container = document.getElementById('omsetInputContainer');
+    var label = document.getElementById('toggleOmsetInputLabel');
+    if (container.classList.toggle('d-none')) {
+        label.textContent = 'Tampilkan';
+    } else {
+        label.textContent = 'Sembunyikan';
+    }
+});
+
+document.getElementById('toggleHasilTable').addEventListener('click', function() {
+    var container = document.getElementById('hasilTableContainer');
+    var label = document.getElementById('toggleHasilTableLabel');
+    if (container.classList.toggle('d-none')) {
+        label.textContent = 'Tampilkan';
+    } else {
+        label.textContent = 'Sembunyikan';
     }
 });
 
@@ -628,6 +737,21 @@ document.getElementById('btnPreview').addEventListener('click', function() {
     var tabsHtml = '<ul class="nav nav-tabs" id="previewTabs" role="tablist">';
     var contentHtml = '<div class="tab-content border border-top-0 p-3 bg-white" id="previewTabContent">';
     var first = true;
+
+    // Pre-compute per-month akum across all tabs
+    var previewPerMonthAkum = {};
+    for (let mo = 1; mo <= 12; mo++) {
+        var total = 0;
+        Object.keys(tabData).forEach(function(p) {
+            var td = tabData[p]; if (!td) return;
+            if (td.tipeId === 1) {
+                total += Number((td.omsetTahunan || '').replace(/[^0-9]/g, '') || 0);
+            } else {
+                total += Number((td.omsetBulanan && td.omsetBulanan[mo] || '0').replace(/[^0-9]/g, '') || 0);
+            }
+        });
+        previewPerMonthAkum[mo] = total;
+    }
 
     Object.keys(tabData).forEach(function(prefix) {
         var td = tabData[prefix];
@@ -690,14 +814,26 @@ document.getElementById('btnPreview').addEventListener('click', function() {
                     const kelebihan = tot - maxVal; const p = kelebihan * persen / 100; totalPotongan += p; ppb = 'Rp ' + formatNum(String(p)); ppc = 'text-warning';
                 } else { ppb = 'Free'; ppc = 'text-success'; }
                 ppf = 'Rp ' + formatNum(String(current * persen / 100));
-                calcRows += '<tr><td class="text-muted ps-4">' + bulanList[mo - 1] + '</td><td class="text-end">Rp ' + formatNum(String(current)) + '</td><td class="text-end">Rp ' + formatNum(String(tot)) + '</td><td class="text-end text-danger fw-semibold">' + ppf + '</td><td class="text-end ' + ppc + ' fw-semibold">' + ppb + '</td></tr>';
+                var akumPreview = '';
+                if (prefix === 'induk') {
+                    var akumMo = 0;
+                    for (let am = 1; am <= mo; am++) akumMo += previewPerMonthAkum[am];
+                    akumPreview = '<td class="text-end">Rp ' + formatNum(String(akumMo)) + '</td>';
+                }
+                calcRows += '<tr><td class="text-muted ps-4">' + bulanList[mo - 1] + '</td><td class="text-end">Rp ' + formatNum(String(current)) + '</td><td class="text-end">Rp ' + formatNum(String(tot)) + '</td>' + akumPreview + '<td class="text-end text-danger fw-semibold">' + ppf + '</td><td class="text-end ' + ppc + ' fw-semibold">' + ppb + '</td></tr>';
                 cumulative += current;
             }
 
+            var persenLabel = persen > 0 ? persen.toString().replace('.', ',') : '0';
+            var cabangCountPreview = 0;
+            Object.keys(tabData).forEach(function(k) { if (k !== 'induk') cabangCountPreview++; });
+            var cabangLabelPreview = cabangCountPreview > 0 ? ' (' + cabangCountPreview + ' Cabang)' : '';
+            var akumHeader = prefix === 'induk' ? '<th class="text-end">Total Bruto Akum' + cabangLabelPreview + '</th>' : '';
+            var akumTotalHeader = prefix === 'induk' ? '<td></td>' : '';
             paneHtml += '<h6 class="fw-semibold text-secondary border-bottom pb-2">Hasil Perhitungan</h6>' +
-                '<div class="table-responsive"><table class="table table-sm small mb-0"><thead><tr><th>Bulan</th><th class="text-end">Omset</th><th class="text-end">Total Bruto</th><th class="text-end">PPH Final 0.5%</th><th class="text-end">PPh Final yg harus dibayar</th></tr></thead><tbody>' +
+                '<div class="table-responsive"><table class="table table-sm small mb-0"><thead><tr><th>Bulan</th><th class="text-end">Omset</th><th class="text-end">Total Bruto</th>' + akumHeader + '<th class="text-end">PPH Final ' + persenLabel + '%</th><th class="text-end">PPh Final yg harus dibayar</th></tr></thead><tbody>' +
                 calcRows +
-                '<tr class="fw-bold table-secondary"><td>Total PPh Final yg harus dibayar</td><td></td><td></td><td></td><td class="text-end text-danger">Rp ' + formatNum(String(totalPotongan)) + '</td></tr>' +
+                '<tr class="fw-bold table-secondary"><td>Total PPh Final yg harus dibayar</td><td></td><td></td>' + akumTotalHeader + '<td></td><td class="text-end text-danger">Rp ' + formatNum(String(totalPotongan)) + '</td></tr>' +
                 '</tbody></table></div>';
         }
 
@@ -760,13 +896,204 @@ function prepareFormData() {
     document.getElementById('totalPphHidden').value = totalOmset * persen / 100;
 }
 
-// --- Form submit ---
-document.getElementById('formTransaksi').addEventListener('submit', function(e) {
+// --- Simpan button ---
+document.getElementById('btnSimpan').addEventListener('click', function() {
     const clientId = parseInt(document.getElementById('clientSelect').value);
     const tahun = document.getElementById('tahunSelect').value;
-    if (!clientId || !tahun) { alert('Pilih client dan tahun terlebih dahulu.'); return false; }
-    prepareFormData();
+    if (!clientId || !tahun) { alert('Pilih client dan tahun terlebih dahulu.'); return; }
+
+    // Check if harta exists for all tabs via AJAX
+    fetch('{{ route("cms.transaksi.check-harta") }}?client_id=' + clientId + '&tahun=' + tahun)
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data.has_harta) {
+                // All tabs have harta, proceed to submit
+                doSimpan();
+            } else {
+                // Some tabs missing harta — build info message
+                var missing = [];
+                var tabs = data.tabs || {};
+                Object.keys(tabs).forEach(function(key) {
+                    if (!tabs[key].has_harta) {
+                        missing.push(tabs[key].npwp || key);
+                    }
+                });
+                var msgEl = document.getElementById('hartaConfirmMsg');
+                if (missing.length) {
+                    msgEl.innerHTML = '<span class="fw-semibold">DATA AKTIVA BELUM DIINSERT UNTUK:</span><br><span class="text-danger">' + missing.join(', ') + '</span>';
+                } else {
+                    msgEl.innerHTML = '<span class="fw-semibold">DATA AKTIVA BELUM DI INSERT, YAKIN MAU MELANJUTKAN?</span>';
+                }
+                var modal = new bootstrap.Modal(document.getElementById('hartaConfirmModal'));
+                modal.show();
+            }
+        })
+        .catch(function() {
+            // If check fails, still show warning
+            var modal = new bootstrap.Modal(document.getElementById('hartaConfirmModal'));
+            modal.show();
+        });
 });
+
+function doSimpan() {
+    prepareFormData();
+    document.getElementById('formTransaksi').submit();
+}
+
+document.getElementById('btnHartaLanjutkan').addEventListener('click', function() {
+    var modal = bootstrap.Modal.getInstance(document.getElementById('hartaConfirmModal'));
+    modal.hide();
+    doSimpan();
+});
+
+document.getElementById('btnHartaInput').addEventListener('click', function() {
+    var modalConfirm = bootstrap.Modal.getInstance(document.getElementById('hartaConfirmModal'));
+    modalConfirm.hide();
+    loadHartaModalData();
+    var modalInput = new bootstrap.Modal(document.getElementById('hartaInputModal'));
+    modalInput.show();
+});
+
+document.getElementById('btnHartaBatal').addEventListener('click', function() {
+    var modalInput = bootstrap.Modal.getInstance(document.getElementById('hartaInputModal'));
+    modalInput.hide();
+    var modalConfirm = new bootstrap.Modal(document.getElementById('hartaConfirmModal'));
+    modalConfirm.show();
+});
+
+document.getElementById('btnHartaSimpan').addEventListener('click', function() {
+    var clientId = document.getElementById('clientSelect').value;
+    var tahun = document.getElementById('tahunSelect').value;
+    var formData = new FormData();
+    formData.append('client_id', clientId);
+    formData.append('tahun', tahun);
+    var hasValue = false;
+    // Collect values from all tab panes using input names (nilai[induk][id], nilai[cabang_5][id], etc.)
+    document.querySelectorAll('#hartaInputModal input.harta-nilai').forEach(function(inp) {
+        var val = inp.value.trim();
+        formData.append(inp.getAttribute('name'), val);
+        if (val.replace(/[^0-9]/g, '') > 0) hasValue = true;
+    });
+    document.getElementById('btnHartaSimpan').disabled = true;
+    document.getElementById('btnHartaSimpan').innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
+    fetch('{{ route("cms.transaksi.save-harta-ajax") }}', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+        body: formData
+    }).then(function(res) { return res.json(); }).then(function(data) {
+        if (data.success) {
+            var modalInput = bootstrap.Modal.getInstance(document.getElementById('hartaInputModal'));
+            modalInput.hide();
+            doSimpan();
+        } else {
+            alert('Gagal menyimpan harta.');
+            document.getElementById('btnHartaSimpan').disabled = false;
+            document.getElementById('btnHartaSimpan').innerHTML = '<i class="bi bi-check-lg me-1"></i> Simpan';
+        }
+    });
+});
+
+function loadHartaModalData() {
+    var clientId = document.getElementById('clientSelect').value;
+    var tahun = document.getElementById('tahunSelect').value;
+    var container = document.getElementById('hartaInputContainer');
+    container.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+
+    // Build tab list from cabangData for the selected client
+    var clientObj = clients.find(function(c) { return c.id === parseInt(clientId); });
+    var hartaTabs = [];
+    hartaTabs.push({ key: 'induk', label: 'Induk', npwp: clientObj ? (clientObj.npwp || 'Induk') : 'Induk' });
+    var clientCabangs = cabangData[parseInt(clientId)] || [];
+    clientCabangs.forEach(function(c) {
+        hartaTabs.push({ key: 'cabang_' + c.id, label: c.npwp || 'Cabang', npwp: c.npwp || '-', npwp_cabang_id: c.id });
+    });
+
+    fetch('{{ route("cms.transaksi.check-harta") }}?client_id=' + clientId + '&tahun=' + tahun)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var tabsData = data.tabs || {};
+            renderHartaForm(hartaTabs, tabsData);
+        })
+        .catch(function(err) {
+            console.error('Harta load error:', err);
+            document.getElementById('hartaInputContainer').innerHTML =
+                '<div class="text-center text-danger py-4"><i class="bi bi-exclamation-circle fs-1 d-block mb-2"></i>Gagal memuat data harta.</div>';
+        });
+}
+
+function renderHartaForm(tabList, tabsData) {
+    var kategoris = @json($kategoris);
+    var container = document.getElementById('hartaInputContainer');
+    var tabNav = document.getElementById('hartaInputTabs');
+    var tabNavWrap = document.getElementById('hartaInputTabNav');
+
+    // Clear container (removes spinner) and tab nav
+    container.innerHTML = '';
+    tabNav.innerHTML = '';
+    tabNavWrap.classList.add('d-none');
+
+    if (!tabList.length) return;
+
+    // Show tab nav only if more than 1 tab
+    if (tabList.length > 1) {
+        tabNavWrap.classList.remove('d-none');
+    }
+
+    // Create tab-content wrapper to prevent layout jumps
+    var tabContent = document.createElement('div');
+    tabContent.className = 'tab-content';
+
+    tabList.forEach(function(tab, idx) {
+        var isActive = idx === 0;
+        var tabId = 'hartaInputTab-' + idx;
+
+        // Nav button — use NPWP as label
+        var li = document.createElement('li');
+        li.className = 'nav-item';
+        var btn = document.createElement('button');
+        btn.className = 'nav-link' + (isActive ? ' active' : '');
+        btn.id = tabId + '-btn';
+        btn.setAttribute('data-bs-toggle', 'tab');
+        btn.setAttribute('data-bs-target', '#' + tabId);
+        btn.setAttribute('type', 'button');
+        btn.setAttribute('role', 'tab');
+        btn.textContent = tab.npwp;
+        li.appendChild(btn);
+        tabNav.appendChild(li);
+
+        // Tab pane — contains the harta form for this tab
+        var pane = document.createElement('div');
+        pane.className = 'harta-tab-pane tab-pane fade' + (isActive ? ' show active' : '');
+        pane.id = tabId;
+        pane.setAttribute('role', 'tabpanel');
+
+        // Build harta form HTML for this tab
+        var tabKey = tab.key;
+        var tabValues = (tabsData[tabKey] && tabsData[tabKey].values) || {};
+        var html = '';
+        var prefix = 'nilai[' + tabKey + ']';
+        kategoris.forEach(function(kat) {
+            html += '<div class="card border mb-2"><div class="card-header bg-light py-1"><h6 class="fw-semibold mb-0 small">' + kat.label + '</h6></div><div class="card-body p-0"><table class="table table-sm mb-0"><thead class="table-light"><tr><th class="ps-3" style="width:80px">Kode</th><th>Nama</th><th class="text-end pe-3" style="width:200px">Nilai (Rp)</th></tr></thead><tbody>';
+            (kat.master_lampiran_spts || []).forEach(function(m) {
+                var val = tabValues[m.id] ? new Intl.NumberFormat('id-ID').format(parseInt(tabValues[m.id], 10)) : '';
+                html += '<tr><td class="ps-3"><code>' + m.sub_kode + '</code></td><td>' + m.nama + '</td><td class="pe-3"><input type="text" class="form-control form-control-sm format-currency text-end harta-nilai" name="' + prefix + '[' + m.id + ']" value="' + val + '"></td></tr>';
+            });
+            html += '</tbody></table></div></div>';
+        });
+        pane.innerHTML = html;
+        tabContent.appendChild(pane);
+    });
+
+    container.appendChild(tabContent);
+
+    // Re-attach currency formatting on all panes
+    container.querySelectorAll('.format-currency').forEach(function(el) {
+        el.addEventListener('input', function(e) {
+            var v = this.value.replace(/[^0-9]/g, '');
+            if (v) this.value = new Intl.NumberFormat('id-ID').format(parseInt(v, 10));
+        });
+    });
+}
 
 function formatNum(v) {
     return Number(v.replace(/[^0-9]/g, '') || 0).toLocaleString('id-ID');
