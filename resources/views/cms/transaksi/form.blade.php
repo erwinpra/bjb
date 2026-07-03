@@ -38,7 +38,9 @@
 
             {{-- Cabang Tabs --}}
             <div id="cabangSection" class="d-none mb-4">
-                <ul class="nav nav-tabs" id="cabangTabs" role="tablist"></ul>
+                <div id="cabangTabsWrap" style="background:#fff;padding-top:4px">
+                    <ul class="nav nav-tabs" id="cabangTabs" role="tablist"></ul>
+                </div>
                 <div class="tab-content border border-top-0 rounded-bottom p-3 bg-light" id="cabangTabContent"></div>
             </div>
 
@@ -60,10 +62,33 @@
                 </div>
             </div>
 
+            {{-- Total Peredaran Bruto Summary --}}
+            <div id="summarySection" class="row g-4 mb-4 d-none">
+                <div class="col-12">
+                    <h6 class="fw-semibold text-info border-bottom pb-2"><i class="bi bi-calculator me-2"></i>Total Peredaran Bruto</h6>
+                    <div class="mb-2"><span class="text-muted small">Periode:</span> <span class="fw-medium" id="summaryPeriodeLabel">Tahun <span id="summaryTahunText">{{ date('Y') }}</span></span></div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0" id="summaryTable">
+                            <thead class="table-info">
+                                <tr>
+                                    <th>Bulan</th>
+                                    <th class="text-end">Omset</th>
+                                    <th class="text-end">PPH Final</th>
+                                    <th class="text-end">Total Peredaran Bruto</th>
+                                    <th class="text-end">Perhitungan Pengurangan</th>
+                                    <th class="text-end">PPH Final Harus dibayar</th>
+                                </tr>
+                            </thead>
+                            <tbody id="summaryTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <hr>
 
             {{-- Lampiran SPT Tahunan --}}
-            <div class="row g-4 mb-4">
+            <div id="hartaSection" class="row g-4 mb-4">
                 <div class="col-12">
                     <h6 class="fw-semibold text-success border-bottom pb-2 position-relative">
                         <span style="vertical-align:middle"><i class="bi bi-building me-2"></i>Harta / Aktiva</span>
@@ -155,9 +180,9 @@
                             <thead class="table-info">
                                 <tr>
                                     <th style="width:80px">Bulan</th>
-                                    <th class="text-end">Omset</th>
-                                    <th class="text-end">Total Peredaran Bruto</th>
-                                    <th class="text-end">Total Peredaran Bruto Akum <small class="text-muted fw-normal" id="akumCabangLabel"></small></th>
+                                    <th class="text-end">Peredaran Bruto</th>
+                                    <th class="text-end">Total Peredaran Bruto Cabang</th>
+                                    <th class="text-end" id="akumColHeader">Total Peredaran Bruto Akum <small class="text-muted fw-normal" id="akumCabangLabel"></small></th>
                                     <th class="text-end">PPH Final <span id="pphPersenLabel">0.5</span>%</th>
                                     <th class="text-end">PPh Final yg harus dibayar</th>
                                     <th style="width:40px" class="text-center">Status</th>
@@ -169,7 +194,7 @@
                                     <td class="text-muted">{{ $bulan }}</td>
                                     <td class="text-end" id="hasilOmset-{{ $i + 1 }}">-</td>
                                     <td class="text-end" id="hasilBruto-{{ $i + 1 }}">-</td>
-                                    <td class="text-end" id="hasilBrutoAkum-{{ $i + 1 }}">-</td>
+                                    <td class="text-end akum-col" id="hasilBrutoAkum-{{ $i + 1 }}">-</td>
                                     <td class="text-end" id="hasilPph-{{ $i + 1 }}">-</td>
                                     <td class="text-end" id="hasilFinal-{{ $i + 1 }}">-</td>
                                     <td class="text-center" id="hasilStatus-{{ $i + 1 }}">-</td>
@@ -179,7 +204,7 @@
                                     <td>Total PPh Final yg harus dibayar</td>
                                     <td></td>
                                     <td></td>
-                                    <td></td>
+                                    <td class="akum-col"></td>
                                     <td></td>
                                     <td class="text-end text-danger" id="hasilTotalPph">Rp 0</td>
                                     <td></td>
@@ -325,9 +350,24 @@ $(document).ready(function() {
         handleClientChange();
     });
     $('body').on('shown.bs.tab', '#cabangTabs button[data-bs-toggle="tab"]', function() {
-        saveCurrentInputs();
-        activeTabPrefix = $(this).data('prefix');
-        restoreCurrentInputs();
+        var prefix = $(this).data('prefix');
+        var ss = document.getElementById('summarySection');
+        if (prefix === 'summary') {
+            saveCurrentInputs();
+            activeTabPrefix = 'summary';
+            document.getElementById('hartaSection').classList.add('d-none');
+            document.getElementById('omsetTahunanSection').classList.add('d-none');
+            document.getElementById('omsetBulananSection').classList.add('d-none');
+            document.getElementById('hasilPerhitunganSection').classList.add('d-none');
+            if (ss) ss.classList.remove('d-none');
+            populateSummaryTable();
+        } else {
+            saveCurrentInputs();
+            activeTabPrefix = prefix;
+            document.getElementById('hartaSection').classList.remove('d-none');
+            if (ss) ss.classList.add('d-none');
+            restoreCurrentInputs();
+        }
     });
 });
 
@@ -336,6 +376,8 @@ function handleClientChange() {
     const id = parseInt(el.value);
     if (!id) {
         document.getElementById('cabangSection').classList.add('d-none');
+        document.getElementById('summarySection').classList.add('d-none');
+        document.getElementById('hartaSection').classList.add('d-none');
         document.getElementById('omsetTahunanSection').classList.add('d-none');
         document.getElementById('omsetBulananSection').classList.add('d-none');
         document.getElementById('hasilPerhitunganSection').classList.add('d-none');
@@ -343,6 +385,7 @@ function handleClientChange() {
         return;
     }
 
+    document.getElementById('summarySection').classList.add('d-none');
     tabData = {};
     activeTabPrefix = 'induk';
     hasCabang = false;
@@ -379,6 +422,10 @@ function handleClientChange() {
         contentContainer.innerHTML = '';
         buildTab('induk', c ? c.nama_client : 'Induk', c ? (c.npwp || '-') : '-', null, true, c ? (c.kpp || '-') : '-');
 
+        // Sort cabangs by last 3 digits of NPWP
+        clientCabangs.sort(function(a, b) {
+            return (a.npwp || '').slice(-3).localeCompare((b.npwp || '').slice(-3));
+        });
         clientCabangs.forEach(function(cabang, i) {
             var pfx = 'cabang_' + i;
             tabData[pfx] = {
@@ -396,8 +443,10 @@ function handleClientChange() {
             buildTab(pfx, tabData[pfx].nama, tabData[pfx].npwp, cabang.id, false, cabang.kpp || '-');
         });
         cabangSection.classList.remove('d-none');
+        buildSummaryTab();
     } else {
         cabangSection.classList.add('d-none');
+        buildSummaryTab();
     }
 
     // Update PPH percentage label from rumus
@@ -407,7 +456,9 @@ function handleClientChange() {
     // Update akum cabang label
     var cabangCountLabel = 0;
     Object.keys(tabData).forEach(function(k) { if (k !== 'induk') cabangCountLabel++; });
-    document.getElementById('akumCabangLabel').textContent = cabangCountLabel > 0 ? '(' + cabangCountLabel + ' Cabang)' : '';
+    document.getElementById('akumCabangLabel').textContent = '(' + cabangCountLabel + ' Cabang)';
+    document.getElementById('akumColHeader').classList.remove('d-none');
+    document.querySelectorAll('.akum-col').forEach(function(el) { el.classList.remove('d-none'); });
 
     // Show omset section based on tipe
     if (tipeId === 1) {
@@ -447,6 +498,77 @@ function buildTab(prefix, nama, npwp, npwpCabangId, isActive, kpp) {
         (npwpCabangId ? '<div class="col-12"><input type="hidden" name="' + prefix + '[npwp_cabang_id]" value="' + npwpCabangId + '"></div>' : '') +
         '</div>';
     contentContainer.appendChild(pane);
+}
+
+function buildSummaryTab() {
+    var tabsContainer = document.getElementById('cabangTabs');
+    if (!tabsContainer) return;
+    var li = document.createElement('li');
+    li.className = 'nav-item';
+    li.innerHTML = '<button class="nav-link" data-bs-toggle="tab" data-bs-target="#cabTab_summary" type="button" role="tab" data-prefix="summary">' +
+        '<i class="bi bi-calculator me-1"></i> Total Peredaran Bruto</button>';
+    tabsContainer.appendChild(li);
+}
+
+function populateSummaryTable() {
+    var tbody = document.getElementById('summaryTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    var tipeId = null;
+    Object.keys(tabData).forEach(function(k) { var td = tabData[k]; if (td && tipeId === null) tipeId = td.tipeId; });
+    var rumus = rumusList.find(function(r) { return String(r.tipe_badan) === String(tipeId); });
+    var maxVal = Number(rumus?.max_value || 0);
+    var persen = Number(rumus?.potongan_persentase || 0);
+    var bulanList = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+
+    function getOmset(prefix, mo) {
+        var td = tabData[prefix];
+        if (!td) return 0;
+        if (td.tipeId === 1) {
+            return Number((td.omsetTahunan || '').replace(/[^0-9]/g, '') || 0);
+        }
+        return Number((td.omsetBulanan[mo] || '').replace(/[^0-9]/g, '') || 0);
+    }
+
+    var cumulative = 0;
+    for (let mo = 1; mo <= 12; mo++) {
+        var totalOmset = 0;
+        var totalPph = 0;
+        Object.keys(tabData).forEach(function(p) {
+            var o = getOmset(p, mo);
+            totalOmset += o;
+            totalPph += o * persen / 100;
+        });
+
+        // showTotalPb = akumulasi omset dari bulan SEBELUMNYA (tidak termasuk bulan ini)
+        var showTotalPb = cumulative;
+        var pengurangan = maxVal > 0 ? Math.max(0, maxVal - cumulative) : 0;
+        var pphBayar;
+        if (maxVal > 0 && cumulative > maxVal) {
+            pphBayar = 'Rp ' + formatNum(String(cumulative * persen / 100));
+        } else {
+            pphBayar = 'FREE';
+        }
+
+        // Jika bulan kosong, timpa dengan Rp 0
+        if (totalOmset === 0) {
+            showTotalPb = 0;
+            pengurangan = 0;
+            pphBayar = 'FREE';
+        }
+
+        cumulative += totalOmset;
+
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + bulanList[mo - 1] + '</td>' +
+            '<td class="text-end">Rp ' + formatNum(String(totalOmset)) + '</td>' +
+            '<td class="text-end">Rp ' + formatNum(String(totalPph)) + '</td>' +
+            '<td class="text-end">Rp ' + formatNum(String(showTotalPb)) + '</td>' +
+            '<td class="text-end">' + (maxVal > 0 ? 'Rp ' + formatNum(String(pengurangan)) : '-') + '</td>' +
+            '<td class="text-end fw-semibold ' + (pphBayar === 'FREE' ? 'text-success' : 'text-danger') + '">' + pphBayar + '</td>';
+        tbody.appendChild(tr);
+    }
 }
 
 function getTipeName(tipeId) {
@@ -553,21 +675,48 @@ function hitungOmset() {
 
     let cumulative = 0, totalPotongan = 0, cumulativeExceeds4M = false;
 
-    // Compute per-month akum = sum of omset across ALL tabs for this month
-    var perMonthAkum = {};
+    // Build ordered tab list (pusat first, then cabangs sorted by NPWP last 3 digits)
+    var cabangPrefixes = [];
+    Object.keys(tabData).forEach(function(k) { if (k !== 'induk') cabangPrefixes.push(k); });
+    cabangPrefixes.sort(function(a, b) {
+        return (tabData[a].npwp || '').slice(-3).localeCompare((tabData[b].npwp || '').slice(-3));
+    });
+    var cascCabangCount = cabangPrefixes.length;
+
+    // Compute cascading akum per month per tab
+    var akumCache = {};
+    function getPB(prefix, month) {
+        var td = tabData[prefix];
+        if (!td) return 0;
+        if (td.tipeId === 1) {
+            return Number((td.omsetTahunan || '').replace(/[^0-9]/g, '') || 0);
+        }
+        return Number((td.omsetBulanan[month] || '').replace(/[^0-9]/g, '') || 0);
+    }
     for (let mo = 1; mo <= 12; mo++) {
-        var total = 0;
-        Object.keys(tabData).forEach(function(p) {
-            var td = tabData[p]; if (!td) return;
-            if (td.tipeId === 1) {
-                var raw = td.omsetTahunan || '';
-                total += Number(raw.replace(/[^0-9]/g, '') || 0);
+        if (cascCabangCount === 0) {
+            akumCache['induk'] = akumCache['induk'] || {};
+            akumCache['induk'][mo] = 0;
+        } else {
+            var pusatPB = getPB('induk', mo);
+            if (mo === 1) {
+                akumCache['induk'] = akumCache['induk'] || {};
+                akumCache['induk'][mo] = pusatPB;
             } else {
-                var raw = td.omsetBulanan[mo] || '';
-                total += Number(raw.replace(/[^0-9]/g, '') || 0);
+                var lastCp = cabangPrefixes[cabangPrefixes.length - 1];
+                var prevAkumLast = akumCache[lastCp] ? (akumCache[lastCp][mo - 1] || 0) : 0;
+                akumCache['induk'] = akumCache['induk'] || {};
+                akumCache['induk'][mo] = pusatPB + prevAkumLast;
             }
-        });
-        perMonthAkum[mo] = total;
+            var prevAkum = akumCache['induk'][mo];
+            for (let ci = 0; ci < cascCabangCount; ci++) {
+                var cp = cabangPrefixes[ci];
+                var cabangPB = getPB(cp, mo);
+                akumCache[cp] = akumCache[cp] || {};
+                akumCache[cp][mo] = cabangPB + prevAkum;
+                prevAkum = akumCache[cp][mo];
+            }
+        }
     }
 
     for (let mo = 1; mo <= 12; mo++) {
@@ -610,13 +759,8 @@ function hitungOmset() {
 
         document.getElementById('hasilBruto-' + mo).textContent = 'Rp ' + formatNum(String(totalWithCurrent));
         var akumEl = document.getElementById('hasilBrutoAkum-' + mo);
-        if (activeTabPrefix === 'induk') {
-            var akumTotal = 0;
-            for (let am = 1; am <= mo; am++) akumTotal += perMonthAkum[am];
-            akumEl.textContent = 'Rp ' + formatNum(String(akumTotal));
-        } else {
-            akumEl.textContent = '';
-        }
+        var akumVal = akumCache[activeTabPrefix] ? (akumCache[activeTabPrefix][mo] || 0) : 0;
+        akumEl.textContent = 'Rp ' + formatNum(String(akumVal));
         document.getElementById('hasilPph-' + mo).innerHTML = '<span class="text-danger fw-semibold">' + pphFinal + '</span>';
         document.getElementById('hasilFinal-' + mo).innerHTML = '<span class="fw-semibold ' + pphClass + '">' + pphBayar + '</span>';
 
@@ -646,24 +790,25 @@ function loadDataFromDb() {
     fetch('/admin/transaksi/load-data?client_id=' + clientId + '&tahun=' + tahun)
         .then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
         .then(function(data) {
-            if (!data.exists) return;
-            if (data.omset && data.omset.length > 0) {
-                var isTahunan = data.omset[0].bulan === null || data.omset[0].bulan === undefined;
-                if (isTahunan) {
-                    tabData['induk'].omsetTahunan = Number(data.omset[0].nominal).toLocaleString('id-ID');
-                } else {
-                    data.omset.forEach(function(o) { tabData['induk'].omsetBulanan[o.bulan] = Number(o.nominal).toLocaleString('id-ID'); });
+            if (data.exists) {
+                if (data.omset && data.omset.length > 0) {
+                    var isTahunan = data.omset[0].bulan === null || data.omset[0].bulan === undefined;
+                    if (isTahunan) {
+                        tabData['induk'].omsetTahunan = Number(data.omset[0].nominal).toLocaleString('id-ID');
+                    } else {
+                        data.omset.forEach(function(o) { tabData['induk'].omsetBulanan[o.bulan] = Number(o.nominal).toLocaleString('id-ID'); });
+                    }
                 }
-            }
-            if (data.cabangs) {
-                data.cabangs.forEach(function(cb) {
-                    var pfx = null;
-                    Object.keys(tabData).forEach(function(p) { if (tabData[p].npwp_cabang_id && tabData[p].npwp_cabang_id == cb.npwp_cabang_id) pfx = p; });
-                    if (!pfx) return;
-                    var isTahunan = cb.omset && cb.omset.length > 0 && (cb.omset[0].bulan === null || cb.omset[0].bulan === undefined);
-                    if (isTahunan) tabData[pfx].omsetTahunan = Number(cb.omset[0].nominal).toLocaleString('id-ID');
-                    else if (cb.omset) cb.omset.forEach(function(o) { tabData[pfx].omsetBulanan[o.bulan] = Number(o.nominal).toLocaleString('id-ID'); });
-                });
+                if (data.cabangs) {
+                    data.cabangs.forEach(function(cb) {
+                        var pfx = null;
+                        Object.keys(tabData).forEach(function(p) { if (tabData[p].npwp_cabang_id && tabData[p].npwp_cabang_id == cb.npwp_cabang_id) pfx = p; });
+                        if (!pfx) return;
+                        var isTahunan = cb.omset && cb.omset.length > 0 && (cb.omset[0].bulan === null || cb.omset[0].bulan === undefined);
+                        if (isTahunan) tabData[pfx].omsetTahunan = Number(cb.omset[0].nominal).toLocaleString('id-ID');
+                        else if (cb.omset) cb.omset.forEach(function(o) { tabData[pfx].omsetBulanan[o.bulan] = Number(o.nominal).toLocaleString('id-ID'); });
+                    });
+                }
             }
             restoreCurrentInputs();
             toggleButtons();
@@ -675,6 +820,37 @@ document.getElementById('tahunSelect').addEventListener('change', function() {
     const clientId = parseInt(document.getElementById('clientSelect').value);
     if (clientId && this.value) {
         document.getElementById('btnLampiranSpt').href = document.getElementById('btnLampiranSpt').href.split('?')[0] + '?client_id=' + clientId + '&tahun=' + this.value;
+    }
+    var tt = document.getElementById('summaryTahunText');
+    if (tt) tt.textContent = this.value || '{{ date("Y") }}';
+    if (!clientId) return;
+    // Clear current tabData omset values
+    Object.keys(tabData).forEach(function(p) {
+        var td = tabData[p];
+        if (!td) return;
+        td.omsetTahunan = '';
+        for (let mo = 1; mo <= 12; mo++) td.omsetBulanan[mo] = '';
+    });
+    // Load data for the new year from DB
+    loadDataFromDb();
+    // If summary tab is active, refresh after load completes
+    if (activeTabPrefix === 'summary') {
+        var checkLoaded = setInterval(function() {
+            var hasData = false;
+            Object.keys(tabData).forEach(function(p) {
+                var td = tabData[p]; if (!td) return;
+                if (td.tipeId === 1 && (td.omsetTahunan || '') !== '') hasData = true;
+                else if (td.tipeId !== 1) {
+                    for (let mo = 1; mo <= 12; mo++) {
+                        if ((td.omsetBulanan[mo] || '') !== '') hasData = true;
+                    }
+                }
+            });
+            populateSummaryTable();
+            if (hasData) clearInterval(checkLoaded);
+            // Also stop after 3 seconds max
+            setTimeout(function() { clearInterval(checkLoaded); }, 3000);
+        }, 200);
     }
 });
 
@@ -738,19 +914,48 @@ document.getElementById('btnPreview').addEventListener('click', function() {
     var contentHtml = '<div class="tab-content border border-top-0 p-3 bg-white" id="previewTabContent">';
     var first = true;
 
-    // Pre-compute per-month akum across all tabs
-    var previewPerMonthAkum = {};
+    // Build ordered cabang list sorted by NPWP last 3 digits
+    var previewCabangPrefixes = [];
+    Object.keys(tabData).forEach(function(k) { if (k !== 'induk') previewCabangPrefixes.push(k); });
+    previewCabangPrefixes.sort(function(a, b) {
+        return (tabData[a].npwp || '').slice(-3).localeCompare((tabData[b].npwp || '').slice(-3));
+    });
+    var previewCabangCount = previewCabangPrefixes.length;
+
+    // Compute cascading akum per month per tab
+    var previewAkumCache = {};
+    function previewGetPB(prefix, month) {
+        var td = tabData[prefix];
+        if (!td) return 0;
+        if (td.tipeId === 1) {
+            return Number((td.omsetTahunan || '').replace(/[^0-9]/g, '') || 0);
+        }
+        return Number((td.omsetBulanan && td.omsetBulanan[month] || '0').replace(/[^0-9]/g, '') || 0);
+    }
     for (let mo = 1; mo <= 12; mo++) {
-        var total = 0;
-        Object.keys(tabData).forEach(function(p) {
-            var td = tabData[p]; if (!td) return;
-            if (td.tipeId === 1) {
-                total += Number((td.omsetTahunan || '').replace(/[^0-9]/g, '') || 0);
+        if (previewCabangCount === 0) {
+            previewAkumCache['induk'] = previewAkumCache['induk'] || {};
+            previewAkumCache['induk'][mo] = 0;
+        } else {
+            var pusatPB = previewGetPB('induk', mo);
+            if (mo === 1) {
+                previewAkumCache['induk'] = previewAkumCache['induk'] || {};
+                previewAkumCache['induk'][mo] = pusatPB;
             } else {
-                total += Number((td.omsetBulanan && td.omsetBulanan[mo] || '0').replace(/[^0-9]/g, '') || 0);
+                var lastCp = previewCabangPrefixes[previewCabangPrefixes.length - 1];
+                var prevLast = previewAkumCache[lastCp] ? (previewAkumCache[lastCp][mo - 1] || 0) : 0;
+                previewAkumCache['induk'] = previewAkumCache['induk'] || {};
+                previewAkumCache['induk'][mo] = pusatPB + prevLast;
             }
-        });
-        previewPerMonthAkum[mo] = total;
+            var prevAkum = previewAkumCache['induk'][mo];
+            for (let ci = 0; ci < previewCabangCount; ci++) {
+                var cp = previewCabangPrefixes[ci];
+                var cabangPB = previewGetPB(cp, mo);
+                previewAkumCache[cp] = previewAkumCache[cp] || {};
+                previewAkumCache[cp][mo] = cabangPB + prevAkum;
+                prevAkum = previewAkumCache[cp][mo];
+            }
+        }
     }
 
     Object.keys(tabData).forEach(function(prefix) {
@@ -814,24 +1019,17 @@ document.getElementById('btnPreview').addEventListener('click', function() {
                     const kelebihan = tot - maxVal; const p = kelebihan * persen / 100; totalPotongan += p; ppb = 'Rp ' + formatNum(String(p)); ppc = 'text-warning';
                 } else { ppb = 'Free'; ppc = 'text-success'; }
                 ppf = 'Rp ' + formatNum(String(current * persen / 100));
-                var akumPreview = '';
-                if (prefix === 'induk') {
-                    var akumMo = 0;
-                    for (let am = 1; am <= mo; am++) akumMo += previewPerMonthAkum[am];
-                    akumPreview = '<td class="text-end">Rp ' + formatNum(String(akumMo)) + '</td>';
-                }
+                var akumPreview = '<td class="text-end">Rp ' + formatNum(String(previewAkumCache[prefix] ? (previewAkumCache[prefix][mo] || 0) : 0)) + '</td>';
                 calcRows += '<tr><td class="text-muted ps-4">' + bulanList[mo - 1] + '</td><td class="text-end">Rp ' + formatNum(String(current)) + '</td><td class="text-end">Rp ' + formatNum(String(tot)) + '</td>' + akumPreview + '<td class="text-end text-danger fw-semibold">' + ppf + '</td><td class="text-end ' + ppc + ' fw-semibold">' + ppb + '</td></tr>';
                 cumulative += current;
             }
 
             var persenLabel = persen > 0 ? persen.toString().replace('.', ',') : '0';
-            var cabangCountPreview = 0;
-            Object.keys(tabData).forEach(function(k) { if (k !== 'induk') cabangCountPreview++; });
-            var cabangLabelPreview = cabangCountPreview > 0 ? ' (' + cabangCountPreview + ' Cabang)' : '';
-            var akumHeader = prefix === 'induk' ? '<th class="text-end">Total Bruto Akum' + cabangLabelPreview + '</th>' : '';
-            var akumTotalHeader = prefix === 'induk' ? '<td></td>' : '';
+            var cabangLabelPreview = ' (' + previewCabangCount + ' Cabang)';
+            var akumHeader = '<th class="text-end">Total Peredaran Bruto Akum' + cabangLabelPreview + '</th>';
+            var akumTotalHeader = '<td></td>';
             paneHtml += '<h6 class="fw-semibold text-secondary border-bottom pb-2">Hasil Perhitungan</h6>' +
-                '<div class="table-responsive"><table class="table table-sm small mb-0"><thead><tr><th>Bulan</th><th class="text-end">Omset</th><th class="text-end">Total Bruto</th>' + akumHeader + '<th class="text-end">PPH Final ' + persenLabel + '%</th><th class="text-end">PPh Final yg harus dibayar</th></tr></thead><tbody>' +
+                '<div class="table-responsive"><table class="table table-sm small mb-0"><thead><tr><th>Bulan</th><th class="text-end">Peredaran Bruto</th><th class="text-end">Total Peredaran Bruto Cabang</th>' + akumHeader + '<th class="text-end">PPH Final ' + persenLabel + '%</th><th class="text-end">PPh Final yg harus dibayar</th></tr></thead><tbody>' +
                 calcRows +
                 '<tr class="fw-bold table-secondary"><td>Total PPh Final yg harus dibayar</td><td></td><td></td>' + akumTotalHeader + '<td></td><td class="text-end text-danger">Rp ' + formatNum(String(totalPotongan)) + '</td></tr>' +
                 '</tbody></table></div>';
@@ -1122,5 +1320,63 @@ document.querySelector('button[type="reset"]').addEventListener('click', functio
     clearInputs();
     restoreCurrentInputs();
 });
+
+// Floating NPWP tabs on scroll
+(function() {
+    var wrap = document.getElementById('cabangTabsWrap');
+    if (!wrap) return;
+    var floatState = { active: false, left: 0, width: 0, offsetTop: 0 };
+    var spacer = null;
+
+    function updateFloat() {
+        var section = document.getElementById('cabangSection');
+        if (!section || section.classList.contains('d-none')) {
+            if (spacer) { spacer.remove(); spacer = null; }
+            floatState.active = false;
+            wrap.style.position = '';
+            wrap.style.top = '';
+            wrap.style.left = '';
+            wrap.style.width = '';
+            wrap.style.zIndex = '';
+            wrap.style.boxShadow = '';
+            return;
+        }
+        if (!floatState.active) {
+            var rect = wrap.getBoundingClientRect();
+            if (rect.top <= 0) {
+                floatState.active = true;
+                floatState.left = rect.left;
+                floatState.width = rect.width;
+                floatState.offsetTop = window.pageYOffset + rect.top;
+                spacer = document.createElement('div');
+                spacer.style.height = rect.height + 'px';
+                wrap.parentNode.insertBefore(spacer, wrap.nextSibling);
+            }
+        }
+        if (floatState.active) {
+            if (window.pageYOffset < floatState.offsetTop) {
+                floatState.active = false;
+                if (spacer) { spacer.remove(); spacer = null; }
+                wrap.style.position = '';
+                wrap.style.top = '';
+                wrap.style.left = '';
+                wrap.style.width = '';
+                wrap.style.zIndex = '';
+                wrap.style.boxShadow = '';
+                return;
+            }
+            wrap.style.position = 'fixed';
+            wrap.style.top = '0';
+            wrap.style.left = floatState.left + 'px';
+            wrap.style.width = floatState.width + 'px';
+            wrap.style.zIndex = '1020';
+            wrap.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+        }
+    }
+
+    document.addEventListener('scroll', updateFloat, { passive: true });
+    new MutationObserver(function() { setTimeout(updateFloat, 50); })
+        .observe(document.getElementById('cabangSection'), { attributes: true, attributeFilter: ['class'] });
+})();
 </script>
 @endpush

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 
 class AuthController extends Controller
 {
@@ -15,10 +16,30 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->validate([
+        $rules = [
             'email' => 'required|email',
             'password' => 'required',
-        ]);
+        ];
+
+        if (config('services.captcha.use')) {
+            $rules['g-recaptcha-response'] = 'required';
+        }
+
+        $credentials = $request->validate($rules);
+
+        if (config('services.captcha.use')) {
+            $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+                'secret' => config('services.captcha.secret'),
+                'response' => $request->input('g-recaptcha-response'),
+                'remoteip' => $request->ip(),
+            ]);
+
+            if (!($response->json()['success'] ?? false)) {
+                return back()->withErrors(['captcha' => 'Verifikasi reCAPTCHA gagal.'])->onlyInput('email');
+            }
+        }
+
+        unset($credentials['g-recaptcha-response']);
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();

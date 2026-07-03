@@ -30,4 +30,10 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'captcha' => [
+        'use' => filter_var(env('CAPTCHA_USE', false), FILTER_VALIDATE_BOOLEAN),
+        'site' => env('CAPTCHA_SITE', ''),
+        'secret' => env('CAPTCHA_SECRET', ''),
+    ],
+
 ];

@@ -348,25 +348,20 @@ class TransaksiController extends Controller
             if ($result['isId1']) {
                 fputcsv($handle, ['Tahunan', number_format($tab['total_omset'], 0, ',', '.')]);
             } else {
-                $akumColLabel = 'Total Peredaran Bruto Akum';
-                if ($tab['key'] === 'induk' && $result['cabangCount'] > 0) {
-                    $akumColLabel .= ' (' . $result['cabangCount'] . ' Cabang)';
-                }
-                $akumCols = $tab['key'] === 'induk' ? [$akumColLabel] : [];
-                fputcsv($handle, array_merge(['Bulan', 'Omset', 'Total Peredaran Bruto'], $akumCols, ['PPH Final ' . number_format($result['persen'], 1) . '%', 'PPh Final yg harus dibayar']));
+                $akumColLabel = 'Total Peredaran Bruto Akum (' . $result['cabangCount'] . ' Cabang)';
+                $akumCols = [$akumColLabel];
+                fputcsv($handle, array_merge(['Bulan', 'Peredaran Bruto', 'Total Peredaran Bruto Cabang'], $akumCols, ['PPH Final ' . number_format($result['persen'], 1) . '%', 'PPh Final yg harus dibayar']));
                 foreach ($tab['detail_bulan'] as $row) {
                     if ($row['omset'] !== '') {
                         $rowData = [$row['bulan'], $row['omset'], $row['totalBruto']];
-                        if ($tab['key'] === 'induk') {
-                            $rowData[] = $row['totalBrutoAkum'];
-                        }
+                        $rowData[] = $row['totalBrutoAkum'];
                         $rowData[] = $row['pphFinal'];
                         $rowData[] = $row['pphBayar'];
                         fputcsv($handle, $rowData);
                     }
                 }
                 $totalRow = ['Total', number_format($tab['total_omset'], 0, ',', '.'), ''];
-                if ($tab['key'] === 'induk') $totalRow[] = '';
+                $totalRow[] = '';
                 $totalRow[] = '';
                 $totalRow[] = number_format($tab['total_potongan'], 0, ',', '.');
                 fputcsv($handle, $totalRow);
@@ -540,38 +535,61 @@ class TransaksiController extends Controller
             $grandTotalPotongan += $totalPotongan;
         }
 
-        // Compute per-month akum across all tabs from raw request data
-        $perMonthAkum = [];
+        // Sort cabang tabs by NPWP last 3 digits for cascading akum
+        $cabangTabs = [];
+        foreach ($tabs as $tab) {
+            if ($tab !== 'induk') $cabangTabs[] = $tab;
+        }
+        $tabNpwpMap = [];
+        foreach ($allTabs as $at) {
+            $tabNpwpMap[$at['key']] = $at['npwp'] ?? '';
+        }
+        usort($cabangTabs, function ($a, $b) use ($tabNpwpMap) {
+            return substr($tabNpwpMap[$a] ?? '', -3) <=> substr($tabNpwpMap[$b] ?? '', -3);
+        });
+        $cabangCount = count($cabangTabs);
+
+        // Compute cascading akum per month per tab
+        $akumCache = [];
         for ($mo = 1; $mo <= 12; $mo++) {
-            $totalMo = 0;
-            foreach ($allTabs as $at) {
-                $tabInput = $at['key'] === 'induk' ? ($request->input('induk') ?? []) : ($request->input($at['key']) ?? []);
-                if ($isId1) {
-                    $totalMo += (float) preg_replace('/[^0-9]/', '', $tabInput['omset_tahunan'] ?? '0');
+            if ($cabangCount === 0) {
+                $akumCache['induk'][$mo] = 0;
+            } else {
+                $pusatInput = $request->input('induk') ?? [];
+                $pusatPB = $isId1
+                    ? (float) preg_replace('/[^0-9]/', '', $pusatInput['omset_tahunan'] ?? '0')
+                    : (float) preg_replace('/[^0-9]/', '', $pusatInput['omset_bulanan'][$mo] ?? '0');
+
+                if ($mo === 1) {
+                    $akumCache['induk'][$mo] = $pusatPB;
                 } else {
-                    $omsetData = $tabInput['omset_bulanan'] ?? [];
-                    $totalMo += isset($omsetData[$mo]) ? (float) preg_replace('/[^0-9]/', '', $omsetData[$mo]) : 0;
+                    $lastCp = $cabangTabs[$cabangCount - 1];
+                    $prevLast = $akumCache[$lastCp][$mo - 1] ?? 0;
+                    $akumCache['induk'][$mo] = $pusatPB + $prevLast;
+                }
+
+                $prevAkum = $akumCache['induk'][$mo];
+                foreach ($cabangTabs as $cp) {
+                    $cabangInput = $request->input($cp) ?? [];
+                    $cabangPB = $isId1
+                        ? (float) preg_replace('/[^0-9]/', '', $cabangInput['omset_tahunan'] ?? '0')
+                        : (float) preg_replace('/[^0-9]/', '', $cabangInput['omset_bulanan'][$mo] ?? '0');
+                    $akumCache[$cp][$mo] = $cabangPB + $prevAkum;
+                    $prevAkum = $akumCache[$cp][$mo];
                 }
             }
-            $perMonthAkum[$mo] = $totalMo;
         }
 
-        // Add akum to induk's detail_bulan (only for induk)
+        // Assign akum to each tab's detail_bulan
         foreach ($allTabs as &$at) {
-            if ($at['key'] === 'induk') {
-                $cumAkum = 0;
-                foreach ($at['detail_bulan'] as &$db) {
-                    $moIdx = array_search($db['bulan'], $bulanLabels);
-                    if ($moIdx !== false) {
-                        $mo = $moIdx + 1;
-                        $cumAkum += $perMonthAkum[$mo];
-                        $db['totalBrutoAkum'] = $cumAkum > 0 ? 'Rp ' . number_format($cumAkum, 0, ',', '.') : '';
-                    } else {
-                        $db['totalBrutoAkum'] = '';
-                    }
-                }
-            } else {
-                foreach ($at['detail_bulan'] as &$db) {
+            $key = $at['key'];
+            foreach ($at['detail_bulan'] as &$db) {
+                $moIdx = array_search($db['bulan'], $bulanLabels);
+                if ($moIdx !== false) {
+                    $mo = $moIdx + 1;
+                    $akumVal = $akumCache[$key][$mo] ?? 0;
+                    $db['totalBrutoAkum'] = $akumVal > 0 ? 'Rp ' . number_format($akumVal, 0, ',', '.') : '';
+                } else {
                     $db['totalBrutoAkum'] = '';
                 }
             }

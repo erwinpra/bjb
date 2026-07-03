@@ -15,7 +15,7 @@
             <div class="p-3 border-bottom border-secondary">
                 <a href="{{ route('cms.dashboard') }}" class="text-white text-decoration-none d-flex align-items-center gap-2">
                     <i class="bi bi-grid-3x3-gap-fill fs-4"></i>
-                    <span class="fw-bold fs-6">{{ config('app.name') }} CMS</span>
+                    <span class="fw-bold fs-6">BJP Online</span>
                 </a>
             </div>
 
@@ -130,7 +130,7 @@
             </main>
 
             <footer class="bg-white border-top py-3 px-4 text-center text-muted small">
-                &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.
+                &copy; {{ date('Y') }} BJP. All rights reserved.
             </footer>
         </div>
     </div>

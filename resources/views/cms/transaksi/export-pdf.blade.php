@@ -56,7 +56,7 @@
 
     @if($isId1)
     <table>
-        <tr><th>Periode</th><th class="text-end">Omset</th></tr>
+        <tr><th>Periode</th><th class="text-end">Peredaran Bruto</th></tr>
         <tr><td>Tahunan</td><td class="text-end">Rp {{ number_format($tab['total_omset'], 0, ',', '.') }}</td></tr>
     </table>
     @else
@@ -64,11 +64,9 @@
         <thead>
             <tr>
                 <th>Bulan</th>
-                <th class="text-end">Omset</th>
-                <th class="text-end">Total Peredaran Bruto</th>
-                @if($tab['key'] === 'induk')
-                <th class="text-end">Total Peredaran Bruto Akum{{ $cabangCount > 0 ? ' (' . $cabangCount . ' Cabang)' : '' }}</th>
-                @endif
+                <th class="text-end">Peredaran Bruto</th>
+                <th class="text-end">Total Peredaran Bruto Cabang</th>
+                <th class="text-end">Total Peredaran Bruto Akum ({{ $cabangCount }} Cabang)</th>
                 <th class="text-end">PPH Final {{ number_format($persen, 1) }}%</th>
                 <th class="text-end">PPh Final yg harus dibayar</th>
             </tr>
@@ -80,9 +78,7 @@
                 <td>{{ $row['bulan'] }}</td>
                 <td class="text-end">{{ $row['omset'] }}</td>
                 <td class="text-end">{{ $row['totalBruto'] }}</td>
-                @if($tab['key'] === 'induk')
                 <td class="text-end">{{ $row['totalBrutoAkum'] ?: '-' }}</td>
-                @endif
                 <td class="text-end">{{ $row['pphFinal'] }}</td>
                 <td class="text-end">{{ $row['pphBayar'] }}</td>
             </tr>
@@ -92,9 +88,7 @@
                 <td>Total</td>
                 <td class="text-end">Rp {{ number_format($tab['total_omset'], 0, ',', '.') }}</td>
                 <td></td>
-                @if($tab['key'] === 'induk')
                 <td></td>
-                @endif
                 <td></td>
                 <td class="text-end">Rp {{ number_format($tab['total_potongan'], 0, ',', '.') }}</td>
             </tr>
