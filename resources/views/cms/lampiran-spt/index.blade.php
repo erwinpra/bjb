@@ -80,45 +80,51 @@
                             value="{{ $tab['npwp_cabang_id'] ?? '' }}">
 
                         @forelse($tab['items'] as $kategori => $subItems)
+                        @php $collapseId = 'collapse-' . $key . '-' . $kategori; @endphp
                         <div class="card border mb-3">
-                            <div class="card-header bg-light py-2">
-                                <h6 class="fw-semibold mb-0">
+                            <div class="card-header bg-light py-2 collapse-toggle"
+                                role="button" data-bs-toggle="collapse"
+                                data-bs-target="#{{ $collapseId }}" aria-expanded="false">
+                                <h6 class="fw-semibold mb-0 d-flex justify-content-between align-items-center">
                                     {{ $kategoriLabels[$kategori] ?? $kategori }}
+                                    <i class="bi bi-chevron-right collapse-icon"></i>
                                 </h6>
                             </div>
-                            <div class="card-body p-0">
-                                <table class="table table-sm mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th class="ps-4" style="width:100px">Kode</th>
-                                            <th>Nama</th>
-                                            <th class="text-end pe-4" style="width:250px">Nilai (Rp)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($subItems as $item)
-                                        <tr>
-                                            <td class="ps-4"><code>{{ $item['sub_kode'] }}</code></td>
-                                            <td>{{ $item['sub_nama'] }}</td>
-                                            <td class="pe-4">
-                                                <input type="text"
-                                                    class="form-control form-control-sm format-currency text-end"
-                                                    name="{{ $prefix }}[nilai][{{ $item['id'] }}]"
-                                                    value="{{ $item['nilai'] > 0 ? number_format($item['nilai'], 0, ',', '.') : '' }}">
-                                            </td>
-                                        </tr>
-                                        @endforeach
-                                        @php
-                                            $totalNilai = $subItems->sum('nilai');
-                                        @endphp
-                                        <tr class="table-secondary fw-bold">
-                                            <td class="ps-4" colspan="2">Total {{ $kategoriLabels[$kategori] ?? $kategori }}</td>
-                                            <td class="text-end pe-4">
-                                                Rp {{ number_format($totalNilai, 0, ',', '.') }}
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                            <div class="collapse" id="{{ $collapseId }}">
+                                <div class="card-body p-0">
+                                    <table class="table table-sm mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th class="ps-4" style="width:100px">Kode</th>
+                                                <th>Nama</th>
+                                                <th class="text-end pe-4" style="width:250px">Nilai (Rp)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($subItems as $item)
+                                            <tr>
+                                                <td class="ps-4"><code>{{ $item['sub_kode'] }}</code></td>
+                                                <td>{{ $item['sub_nama'] }}</td>
+                                                <td class="pe-4">
+                                                    <input type="text"
+                                                        class="form-control form-control-sm format-currency text-end"
+                                                        name="{{ $prefix }}[nilai][{{ $item['id'] }}]"
+                                                        value="{{ $item['nilai'] > 0 ? number_format($item['nilai'], 0, ',', '.') : '' }}">
+                                                </td>
+                                            </tr>
+                                            @endforeach
+                                            @php
+                                                $totalNilai = $subItems->sum('nilai');
+                                            @endphp
+                                            <tr class="table-secondary fw-bold">
+                                                <td class="ps-4" colspan="2">Total {{ $kategoriLabels[$kategori] ?? $kategori }}</td>
+                                                <td class="text-end pe-4">
+                                                    Rp {{ number_format($totalNilai, 0, ',', '.') }}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                         @empty
@@ -161,6 +167,13 @@
 .select2-container--default .select2-selection--single .select2-selection__rendered {
     line-height: 1.5;
 }
+.collapse-toggle {
+    cursor: pointer;
+    user-select: none;
+}
+.collapse-toggle:hover {
+    background-color: #e9ecef;
+}
 </style>
 @endpush
 
@@ -193,6 +206,27 @@ document.querySelectorAll('#lampiranTabs button[data-bs-toggle="tab"]').forEach(
     btn.addEventListener('shown.bs.tab', function(e) {
         document.getElementById('activeTab').value = btn.getAttribute('data-prefix');
     });
+});
+
+// Collapse toggle icons
+document.querySelectorAll('.collapse-toggle').forEach(function(header) {
+    var target = document.querySelector(header.getAttribute('data-bs-target'));
+    if (target) {
+        target.addEventListener('show.bs.collapse', function() {
+            var icon = header.querySelector('.collapse-icon');
+            if (icon) {
+                icon.classList.remove('bi-chevron-right');
+                icon.classList.add('bi-chevron-up');
+            }
+        });
+        target.addEventListener('hide.bs.collapse', function() {
+            var icon = header.querySelector('.collapse-icon');
+            if (icon) {
+                icon.classList.remove('bi-chevron-up');
+                icon.classList.add('bi-chevron-right');
+            }
+        });
+    }
 });
 </script>
 @endpush

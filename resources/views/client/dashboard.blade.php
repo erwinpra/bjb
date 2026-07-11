@@ -8,6 +8,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+    .collapse-toggle { cursor: pointer; user-select: none; }
+    .collapse-toggle:hover { background-color: #e9ecef !important; }
+    </style>
 </head>
 <body>
     <nav class="navbar navbar-dark bg-success shadow-sm">
@@ -344,18 +348,25 @@
                 groups[h.kategori].push(h);
             });
             var html = '<div class="p-0">';
+            var collapseIdx = 0;
             Object.keys(groups).forEach(function(kat) {
                 var items = groups[kat];
                 var katTotal = items.reduce(function(s, h) { return s + h.nilai; }, 0);
-                html += '<div class="card border-0 border-bottom rounded-0"><div class="card-header bg-light py-1"><h6 class="fw-semibold mb-0 small">' + kat + '</h6></div><div class="card-body p-0"><table class="table table-sm mb-0"><thead class="table-light"><tr><th class="ps-4">Item</th><th class="text-end pe-4">Nilai</th></tr></thead><tbody>';
+                var colId = 'hartaCollapse-' + collapseIdx;
+                html += '<div class="card border-0 border-bottom rounded-0">';
+                html += '<div class="card-header bg-light py-1 collapse-toggle" role="button" data-bs-toggle="collapse" data-bs-target="#' + colId + '" aria-expanded="false">';
+                html += '<h6 class="fw-semibold mb-0 small d-flex justify-content-between align-items-center text-primary">' + kat + '<span class="d-flex align-items-center gap-2"><span class="text-muted fw-normal small">Rp ' + formatNum(katTotal) + '</span><i class="bi bi-chevron-right collapse-icon"></i></span></h6></div>';
+                html += '<div class="collapse" id="' + colId + '"><div class="card-body p-0"><table class="table table-sm mb-0"><thead class="table-light"><tr><th class="ps-4">Item</th><th class="text-end pe-4">Nilai</th></tr></thead><tbody>';
                 items.forEach(function(h) {
                     html += '<tr><td class="ps-4">' + h.nama + '</td><td class="text-end pe-4">Rp ' + formatNum(h.nilai) + '</td></tr>';
                 });
                 html += '<tr class="table-secondary fw-bold"><td class="ps-4">Total</td><td class="text-end pe-4">Rp ' + formatNum(katTotal) + '</td></tr>';
-                html += '</tbody></table></div></div>';
+                html += '</tbody></table></div></div></div>';
+                collapseIdx++;
             });
             html += '</div>';
             container.innerHTML = html;
+            attachCollapseToggle();
         } else {
             container.innerHTML = '<div class="text-center text-muted py-5"><i class="bi bi-inbox fs-1 d-block mb-2"></i>Tidak ada data harta.</div>';
         }
@@ -448,6 +459,22 @@
         return div.innerHTML;
     }
 
+    function attachCollapseToggle() {
+        document.querySelectorAll('#hartaDetailContent .collapse-toggle').forEach(function(header) {
+            var target = document.querySelector(header.getAttribute('data-bs-target'));
+            if (target) {
+                target.addEventListener('show.bs.collapse', function() {
+                    var icon = header.querySelector('.collapse-icon');
+                    if (icon) { icon.classList.remove('bi-chevron-right'); icon.classList.add('bi-chevron-up'); }
+                });
+                target.addEventListener('hide.bs.collapse', function() {
+                    var icon = header.querySelector('.collapse-icon');
+                    if (icon) { icon.classList.remove('bi-chevron-up'); icon.classList.add('bi-chevron-right'); }
+                });
+            }
+        });
+    }
+
     function renderHartaDetail(data) {
         const hartaDiv = document.getElementById('hartaDetailContent');
         if (data.harta_detail && data.harta_detail.length) {
@@ -457,18 +484,25 @@
                 groups[h.kategori].push(h);
             });
             var html = '<div class="p-0">';
+            var collapseIdx = 0;
             Object.keys(groups).forEach(function(kat) {
                 var items = groups[kat];
                 var katTotal = items.reduce(function(s, h) { return s + h.nilai; }, 0);
-                html += '<div class="card border-0 border-bottom rounded-0"><div class="card-header bg-light py-1"><h6 class="fw-semibold mb-0 small">' + kat + '</h6></div><div class="card-body p-0"><table class="table table-sm mb-0"><thead class="table-light"><tr><th class="ps-4">Item</th><th class="text-end pe-4">Nilai</th></tr></thead><tbody>';
+                var colId = 'hartaDetailCollapse-' + collapseIdx;
+                html += '<div class="card border-0 border-bottom rounded-0">';
+                html += '<div class="card-header bg-light py-1 collapse-toggle" role="button" data-bs-toggle="collapse" data-bs-target="#' + colId + '" aria-expanded="false">';
+                html += '<h6 class="fw-semibold mb-0 small d-flex justify-content-between align-items-center text-primary">' + kat + '<span class="d-flex align-items-center gap-2"><span class="text-muted fw-normal small">Rp ' + formatNum(katTotal) + '</span><i class="bi bi-chevron-right collapse-icon"></i></span></h6></div>';
+                html += '<div class="collapse" id="' + colId + '"><div class="card-body p-0"><table class="table table-sm mb-0"><thead class="table-light"><tr><th class="ps-4">Item</th><th class="text-end pe-4">Nilai</th></tr></thead><tbody>';
                 items.forEach(function(h) {
                     html += '<tr><td class="ps-4">' + h.nama + '</td><td class="text-end pe-4">Rp ' + formatNum(h.nilai) + '</td></tr>';
                 });
                 html += '<tr class="table-secondary fw-bold"><td class="ps-4">Total</td><td class="text-end pe-4">Rp ' + formatNum(katTotal) + '</td></tr>';
-                html += '</tbody></table></div></div>';
+                html += '</tbody></table></div></div></div>';
+                collapseIdx++;
             });
             html += '</div>';
             hartaDiv.innerHTML = html;
+            attachCollapseToggle();
         } else {
             hartaDiv.innerHTML = '<div class="text-center text-muted py-5"><i class="bi bi-inbox fs-1 d-block mb-2"></i>Tidak ada data harta.</div>';
         }

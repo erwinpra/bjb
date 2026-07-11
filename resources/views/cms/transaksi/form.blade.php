@@ -201,13 +201,8 @@
                                 </tr>
                                 @endforeach
                                 <tr class="fw-bold table-secondary" id="hasilTotalRow">
-                                    <td>Total PPh Final yg harus dibayar</td>
-                                    <td></td>
-                                    <td></td>
-                                    <td class="akum-col"></td>
-                                    <td></td>
+                                    <td colspan="6" class="text-center">Total</td>
                                     <td class="text-end text-danger" id="hasilTotalPph">Rp 0</td>
-                                    <td></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -541,8 +536,7 @@ function populateSummaryTable() {
             totalPph += o * persen / 100;
         });
 
-        // showTotalPb = akumulasi omset dari bulan SEBELUMNYA (tidak termasuk bulan ini)
-        var showTotalPb = cumulative;
+        var showTotalPb = cumulative + totalOmset;
         var pengurangan = maxVal > 0 ? Math.max(0, maxVal - cumulative) : 0;
         var pphBayar;
         if (maxVal > 0 && cumulative > maxVal) {
@@ -1027,11 +1021,10 @@ document.getElementById('btnPreview').addEventListener('click', function() {
             var persenLabel = persen > 0 ? persen.toString().replace('.', ',') : '0';
             var cabangLabelPreview = ' (' + previewCabangCount + ' Cabang)';
             var akumHeader = '<th class="text-end">Total Peredaran Bruto Akum' + cabangLabelPreview + '</th>';
-            var akumTotalHeader = '<td></td>';
             paneHtml += '<h6 class="fw-semibold text-secondary border-bottom pb-2">Hasil Perhitungan</h6>' +
                 '<div class="table-responsive"><table class="table table-sm small mb-0"><thead><tr><th>Bulan</th><th class="text-end">Peredaran Bruto</th><th class="text-end">Total Peredaran Bruto Cabang</th>' + akumHeader + '<th class="text-end">PPH Final ' + persenLabel + '%</th><th class="text-end">PPh Final yg harus dibayar</th></tr></thead><tbody>' +
                 calcRows +
-                '<tr class="fw-bold table-secondary"><td>Total PPh Final yg harus dibayar</td><td></td><td></td>' + akumTotalHeader + '<td></td><td class="text-end text-danger">Rp ' + formatNum(String(totalPotongan)) + '</td></tr>' +
+                '<tr class="fw-bold table-secondary"><td colspan="5" class="text-center">Total</td><td class="text-end text-danger">Rp ' + formatNum(String(totalPotongan)) + '</td></tr>' +
                 '</tbody></table></div>';
         }
 
