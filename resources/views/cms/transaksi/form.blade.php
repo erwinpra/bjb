@@ -10,9 +10,6 @@
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
         <h6 class="fw-semibold mb-0"><i class="bi bi-arrow-left-right me-2"></i>Form Transaksi</h6>
-        <a href="{{ route('cms.transaksi.import') }}" class="btn btn-sm btn-outline-success">
-            <i class="bi bi-upload me-1"></i> Import Excel
-        </a>
     </div>
     <div class="card-body p-4">
         <form id="formTransaksi" method="POST" action="{{ route('cms.transaksi.store') }}">
@@ -25,14 +22,17 @@
                 </div>
                 <div class="col-md-8">
                     <label class="form-label fw-semibold small">Pilih Client <span class="text-danger">*</span></label>
-                    <select id="clientSelect" name="client_id" class="form-select" required>
-                        <option value="">-- Pilih Client --</option>
-                        @foreach($clients as $c)
-                            <option value="{{ $c->id }}" data-nama="{{ $c->nama_client }}" data-npwp="{{ $c->npwp }}" data-phone="{{ $c->no_telephone }}" data-alamat-npwp="{{ $c->alamat_npwp }}" data-kpp="{{ $c->kpp }}" data-tipe-id="{{ $c->tipe_badan }}">
-                                {{ $c->nama_client }} — {{ $c->npwp ?: 'NPWP: -' }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <div class="d-flex gap-2 flex-nowrap">
+                        <select id="clientSelect" name="client_id" class="form-select" required style="flex:1">
+                            <option value="">-- Pilih Client --</option>
+                            @foreach($clients as $c)
+                                <option value="{{ $c->id }}" data-nama="{{ $c->nama_client }}" data-npwp="{{ $c->npwp }}" data-phone="{{ $c->no_telephone }}" data-alamat-npwp="{{ $c->alamat_npwp }}" data-kpp="{{ $c->kpp }}" data-tipe-id="{{ $c->tipe_badan }}">
+                                    {{ $c->nama_client }} — {{ $c->npwp ?: 'NPWP: -' }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <a href="{{ route('cms.transaksi.import') }}" class="btn btn-outline-success btn-sm btn-import-transaksi d-none text-nowrap" id="btnImportTransaksi"><i class="bi bi-upload me-1"></i>Import Excel</a>
+                    </div>
                 </div>
             </div>
 
@@ -369,7 +369,9 @@ $(document).ready(function() {
 function handleClientChange() {
     const el = document.getElementById('clientSelect');
     const id = parseInt(el.value);
+    var btnImport = document.getElementById('btnImportTransaksi');
     if (!id) {
+        btnImport.classList.add('d-none');
         document.getElementById('cabangSection').classList.add('d-none');
         document.getElementById('summarySection').classList.add('d-none');
         document.getElementById('hartaSection').classList.add('d-none');
@@ -379,6 +381,7 @@ function handleClientChange() {
         toggleButtons();
         return;
     }
+    btnImport.classList.remove('d-none');
 
     document.getElementById('summarySection').classList.add('d-none');
     tabData = {};

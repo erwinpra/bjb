@@ -103,19 +103,19 @@
                             <table class="table table-bordered align-middle" id="tableLampiran">
                                 <thead class="table-dark" style="font-size:0.8rem">
                                     <tr>
-                                        <th style="width:80px">KODE</th>
-                                        <th style="width:140px">NIK/NPWP</th>
-                                        <th style="width:150px">DESKRIPSI</th>
-                                        <th style="width:130px">NOMOR AKUN</th>
-                                        <th style="width:150px">ATAS NAMA</th>
-                                        <th style="width:180px">NAMA BANK/INSTITUSI</th>
-                                        <th style="width:140px">LOKASI HARTA</th>
-                                        <th style="width:60px">KURS</th>
-                                        <th style="width:70px">THN<br>PEROLEHAN</th>
-                                        <th style="width:140px">SALDO SAAT INI<br><small class="fw-normal">(tahun dari perolehan)</small></th>
-                                        <th style="width:140px">SALDO BENTUK AWAL<br><small class="fw-normal">(tahun dari perolehan)</small></th>
-                                        <th style="width:100px">NILAI KURS</th>
-                                        <th style="width:90px">AKSI</th>
+                                        <th style="width:120px">KODE</th>
+                                        <th style="width:200px">NIK/NPWP</th>
+                                        <th style="width:200px">DESKRIPSI</th>
+                                        <th style="width:200px">NOMOR AKUN</th>
+                                        <th style="width:200px">ATAS NAMA</th>
+                                        <th style="width:220px">NAMA BANK/INSTITUSI</th>
+                                        <th style="width:200px">LOKASI HARTA</th>
+                                        <th style="width:100px">KURS</th>
+                                        <th style="width:140px">THN PEROLEHAN</th>
+                                        <th style="width:200px">SALDO SAAT INI</th>
+                                        <th style="width:200px">SALDO BENTUK AWAL</th>
+                                        <th style="width:160px">NILAI KURS</th>
+                                        <th style="width:100px">AKSI</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -123,7 +123,8 @@
                                     <tr class="row-edit">
                                         <td>
                                             <input type="hidden" name="row_id[]" value="{{ $d->id }}">
-                                            <select name="kode[]" class="cell-input cell-select" readonly>
+                                            <span class="kode-text">{{ $d->kode }}</span>
+                                            <select name="kode[]" class="cell-input cell-select d-none">
                                                 <option value="">--</option>
                                                 @foreach($masterItems as $m)
                                                     <option value="{{ $m->sub_kode }}" {{ $d->kode == $m->sub_kode ? 'selected' : '' }}>
@@ -138,23 +139,51 @@
                                             @endphp
                                             <input type="text" name="nik_npwp[]" class="cell-input" value="{{ optional($clientData)->npwp ?? '' }}" readonly>
                                         </td>
-                                        <td><input type="text" name="deskripsi[]" class="cell-input" value="{{ $d->deskripsi }}" readonly></td>
-                                        <td><input type="text" name="nomor_akun[]" class="cell-input" value="{{ $d->nomor_akun }}" readonly></td>
-                                        <td><input type="text" name="atas_nama[]" class="cell-input" value="{{ $d->atas_nama }}" readonly></td>
-                                        <td><input type="text" name="nama_bank_institusi[]" class="cell-input" value="{{ $d->nama_bank_institusi }}" readonly></td>
-                                        <td><input type="text" name="lokasi_harta[]" class="cell-input" value="{{ $d->lokasi_harta }}" readonly></td>
-                                        <td><input type="text" name="kurs[]" class="cell-input" value="{{ $d->kurs }}" readonly></td>
                                         <td>
-                                            <select name="tahun_perolehan[]" class="cell-input cell-select" readonly>
+                                            <span class="field-display">{{ $d->deskripsi ?: '-' }}</span>
+                                            <input type="text" name="deskripsi[]" class="cell-input cell-edit d-none" value="{{ $d->deskripsi }}">
+                                        </td>
+                                        <td>
+                                            <span class="field-display">{{ $d->nomor_akun ?: '-' }}</span>
+                                            <input type="text" name="nomor_akun[]" class="cell-input cell-edit d-none" value="{{ $d->nomor_akun }}">
+                                        </td>
+                                        <td>
+                                            <span class="field-display">{{ $d->atas_nama ?: '-' }}</span>
+                                            <input type="text" name="atas_nama[]" class="cell-input cell-edit d-none" value="{{ $d->atas_nama }}">
+                                        </td>
+                                        <td>
+                                            <span class="field-display">{{ $d->nama_bank_institusi ?: '-' }}</span>
+                                            <input type="text" name="nama_bank_institusi[]" class="cell-input cell-edit d-none" value="{{ $d->nama_bank_institusi }}">
+                                        </td>
+                                        <td>
+                                            <span class="field-display">{{ $d->lokasi_harta ?: '-' }}</span>
+                                            <input type="text" name="lokasi_harta[]" class="cell-input cell-edit d-none" value="{{ $d->lokasi_harta }}">
+                                        </td>
+                                        <td>
+                                            <span class="field-display">{{ $d->kurs ?: '-' }}</span>
+                                            <input type="text" name="kurs[]" class="cell-input cell-edit d-none" value="{{ $d->kurs }}">
+                                        </td>
+                                        <td>
+                                            <span class="field-display">{{ $d->tahun_perolehan ?: '-' }}</span>
+                                            <select name="tahun_perolehan[]" class="cell-input cell-select cell-edit d-none">
                                                 <option value="">--</option>
                                                 @foreach($tahunPerolehanList as $t)
                                                     <option value="{{ $t }}" {{ $d->tahun_perolehan == $t ? 'selected' : '' }}>{{ $t }}</option>
                                                 @endforeach
                                             </select>
                                         </td>
-                                        <td><input type="text" name="saldo_saat_ini[]" class="cell-input format-currency text-end" value="{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '' }}" readonly></td>
-                                        <td><input type="text" name="saldo_bentuk_awal[]" class="cell-input format-currency text-end" value="{{ $d->saldo_bentuk_awal > 0 ? number_format($d->saldo_bentuk_awal, 0, ',', '.') : '' }}" readonly></td>
-                                        <td><input type="text" name="nilai_kurs[]" class="cell-input format-currency text-end" value="{{ $d->nilai_kurs > 0 ? number_format($d->nilai_kurs, 0, ',', '.') : '' }}" readonly></td>
+                                        <td>
+                                            <span class="field-display text-end">{{ $d->saldo_saat_ini > 0 ? 'Rp ' . number_format($d->saldo_saat_ini, 0, ',', '.') : '-' }}</span>
+                                            <input type="text" name="saldo_saat_ini[]" class="cell-input cell-edit format-currency text-end d-none" value="{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '' }}">
+                                        </td>
+                                        <td>
+                                            <span class="field-display text-end">{{ $d->saldo_bentuk_awal > 0 ? 'Rp ' . number_format($d->saldo_bentuk_awal, 0, ',', '.') : '-' }}</span>
+                                            <input type="text" name="saldo_bentuk_awal[]" class="cell-input cell-edit format-currency text-end d-none" value="{{ $d->saldo_bentuk_awal > 0 ? number_format($d->saldo_bentuk_awal, 0, ',', '.') : '' }}">
+                                        </td>
+                                        <td>
+                                            <span class="field-display text-end">{{ $d->nilai_kurs > 0 ? number_format($d->nilai_kurs, 0, ',', '.') : '-' }}</span>
+                                            <input type="text" name="nilai_kurs[]" class="cell-input cell-edit format-currency text-end d-none" value="{{ $d->nilai_kurs > 0 ? number_format($d->nilai_kurs, 0, ',', '.') : '' }}">
+                                        </td>
                                         <td class="text-center">
                                             <button type="button" class="btn btn-outline-primary btn-sm btn-edit-row" title="Edit baris">
                                                 <i class="bi bi-pencil"></i>
@@ -315,25 +344,26 @@
 .cell-input:focus, .cell-select:focus {
     outline: none;
 }
-#tableLampiran td {
+#tableLampiran td, #tableLampiran th {
     padding: 2px 4px;
     vertical-align: middle;
+    white-space: nowrap;
 }
-#tableLampiran tr.editing .cell-input,
-#tableLampiran tr.editing .cell-select {
-    border: 1px solid #86b7fe !important;
-    background: #fff !important;
-    padding: 2px 4px !important;
-    border-radius: 3px !important;
-}
-#tableLampiran tr.row-new .cell-input,
-#tableLampiran tr.row-new .cell-select {
+#tableLampiran tr .cell-input,
+#tableLampiran tr .cell-select {
     border: 1px solid #ced4da !important;
     background: #fff !important;
     padding: 2px 4px !important;
     border-radius: 3px !important;
 }
 .cell-select { cursor: pointer; }
+.field-display {
+    display: inline-block;
+    padding: 2px 4px;
+    font-size: 0.8rem;
+    min-height: 24px;
+    line-height: 1.5;
+}
 </style>
 @endpush
 
@@ -404,32 +434,74 @@ document.getElementById('btnAddRow')?.addEventListener('click', function() {
     tbody.appendChild(tr);
 });
 
-// Edit row toggle
+// Toggle edit row
 document.addEventListener('click', function(e) {
     var btn = e.target.closest('.btn-edit-row');
-    if (btn) {
-        var tr = btn.closest('tr');
-        if (!tr) return;
-        var isEditing = tr.classList.contains('editing');
-        var inputs = tr.querySelectorAll('.cell-input, .cell-select');
-        if (isEditing) {
-            // Save mode: remove editing, set readonly
-            tr.classList.remove('editing');
-            inputs.forEach(function(inp) { inp.setAttribute('readonly', true); });
-            btn.innerHTML = '<i class="bi bi-pencil"></i>';
-            btn.classList.remove('btn-success');
-            btn.classList.add('btn-outline-primary');
-        } else {
-            // Edit mode: add editing, remove readonly
-            tr.classList.add('editing');
-            inputs.forEach(function(inp) { inp.removeAttribute('readonly'); });
-            btn.innerHTML = '<i class="bi bi-check-lg"></i>';
-            btn.classList.remove('btn-outline-primary');
-            btn.classList.add('btn-success');
-            // Focus first input
-            var first = tr.querySelector('.cell-input, .cell-select');
-            if (first) first.focus();
+    if (!btn) return;
+    var tr = btn.closest('tr');
+    if (!tr) return;
+    var isEditing = tr.classList.toggle('editing');
+
+    // Toggle display text vs edit inputs
+    tr.querySelectorAll('.field-display').forEach(function(el) {
+        el.classList.toggle('d-none', isEditing);
+    });
+    tr.querySelectorAll('.cell-edit').forEach(function(el) {
+        el.classList.toggle('d-none', !isEditing);
+    });
+
+    // Toggle kode text vs select
+    var kodeText = tr.querySelector('.kode-text');
+    var kodeSelect = tr.querySelector('td select[name="kode[]"]');
+    if (kodeText && kodeSelect) {
+        kodeText.classList.toggle('d-none', isEditing);
+        kodeSelect.classList.toggle('d-none', !isEditing);
+    }
+
+    if (isEditing) {
+        // Format currency on newly shown inputs
+        tr.querySelectorAll('.format-currency').forEach(function(inp) {
+            if (inp.value) {
+                var num = inp.value.replace(/[^0-9]/g, '');
+                if (num) inp.value = new Intl.NumberFormat('id-ID').format(parseInt(num, 10));
+            }
+        });
+    } else {
+        // Sync display spans with current input values
+        tr.querySelectorAll('.cell-edit').forEach(function(inp) {
+            var td = inp.closest('td');
+            if (!td) return;
+            var display = td.querySelector('.field-display');
+            if (!display) return;
+            var val = inp.value.trim();
+            var isCurrency = inp.classList.contains('format-currency');
+            if (isCurrency) {
+                var num = val.replace(/[^0-9]/g, '');
+                display.textContent = num ? 'Rp ' + new Intl.NumberFormat('id-ID').format(parseInt(num, 10)) : '-';
+            } else if (inp.tagName === 'SELECT') {
+                display.textContent = val || '-';
+            } else {
+                display.textContent = val || '-';
+            }
+        });
+        // Sync kode
+        var kodeSelect = tr.querySelector('td select[name="kode[]"]');
+        var kodeText = tr.querySelector('.kode-text');
+        if (kodeSelect && kodeText) {
+            kodeText.textContent = kodeSelect.value || '';
         }
+    }
+
+    // Toggle button icon & color
+    var icon = btn.querySelector('i');
+    if (isEditing) {
+        btn.classList.remove('btn-outline-primary');
+        btn.classList.add('btn-outline-success');
+        icon.className = 'bi bi-check-lg';
+    } else {
+        btn.classList.remove('btn-outline-success');
+        btn.classList.add('btn-outline-primary');
+        icon.className = 'bi bi-pencil';
     }
 });
 
