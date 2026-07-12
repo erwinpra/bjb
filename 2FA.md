@@ -1,0 +1,1 @@
+tail -f storage/logs/laravel.log | grep '2FA'

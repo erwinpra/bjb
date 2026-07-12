@@ -20,6 +20,9 @@ Route::get('/', function () {
 Route::middleware('guest')->group(function () {
     Route::get('login', [App\Http\Controllers\AuthController::class, 'showLogin'])->name('login');
     Route::post('login', [App\Http\Controllers\AuthController::class, 'login']);
+
+    Route::get('verify-2fa', [App\Http\Controllers\AuthController::class, 'showVerifyForm'])->name('verify-2fa');
+    Route::post('verify-2fa', [App\Http\Controllers\AuthController::class, 'verifyCode']);
 });
 
 Route::post('logout', [App\Http\Controllers\AuthController::class, 'logout'])->name('logout');
