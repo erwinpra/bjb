@@ -114,13 +114,10 @@
             <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header bg-primary text-white">
-                        <h6 class="fw-semibold mb-0"><i class="bi bi-building me-2"></i>Detail Harta</h6>
+                        <h6 class="fw-semibold mb-0"><i class="bi bi-bar-chart-line me-2"></i>Recap</h6>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body p-0">
-                        <div id="hartaModalTabs" class="d-none border-bottom">
-                            <ul class="nav nav-tabs px-3 pt-2" id="hartaModalTabNav" role="tablist" style="font-size:0.85rem"></ul>
-                        </div>
                         <div id="hartaDetailContent" class="text-center text-muted py-5">
                             <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                             Tidak ada data harta.
@@ -279,65 +276,18 @@
 
     function renderHartaModal() {
         var data = _dashboardData;
-        var tabNav = document.getElementById('hartaModalTabNav');
         var hartaDiv = document.getElementById('hartaDetailContent');
-        var tabsContainer = document.getElementById('hartaModalTabs');
         var allTabs = data.tabs || [];
 
-        // Remove stale tab panes from previous render
-        document.querySelectorAll('.harta-modal-pane').forEach(function(el) { el.remove(); });
-
-        tabNav.innerHTML = '';
-        tabsContainer.classList.add('d-none');
-
-        if (!allTabs.length) {
-            renderHartaDetailContent(hartaDiv, []);
-            return;
-        }
-
-        // Show tabs if there are cabangs (more than 1 tab)
-        if (allTabs.length > 1) {
-            tabsContainer.classList.remove('d-none');
-        }
-
-        allTabs.forEach(function(tab, idx) {
-            var isActive = idx === 0;
-            var tabId = 'hartaModal-tab-' + idx;
-            var tabLabel = tab.npwp || tab.label || '-';
-
-            var li = document.createElement('li');
-            li.className = 'nav-item';
-            var btn = document.createElement('button');
-            btn.className = 'nav-link' + (isActive ? ' active' : '');
-            btn.id = tabId + '-btn';
-            btn.setAttribute('data-bs-toggle', 'tab');
-            btn.setAttribute('data-bs-target', '#' + tabId);
-            btn.setAttribute('type', 'button');
-            btn.setAttribute('role', 'tab');
-            btn.textContent = tabLabel;
-            li.appendChild(btn);
-            tabNav.appendChild(li);
-
-            // Create tab pane (dummy, used by Bootstrap tab plugin to trigger events)
-            var pane = document.createElement('div');
-            pane.className = 'harta-modal-pane tab-pane fade' + (isActive ? ' show active' : '');
-            pane.id = tabId;
-            pane.setAttribute('role', 'tabpanel');
-            hartaDiv.parentNode.insertBefore(pane, hartaDiv);
+        // Collect all harta from all tabs
+        var allHarta = [];
+        allTabs.forEach(function(tab) {
+            if (tab.harta && tab.harta.detail) {
+                allHarta = allHarta.concat(tab.harta.detail);
+            }
         });
 
-        // Render initial content for first tab
-        var firstTab = allTabs[0];
-        renderHartaDetailContent(hartaDiv, firstTab.harta ? firstTab.harta.detail : []);
-
-        // Tab change handler
-        allTabs.forEach(function(tab, idx) {
-            var btn = document.getElementById('hartaModal-tab-' + idx + '-btn');
-            if (!btn) return;
-            btn.addEventListener('shown.bs.tab', function() {
-                renderHartaDetailContent(hartaDiv, tab.harta ? tab.harta.detail : []);
-            });
-        });
+        renderHartaDetailContent(hartaDiv, allHarta);
     }
 
     function renderHartaDetailContent(container, detail) {

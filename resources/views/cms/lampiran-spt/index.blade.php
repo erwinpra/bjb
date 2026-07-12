@@ -43,109 +43,239 @@
         </form>
 
         @if($clientId)
-            <form method="POST" action="{{ route('cms.lampiran-spt.store') }}" id="formLampiran">
-                @csrf
-                <input type="hidden" name="client_id" value="{{ $clientId }}">
-                <input type="hidden" name="tahun" value="{{ $tahun }}">
-                <input type="hidden" name="active_tab" id="activeTab" value="{{ $activeTab }}">
+            <ul class="nav nav-tabs mb-3" id="lampiranTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="tab-input" data-bs-toggle="tab"
+                        data-bs-target="#tabContent-input" type="button" role="tab">
+                        <i class="bi bi-pencil-square me-1"></i> Lampiran SPT
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="tab-recap" data-bs-toggle="tab"
+                        data-bs-target="#tabContent-recap" type="button" role="tab">
+                        <i class="bi bi-bar-chart-line me-1"></i> Recap
+                    </button>
+                </li>
+            </ul>
 
-                @if($tabs->count() > 1)
-                {{-- Cabang Tabs --}}
-                <ul class="nav nav-tabs mb-3" id="lampiranTabs" role="tablist">
-                    @foreach($tabs as $key => $tab)
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link {{ $key === $activeTab ? 'active' : '' }}"
-                            id="tab-{{ $key }}" data-bs-toggle="tab"
-                            data-bs-target="#tabContent-{{ $key }}"
-                            type="button" role="tab"
-                            data-prefix="{{ $key }}">
-                            <i class="bi {{ $key === 'induk' ? 'bi-building' : 'bi-diagram-2' }} me-1"></i>
-                            {{ $tab['npwp'] }}
-                        </button>
-                    </li>
-                    @endforeach
-                </ul>
-                @endif
-
-                <div class="tab-content" id="lampiranTabContent">
-                    @foreach($tabs as $key => $tab)
-                    @php $prefix = $key === 'induk' ? 'induk' : $key; @endphp
-                    <div class="tab-pane fade {{ $key === $activeTab ? 'show active' : '' }}"
-                        id="tabContent-{{ $key }}" role="tabpanel">
-                        <div class="mb-2">
-                            <small class="text-muted">{{ $tab['label'] }} &middot; NPWP: {{ $tab['npwp'] }}</small>
+            <div class="tab-content" id="lampiranTabContent">
+                {{-- Tab: Lampiran SPT (Input) --}}
+                <div class="tab-pane fade show active" id="tabContent-input" role="tabpanel">
+                    {{-- Upload Section --}}
+                    <div class="card border mb-4">
+                        <div class="card-header bg-light py-2">
+                            <h6 class="fw-semibold mb-0"><i class="bi bi-upload me-1"></i> Import dari Excel</h6>
                         </div>
-
-                        <input type="hidden" name="{{ $prefix }}[npwp_cabang_id]"
-                            value="{{ $tab['npwp_cabang_id'] ?? '' }}">
-
-                        @forelse($tab['items'] as $kategori => $subItems)
-                        @php $collapseId = 'collapse-' . $key . '-' . $kategori; @endphp
-                        <div class="card border mb-3">
-                            <div class="card-header bg-light py-2 collapse-toggle"
-                                role="button" data-bs-toggle="collapse"
-                                data-bs-target="#{{ $collapseId }}" aria-expanded="false">
-                                <h6 class="fw-semibold mb-0 d-flex justify-content-between align-items-center">
-                                    {{ $kategoriLabels[$kategori] ?? $kategori }}
-                                    <i class="bi bi-chevron-right collapse-icon"></i>
-                                </h6>
-                            </div>
-                            <div class="collapse" id="{{ $collapseId }}">
-                                <div class="card-body p-0">
-                                    <table class="table table-sm mb-0">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th class="ps-4" style="width:100px">Kode</th>
-                                                <th>Nama</th>
-                                                <th class="text-end pe-4" style="width:250px">Nilai (Rp)</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach($subItems as $item)
-                                            <tr>
-                                                <td class="ps-4"><code>{{ $item['sub_kode'] }}</code></td>
-                                                <td>{{ $item['sub_nama'] }}</td>
-                                                <td class="pe-4">
-                                                    <input type="text"
-                                                        class="form-control form-control-sm format-currency text-end"
-                                                        name="{{ $prefix }}[nilai][{{ $item['id'] }}]"
-                                                        value="{{ $item['nilai'] > 0 ? number_format($item['nilai'], 0, ',', '.') : '' }}">
-                                                </td>
-                                            </tr>
-                                            @endforeach
-                                            @php
-                                                $totalNilai = $subItems->sum('nilai');
-                                            @endphp
-                                            <tr class="table-secondary fw-bold">
-                                                <td class="ps-4" colspan="2">Total {{ $kategoriLabels[$kategori] ?? $kategori }}</td>
-                                                <td class="text-end pe-4">
-                                                    Rp {{ number_format($totalNilai, 0, ',', '.') }}
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                        <div class="card-body">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-6">
+                                    <form method="POST" action="{{ route('cms.lampiran-spt.import.preview') }}" enctype="multipart/form-data" id="formImport">
+                                        @csrf
+                                        <input type="hidden" name="client_id" value="{{ $clientId }}">
+                                        <input type="hidden" name="tahun" value="{{ $tahun }}">
+                                        <div class="input-group">
+                                            <input type="file" name="file" class="form-control" accept=".xlsx,.xls,.csv" required>
+                                            <button type="submit" class="btn btn-success">
+                                                <i class="bi bi-eye me-1"></i> Preview
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="col-md-6">
+                                    <a href="{{ route('cms.lampiran-spt.import.template') }}" class="btn btn-outline-primary">
+                                        <i class="bi bi-download me-1"></i> Download Template
+                                    </a>
+                                    <small class="text-muted d-block mt-1">
+                                        Download template Excel, isi data, lalu upload.
+                                    </small>
                                 </div>
                             </div>
                         </div>
-                        @empty
-                        <div class="text-center text-muted py-4">
-                            <i class="bi bi-inbox display-4 d-block mb-2 text-secondary opacity-50"></i>
-                            Belum ada master kategori.
-                            <a href="{{ route('cms.lampiran-spt.master') }}">Kelola Master</a>
-                        </div>
-                        @endforelse
                     </div>
-                    @endforeach
+
+                    {{-- Input Table --}}
+                    <form method="POST" action="{{ route('cms.lampiran-spt.store') }}" id="formLampiran">
+                        @csrf
+                        <input type="hidden" name="client_id" value="{{ $clientId }}">
+                        <input type="hidden" name="tahun" value="{{ $tahun }}">
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered align-middle" id="tableLampiran">
+                                <thead class="table-dark" style="font-size:0.8rem">
+                                    <tr>
+                                        <th style="width:80px">KODE</th>
+                                        <th style="width:140px">NIK/NPWP</th>
+                                        <th style="width:150px">DESKRIPSI</th>
+                                        <th style="width:130px">NOMOR AKUN</th>
+                                        <th style="width:150px">ATAS NAMA</th>
+                                        <th style="width:180px">NAMA BANK/INSTITUSI</th>
+                                        <th style="width:140px">LOKASI HARTA</th>
+                                        <th style="width:60px">KURS</th>
+                                        <th style="width:70px">THN<br>PEROLEHAN</th>
+                                        <th style="width:140px">SALDO SAAT INI<br><small class="fw-normal">(tahun dari perolehan)</small></th>
+                                        <th style="width:140px">SALDO BENTUK AWAL<br><small class="fw-normal">(tahun dari perolehan)</small></th>
+                                        <th style="width:100px">NILAI KURS</th>
+                                        <th style="width:90px">AKSI</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($details as $d)
+                                    <tr class="row-edit">
+                                        <td>
+                                            <input type="hidden" name="row_id[]" value="{{ $d->id }}">
+                                            <select name="kode[]" class="cell-input cell-select" readonly>
+                                                <option value="">--</option>
+                                                @foreach($masterItems as $m)
+                                                    <option value="{{ $m->sub_kode }}" {{ $d->kode == $m->sub_kode ? 'selected' : '' }}>
+                                                        {{ $m->sub_kode }} - {{ $m->nama }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </td>
+                                        <td>
+                                            @php
+                                                $clientData = \App\Models\Cms\DataClient::find($clientId);
+                                            @endphp
+                                            <input type="text" name="nik_npwp[]" class="cell-input" value="{{ optional($clientData)->npwp ?? '' }}" readonly>
+                                        </td>
+                                        <td><input type="text" name="deskripsi[]" class="cell-input" value="{{ $d->deskripsi }}" readonly></td>
+                                        <td><input type="text" name="nomor_akun[]" class="cell-input" value="{{ $d->nomor_akun }}" readonly></td>
+                                        <td><input type="text" name="atas_nama[]" class="cell-input" value="{{ $d->atas_nama }}" readonly></td>
+                                        <td><input type="text" name="nama_bank_institusi[]" class="cell-input" value="{{ $d->nama_bank_institusi }}" readonly></td>
+                                        <td><input type="text" name="lokasi_harta[]" class="cell-input" value="{{ $d->lokasi_harta }}" readonly></td>
+                                        <td><input type="text" name="kurs[]" class="cell-input" value="{{ $d->kurs }}" readonly></td>
+                                        <td>
+                                            <select name="tahun_perolehan[]" class="cell-input cell-select" readonly>
+                                                <option value="">--</option>
+                                                @foreach($tahunPerolehanList as $t)
+                                                    <option value="{{ $t }}" {{ $d->tahun_perolehan == $t ? 'selected' : '' }}>{{ $t }}</option>
+                                                @endforeach
+                                            </select>
+                                        </td>
+                                        <td><input type="text" name="saldo_saat_ini[]" class="cell-input format-currency text-end" value="{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '' }}" readonly></td>
+                                        <td><input type="text" name="saldo_bentuk_awal[]" class="cell-input format-currency text-end" value="{{ $d->saldo_bentuk_awal > 0 ? number_format($d->saldo_bentuk_awal, 0, ',', '.') : '' }}" readonly></td>
+                                        <td><input type="text" name="nilai_kurs[]" class="cell-input format-currency text-end" value="{{ $d->nilai_kurs > 0 ? number_format($d->nilai_kurs, 0, ',', '.') : '' }}" readonly></td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-outline-primary btn-sm btn-edit-row" title="Edit baris">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger btn-sm btn-remove-row" title="Hapus baris" data-id="{{ $d->id }}">
+                                                <i class="bi bi-trash3"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    @empty
+                                    <tr class="empty-row">
+                                        <td colspan="13" class="text-center text-muted py-4">
+                                            <i class="bi bi-plus-circle d-block mb-1 fs-4"></i>
+                                            Klik "Tambah Baris" untuk menambah data
+                                        </td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-3">
+                            <button type="button" class="btn btn-outline-primary" id="btnAddRow">
+                                <i class="bi bi-plus-lg me-1"></i> Tambah Baris
+                            </button>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-save me-1"></i> Simpan
+                            </button>
+                        </div>
+                    </form>
                 </div>
 
-                @if($tabs->isNotEmpty())
-                <div class="d-flex justify-content-end mt-3">
-                    <button type="submit" class="btn btn-primary px-4">
-                        <i class="bi bi-save me-1"></i> Simpan Nilai SPT
-                    </button>
+                {{-- Tab: Recap --}}
+                <div class="tab-pane fade" id="tabContent-recap" role="tabpanel">
+                    @if($details->isNotEmpty())
+                        @php
+                            $grouped = $details->groupBy('kode');
+                            $grandTotal = $details->sum('saldo_saat_ini');
+                        @endphp
+                        @foreach($grouped as $kode => $items)
+                            @php
+                                $collapseId = 'recap-collapse-' . $loop->index;
+                                $subTotal = $items->sum('saldo_saat_ini');
+                                $first = $items->first();
+                                $masterLabel = $masterItems->where('sub_kode', $kode)->first();
+                                $label = $masterLabel ? $masterLabel->sub_kode . ' - ' . $masterLabel->nama : $kode;
+                            @endphp
+                            <div class="card border mb-3">
+                                <div class="card-header bg-light py-2 collapse-toggle"
+                                    role="button" data-bs-toggle="collapse"
+                                    data-bs-target="#{{ $collapseId }}" aria-expanded="false">
+                                    <h6 class="fw-semibold mb-0 d-flex justify-content-between align-items-center">
+                                        <span>{{ $label }} <small class="text-muted fw-normal">(Rp {{ number_format($subTotal, 0, ',', '.') }})</small></span>
+                                        <i class="bi bi-chevron-down collapse-icon transition-rotate"></i>
+                                    </h6>
+                                </div>
+                                <div class="collapse" id="{{ $collapseId }}">
+                                    <div class="card-body p-0">
+                                        <table class="table table-sm mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>NOMOR AKUN</th>
+                                                    <th>ATAS NAMA</th>
+                                                    <th>BANK/INSTITUSI</th>
+                                                    <th>LOKASI</th>
+                                                    <th>KURS</th>
+                                                    <th>THN PEROLEHAN</th>
+                                                    <th class="text-end">SALDO SAAT INI</th>
+                                                    <th class="text-end">SALDO AWAL</th>
+                                                    <th class="text-end">NILAI KURS</th>
+                                                    <th style="width:50px">AKSI</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($items as $idx => $item)
+                                                <tr data-row-id="{{ $item->id }}">
+                                                    <td>{{ $idx + 1 }}</td>
+                                                    <td>{{ $item->nomor_akun }}</td>
+                                                    <td>{{ $item->atas_nama }}</td>
+                                                    <td>{{ $item->nama_bank_institusi }}</td>
+                                                    <td>{{ $item->lokasi_harta }}</td>
+                                                    <td>{{ $item->kurs }}</td>
+                                                    <td>{{ $item->tahun_perolehan }}</td>
+                                                    <td class="text-end">Rp {{ number_format($item->saldo_saat_ini, 0, ',', '.') }}</td>
+                                                    <td class="text-end">Rp {{ number_format($item->saldo_bentuk_awal, 0, ',', '.') }}</td>
+                                                    <td class="text-end">{{ number_format($item->nilai_kurs, 2, ',', '.') }}</td>
+                                                    <td class="text-center">
+                                                        <button type="button" class="btn btn-outline-danger btn-sm btn-delete-row" data-id="{{ $item->id }}" title="Hapus">
+                                                            <i class="bi bi-trash3"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                @endforeach
+                                                <tr class="table-active fw-bold">
+                                                    <td colspan="7" class="text-end">TOTAL {{ $label }}</td>
+                                                    <td class="text-end text-primary">Rp {{ number_format($subTotal, 0, ',', '.') }}</td>
+                                                    <td class="text-end text-primary">Rp {{ number_format($items->sum('saldo_bentuk_awal'), 0, ',', '.') }}</td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                        <div class="d-flex justify-content-end mt-2">
+                            <div class="bg-danger text-white fw-bold fs-6 px-4 py-2 rounded">
+                                TOTAL HARTA: Rp {{ number_format($grandTotal, 0, ',', '.') }}
+                            </div>
+                        </div>
+                    @else
+                        <div class="text-center text-muted py-5">
+                            <i class="bi bi-hand-index display-4 d-block mb-2 text-secondary opacity-50"></i>
+                            Belum ada data Lampiran SPT untuk client ini.
+                            <br><small>Isi data pada tab <strong>Lampiran SPT</strong> terlebih dahulu.</small>
+                        </div>
+                    @endif
                 </div>
-                @endif
-            </form>
+            </div>
         @else
             <div class="text-center text-muted py-5">
                 <i class="bi bi-hand-index display-4 d-block mb-2 text-secondary opacity-50"></i>
@@ -157,6 +287,7 @@
 @endsection
 
 @push('styles')
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
 .select2-container--default .select2-selection--single {
@@ -167,13 +298,42 @@
 .select2-container--default .select2-selection--single .select2-selection__rendered {
     line-height: 1.5;
 }
-.collapse-toggle {
-    cursor: pointer;
-    user-select: none;
+.collapse-toggle { cursor: pointer; user-select: none; }
+.collapse-toggle:hover { background-color: #e9ecef; }
+.cell-input, .cell-select {
+    font-size: 0.8rem;
+    width: 100%;
+    border: none !important;
+    background: transparent !important;
+    padding: 2px 4px !important;
+    outline: none;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    -webkit-appearance: none;
+    appearance: none;
 }
-.collapse-toggle:hover {
-    background-color: #e9ecef;
+.cell-input:focus, .cell-select:focus {
+    outline: none;
 }
+#tableLampiran td {
+    padding: 2px 4px;
+    vertical-align: middle;
+}
+#tableLampiran tr.editing .cell-input,
+#tableLampiran tr.editing .cell-select {
+    border: 1px solid #86b7fe !important;
+    background: #fff !important;
+    padding: 2px 4px !important;
+    border-radius: 3px !important;
+}
+#tableLampiran tr.row-new .cell-input,
+#tableLampiran tr.row-new .cell-select {
+    border: 1px solid #ced4da !important;
+    background: #fff !important;
+    padding: 2px 4px !important;
+    border-radius: 3px !important;
+}
+.cell-select { cursor: pointer; }
 </style>
 @endpush
 
@@ -189,44 +349,153 @@ $(document).ready(function() {
     });
 });
 
-document.querySelectorAll('.format-currency').forEach(function(el) {
-    el.addEventListener('input', function(e) {
-        var val = this.value.replace(/[^0-9]/g, '');
+// Format currency inputs
+document.addEventListener('input', function(e) {
+    if (e.target.classList.contains('format-currency')) {
+        var val = e.target.value.replace(/[^0-9]/g, '');
         if (val) {
-            this.value = new Intl.NumberFormat('id-ID').format(parseInt(val, 10));
+            e.target.value = new Intl.NumberFormat('id-ID').format(parseInt(val, 10));
         }
-    });
-    el.addEventListener('blur', function() {
-        if (!this.value) this.value = '';
-    });
+    }
 });
 
-// Track active tab for redirect after save
-document.querySelectorAll('#lampiranTabs button[data-bs-toggle="tab"]').forEach(function(btn) {
-    btn.addEventListener('shown.bs.tab', function(e) {
-        document.getElementById('activeTab').value = btn.getAttribute('data-prefix');
-    });
+// Add row
+document.getElementById('btnAddRow')?.addEventListener('click', function() {
+    var tbody = document.querySelector('#tableLampiran tbody');
+    var emptyRow = tbody.querySelector('.empty-row');
+    if (emptyRow) emptyRow.remove();
+
+    var options = '<option value="">--</option>';
+    @foreach($masterItems as $m)
+        options += '<option value="{{ $m->sub_kode }}">{{ $m->sub_kode }} - {{ $m->nama }}</option>';
+    @endforeach
+
+    var tr = document.createElement('tr');
+    tr.className = 'row-new';
+    var clientNpwp = '{{ optional(\App\Models\Cms\DataClient::find($clientId))->npwp ?? '' }}';
+    tr.innerHTML = `
+        <td>
+            <select name="kode[]" class="cell-input cell-select">${options}</select>
+        </td>
+        <td><input type="text" name="nik_npwp[]" class="cell-input" value="` + clientNpwp + `"></td>
+        <td><input type="text" name="deskripsi[]" class="cell-input"></td>
+        <td><input type="text" name="nomor_akun[]" class="cell-input"></td>
+        <td><input type="text" name="atas_nama[]" class="cell-input"></td>
+        <td><input type="text" name="nama_bank_institusi[]" class="cell-input"></td>
+        <td><input type="text" name="lokasi_harta[]" class="cell-input"></td>
+        <td><input type="text" name="kurs[]" class="cell-input"></td>
+        <td>
+            <select name="tahun_perolehan[]" class="cell-input cell-select">
+                <option value="">--</option>
+                @foreach($tahunPerolehanList as $t)
+                    <option value="{{ $t }}">{{ $t }}</option>
+                @endforeach
+            </select>
+        </td>
+        <td><input type="text" name="saldo_saat_ini[]" class="cell-input format-currency text-end"></td>
+        <td><input type="text" name="saldo_bentuk_awal[]" class="cell-input format-currency text-end"></td>
+        <td><input type="text" name="nilai_kurs[]" class="cell-input format-currency text-end"></td>
+        <td class="text-center">
+            <button type="button" class="btn btn-outline-danger btn-sm btn-remove-row" title="Hapus baris">
+                <i class="bi bi-trash3"></i>
+            </button>
+        </td>
+    `;
+    tbody.appendChild(tr);
+});
+
+// Edit row toggle
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.btn-edit-row');
+    if (btn) {
+        var tr = btn.closest('tr');
+        if (!tr) return;
+        var isEditing = tr.classList.contains('editing');
+        var inputs = tr.querySelectorAll('.cell-input, .cell-select');
+        if (isEditing) {
+            // Save mode: remove editing, set readonly
+            tr.classList.remove('editing');
+            inputs.forEach(function(inp) { inp.setAttribute('readonly', true); });
+            btn.innerHTML = '<i class="bi bi-pencil"></i>';
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-primary');
+        } else {
+            // Edit mode: add editing, remove readonly
+            tr.classList.add('editing');
+            inputs.forEach(function(inp) { inp.removeAttribute('readonly'); });
+            btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+            btn.classList.remove('btn-outline-primary');
+            btn.classList.add('btn-success');
+            // Focus first input
+            var first = tr.querySelector('.cell-input, .cell-select');
+            if (first) first.focus();
+        }
+    }
+});
+
+// Delete row (AJAX with confirmation)
+function deleteRow(id, tr) {
+    if (!confirm('Hapus data ini?')) return;
+    var csrf = document.querySelector('meta[name="csrf-token"]');
+    var token = csrf ? csrf.getAttribute('content') : '';
+    fetch('/admin/lampiran-spt/row/' + id, {
+        method: 'DELETE',
+        headers: { 'X-CSRF-TOKEN': token }
+    }).then(function(r) { return r.json(); }).then(function(res) {
+        if (res.success) {
+            if (tr) tr.remove();
+        } else {
+            alert('Gagal menghapus data.');
+        }
+    }).catch(function() { alert('Terjadi kesalahan.'); });
+}
+
+// Remove row (from input tab - AJAX if has ID, else just remove DOM)
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.btn-remove-row');
+    if (btn) {
+        var tr = btn.closest('tr');
+        var id = btn.getAttribute('data-id');
+        if (id) {
+            deleteRow(id, tr);
+        } else if (tr) {
+            tr.remove();
+        }
+    }
+});
+
+// Delete row from recap tab
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.btn-delete-row');
+    if (btn) {
+        var tr = btn.closest('tr');
+        var id = btn.getAttribute('data-id');
+        if (id) deleteRow(id, tr);
+    }
 });
 
 // Collapse toggle icons
 document.querySelectorAll('.collapse-toggle').forEach(function(header) {
-    var target = document.querySelector(header.getAttribute('data-bs-target'));
-    if (target) {
-        target.addEventListener('show.bs.collapse', function() {
-            var icon = header.querySelector('.collapse-icon');
-            if (icon) {
-                icon.classList.remove('bi-chevron-right');
-                icon.classList.add('bi-chevron-up');
-            }
-        });
-        target.addEventListener('hide.bs.collapse', function() {
-            var icon = header.querySelector('.collapse-icon');
-            if (icon) {
-                icon.classList.remove('bi-chevron-up');
-                icon.classList.add('bi-chevron-right');
-            }
-        });
+    var icon = header.querySelector('.collapse-icon');
+    if (icon) {
+        var target = document.querySelector(header.getAttribute('data-bs-target'));
+        if (target) {
+            target.addEventListener('show.bs.collapse', function() { icon.classList.add('rotate-180'); });
+            target.addEventListener('hide.bs.collapse', function() { icon.classList.remove('rotate-180'); });
+        }
     }
+});
+
+// Persist active tab
+var tabKey = localStorage.getItem('lampiranSptTab');
+if (tabKey) {
+    var tab = document.querySelector('#lampiranTabs button[data-bs-target="' + tabKey + '"]');
+    if (tab) { var trigger = new bootstrap.Tab(tab); trigger.show(); }
+}
+document.querySelectorAll('#lampiranTabs button[data-bs-toggle="tab"]').forEach(function(btn) {
+    btn.addEventListener('shown.bs.tab', function(e) {
+        localStorage.setItem('lampiranSptTab', btn.getAttribute('data-bs-target'));
+    });
 });
 </script>
 @endpush

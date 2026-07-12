@@ -68,7 +68,10 @@ Route::prefix($prefix)
             Route::get('lampiran-spt', [LampiranSptController::class, 'index'])->name('lampiran-spt.index');
             Route::post('lampiran-spt', [LampiranSptController::class, 'store'])->name('lampiran-spt.store');
             Route::get('lampiran-spt/master', [LampiranSptController::class, 'editMaster'])->name('lampiran-spt.master');
-            Route::get('lampiran-spt/dashboard', [LampiranSptController::class, 'dashboard'])->name('lampiran-spt.dashboard');
+            Route::get('lampiran-spt/import/template', [LampiranSptController::class, 'downloadTemplate'])->name('lampiran-spt.import.template');
+            Route::post('lampiran-spt/import/preview', [LampiranSptController::class, 'previewImport'])->name('lampiran-spt.import.preview');
+            Route::post('lampiran-spt/import/confirm', [LampiranSptController::class, 'confirmImport'])->name('lampiran-spt.import.confirm');
+            Route::delete('lampiran-spt/row/{id}', [LampiranSptController::class, 'destroyRow'])->name('lampiran-spt.row.destroy');
         }
 
         if (config('cms.modules.transaksi.enabled', true)) {
