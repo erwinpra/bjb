@@ -9,13 +9,28 @@
     @if(config('services.captcha.use'))
         <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     @endif
+    <style>
+        body {
+            background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+        }
+        .card { border: none; }
+        .card-header {
+            background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+        }
+        @media (max-width: 575.98px) {
+            .card-body { padding: 1.25rem; }
+            .card-header h4 { font-size: 1.1rem; }
+            .card-header p { font-size: 0.75rem; }
+            .card-header i { font-size: 1.75rem !important; }
+        }
+    </style>
 </head>
-<body class="bg-light d-flex align-items-center min-vh-100">
+<body class="d-flex align-items-center min-vh-100 py-4">
     <div class="container">
         <div class="row justify-content-center">
-            <div class="col-md-5 col-lg-4">
+            <div class="col-11 col-sm-8 col-md-5 col-lg-4">
                 <div class="card shadow border-0 rounded-4 overflow-hidden">
-                    <div class="card-header bg-success text-white text-center py-4 border-0">
+                    <div class="card-header text-white text-center py-4 py-sm-4 border-0">
                         <i class="bi bi-person-badge fs-1 mb-2 d-block"></i>
                         <h4 class="fw-bold mb-0">Client Portal</h4>
                         <p class="small mb-0 opacity-75">BJP Online</p>
@@ -32,7 +47,7 @@
                             @csrf
                             <div class="mb-3">
                                 <label class="form-label small fw-semibold">NIK / NPWP</label>
-                                <div class="input-group">
+                                <div class="input-group input-group-sm">
                                     <span class="input-group-text"><i class="bi bi-person-vcard"></i></span>
                                     <input type="text" name="nik_npwp" value="{{ old('nik_npwp') }}" required autofocus
                                            class="form-control" placeholder="Masukkan NIK atau NPWP">
@@ -41,7 +56,7 @@
 
                             <div class="mb-4">
                                 <label class="form-label small fw-semibold">Password</label>
-                                <div class="input-group">
+                                <div class="input-group input-group-sm">
                                     <span class="input-group-text"><i class="bi bi-lock"></i></span>
                                     <input type="password" name="password" required class="form-control" placeholder="password">
                                 </div>

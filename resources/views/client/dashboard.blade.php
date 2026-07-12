@@ -364,7 +364,8 @@
             var html = '<div class="tab-pane' + (isActive ? ' show active' : '') + '" id="' + tabId + '" role="tabpanel">';
             html += '<div class="p-3">';
             html += '<div class="mb-2"><small class="text-muted">' + escHtml(tab.label) + ' &middot; NPWP: ' + escHtml(tab.npwp || '-') + ' &middot; KPP: ' + escHtml(tab.kpp || '-') + '</small></div>';
-            html += '<table class="table table-sm table-bordered mb-0"><thead class="table-light"><tr>';
+            html += '<div class="table-responsive">';
+            html += '<table class="table table-sm table-bordered mb-0" style="white-space:nowrap"><thead class="table-light"><tr>';
             html += '<th>Bulan</th><th class="text-end">Omset</th><th class="text-end">Total Peredaran Bruto</th>';
             if (isInduk) {
                 html += '<th class="text-end">Total Peredaran Bruto Akum' + (cabangCount > 0 ? ' (' + cabangCount + ' Cabang)' : '') + '</th>';
@@ -392,7 +393,7 @@
             html += '<tr class="table-secondary fw-bold"><td>Total</td><td class="text-end">Rp ' + formatNum(tabOmset) + '</td><td></td>';
             if (isInduk) { html += '<td></td>'; }
             html += '<td></td><td class="text-end">Rp ' + formatNum(tabPotongan) + '</td></tr>';
-            html += '</tbody></table></div></div>';
+            html += '</tbody></table></div></div></div>';
             tabContent.innerHTML += html;
         });
     }
