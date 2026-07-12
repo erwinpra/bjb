@@ -31,7 +31,7 @@ class LampiranSptController extends Controller
         if ($clientId) {
             $details = LampiranSptDetail::where('client_id', $clientId)
                 ->where('tahun', $tahun)
-                ->orderBy('kode')
+                ->orderBy('id')
                 ->get();
         }
 
@@ -231,6 +231,19 @@ class LampiranSptController extends Controller
             @unlink($fullPath);
             return redirect()->route('cms.lampiran-spt.index', ['client_id' => $clientId, 'tahun' => $tahun])
                 ->with('error', 'File kosong.');
+        }
+
+        // Check if any row has empty NPWP/NIK
+        for ($r = 1; $r < count($rows); $r++) {
+            $row = $rows[$r];
+            $npwpFile = isset($row[0]) ? ltrim(trim((string) $row[0]), "'") : '';
+            $kode = isset($row[1]) ? trim((string) $row[1]) : '';
+            if (empty($kode)) continue;
+            if (empty($npwpFile)) {
+                @unlink($fullPath);
+                return redirect()->route('cms.lampiran-spt.index', ['client_id' => $clientId, 'tahun' => $tahun])
+                    ->with('error', 'NPWP/NIK belum terisi');
+            }
         }
 
         $preview = [];

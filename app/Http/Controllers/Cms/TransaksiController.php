@@ -630,46 +630,40 @@ class TransaksiController extends Controller
     {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Template');
 
         $months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-        $headers = ['No', 'NPWP Client', 'NPWP Cabang', 'Tahun', 'Omset Tahunan'];
+        $headers = ['No', 'NPWP Client', 'NPWP Cabang', 'Tahun'];
         foreach ($months as $m) {
             $headers[] = 'Omset ' . $m;
         }
-        $headers[] = 'Harta Nama';
-        $headers[] = 'Harta Nilai';
+
+        // Header row
+        $headerStyle = $sheet->getStyle('A1:' . chr(65 + count($headers) - 1) . '1');
+        $headerStyle->getFont()->setBold(true)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FFFFFF'));
+        $headerStyle->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setARGB('FF4472C4');
+        $headerStyle->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        $headerStyle->getBorders()->applyFromArray(['allBorders' => ['style' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN]]);
 
         foreach ($headers as $i => $header) {
             $col = chr(65 + $i);
             $sheet->setCellValue($col . '1', $header);
-            $sheet->getStyle($col . '1')->getFont()->setBold(true);
         }
 
+        // Column widths
         $sheet->getColumnDimension('A')->setWidth(5);
-        $sheet->getColumnDimension('B')->setWidth(22);
-        $sheet->getColumnDimension('C')->setWidth(22);
+        $sheet->getColumnDimension('B')->setWidth(24);
+        $sheet->getColumnDimension('C')->setWidth(24);
         $sheet->getColumnDimension('D')->setWidth(8);
-        $sheet->getColumnDimension('E')->setWidth(18);
         for ($i = 0; $i < 12; $i++) {
-            $sheet->getColumnDimension(chr(70 + $i))->setWidth(15);
+            $sheet->getColumnDimension(chr(69 + $i))->setWidth(15);
         }
-        $sheet->getColumnDimension('S')->setWidth(30);
-        $sheet->getColumnDimension('T')->setWidth(15);
 
-        // Example row
-        $sheet->setCellValue('A2', 1);
-        $sheet->setCellValue('B2', '000000000000000');
-        $sheet->setCellValue('C2', '');
-        $sheet->setCellValue('D2', date('Y'));
-        $sheet->setCellValue('E2', '100000000');
-        $sheet->setCellValue('A3', 2);
-        $sheet->setCellValue('B3', '000000000000000');
-        $sheet->setCellValue('C3', 'NPWP Cabang (jika ada)');
-        $sheet->setCellValue('D3', date('Y'));
-        $sheet->setCellValue('F3', '10000000');
-        foreach ($months as $i => $m) {
-            $sheet->getStyle(chr(70 + $i) . '3')->getFont()->getColor()->setARGB('FF999999');
-        }
+        // --- Instructions ---
+        $sheet->setCellValue('A3', 'INSTRUKSI:');
+        $sheet->getStyle('A3')->getFont()->setBold(true)->setSize(11);
+        $sheet->setCellValue('A4', 'Isi data mulai dari baris 5. Kolom B = NPWP Client, C = NPWP Cabang (kosongkan jika induk), D = Tahun, E-P = Omset Jan-Des.');
+        $sheet->getStyle('A4')->getFont()->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF555555'))->setSize(9);
 
         $writer = new Xlsx($spreadsheet);
         $filename = 'Template_Import_Transaksi.xlsx';
@@ -704,43 +698,56 @@ class TransaksiController extends Controller
         }
 
         $rows = $xlsx->rows();
-        $totalRows = max(0, count($rows) - 1);
-
-        if ($totalRows === 0) {
-            @unlink($fullPath);
-            return redirect()->route('cms.transaksi.import')
-                ->with('error', 'File Excel kosong.');
-        }
 
         $months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-        $preview = [];
-        $errors = [];
 
-        $clientsByNpwp = DataClient::whereNotNull('npwp')->pluck('id', 'npwp')->map(function ($id) {
-            return $id;
-        });
-
+        $dataRows = [];
         for ($r = 1; $r < count($rows); $r++) {
             $row = $rows[$r];
             $npwpClient = isset($row[1]) ? ltrim(trim((string) $row[1]), "'") : '';
+            if ($npwpClient === '') continue;
+            $dataRows[] = $row;
+        }
+
+        if (empty($dataRows)) {
+            @unlink($fullPath);
+            return redirect()->route('cms.transaksi.import')
+                ->with('error', 'Tidak ada data valid. Pastikan kolom NPWP Client terisi.');
+        }
+
+        $npwpList = [];
+        foreach ($dataRows as $row) {
+            $npwpClient = isset($row[1]) ? ltrim(trim((string) $row[1]), "'") : '';
+            if ($npwpClient) $npwpList[] = $npwpClient;
+        }
+        $npwpList = array_unique($npwpList);
+        $existingNpwps = DataClient::whereNotNull('npwp')->pluck('npwp')->map(fn($v) => strtolower(trim($v)))->filter()->values()->toArray();
+        $missingNpwps = [];
+        foreach ($npwpList as $np) {
+            $cleanNp = strtolower(ltrim(trim($np), "'"));
+            if (!in_array($cleanNp, $existingNpwps)) {
+                $missingNpwps[] = $np;
+            }
+        }
+        if (!empty($missingNpwps)) {
+            @unlink($fullPath);
+            return redirect()->route('cms.transaksi.import')
+                ->with('error', 'Import dibatalkan. Data NPWP tidak tersedia: ' . implode(', ', array_slice($missingNpwps, 0, 10)));
+        }
+
+        $preview = [];
+
+        foreach ($dataRows as $row) {
+            $npwpClient = isset($row[1]) ? ltrim(trim((string) $row[1]), "'") : '';
             $npwpCabang = isset($row[2]) ? ltrim(trim((string) $row[2]), "'") : '';
             $tahun = isset($row[3]) ? trim((string) $row[3]) : '';
-            $omsetTahunan = isset($row[4]) ? trim((string) $row[4]) : '';
 
-            if (!$npwpClient && !$tahun) continue;
-
-            // Validate client exists
-            $client = null;
-            if ($npwpClient) {
-                $client = DataClient::where('npwp', $npwpClient)->first();
-            }
+            $client = DataClient::where('npwp', $npwpClient)->first();
 
             $rowErrors = [];
             if (!$npwpClient) $rowErrors[] = 'NPWP Client kosong';
             if (!$tahun || !is_numeric($tahun)) $rowErrors[] = 'Tahun tidak valid';
-            if (!$client) $rowErrors[] = 'Client dengan NPWP ' . $npwpClient . ' tidak ditemukan';
 
-            // Validate cabang if specified
             $cabangRecord = null;
             if ($npwpCabang && $client) {
                 $cabangRecord = NpwpCabang::where('data_client_id', $client->id)
@@ -752,10 +759,7 @@ class TransaksiController extends Controller
                 'npwp_client' => $npwpClient,
                 'npwp_cabang' => $npwpCabang,
                 'tahun' => $tahun,
-                'omset_tahunan' => $omsetTahunan,
-                'omset_bulanan' => array_slice($row, 5, 12),
-                'harta_nama' => $row[17] ?? '',
-                'harta_nilai' => $row[18] ?? '',
+                'omset_bulanan' => array_slice($row, 4, 12),
                 'client_nama' => $client ? $client->nama_client : '-',
                 'cabang_nama' => $cabangRecord ? $cabangRecord->nama_client : ($npwpCabang ? 'Not Found' : ''),
                 'errors' => $rowErrors,
@@ -763,6 +767,8 @@ class TransaksiController extends Controller
                 'is_cabang' => $npwpCabang !== '',
             ];
         }
+
+        $totalRows = count($preview);
 
         return view('cms::transaksi.import', compact(
             'preview', 'totalRows', 'tempPath', 'months'
@@ -789,22 +795,50 @@ class TransaksiController extends Controller
         }
 
         $rows = $xlsx->rows();
+
+        $dataRows = [];
+        for ($r = 1; $r < count($rows); $r++) {
+            $row = $rows[$r];
+            $npwpClient = isset($row[1]) ? ltrim(trim((string) $row[1]), "'") : '';
+            if ($npwpClient === '') continue;
+            $dataRows[] = $row;
+        }
+
+        if (empty($dataRows)) {
+            @unlink($fullPath);
+            return redirect()->route('cms.transaksi.import')
+                ->with('error', 'Tidak ada data valid. Pastikan kolom NPWP Client terisi.');
+        }
+
+        $npwpList = [];
+        foreach ($dataRows as $row) {
+            $npwpClient = isset($row[1]) ? ltrim(trim((string) $row[1]), "'") : '';
+            if ($npwpClient) $npwpList[] = $npwpClient;
+        }
+        $npwpList = array_unique($npwpList);
+        $existingNpwps = DataClient::whereNotNull('npwp')->pluck('npwp')->map(fn($v) => strtolower(trim($v)))->filter()->values()->toArray();
+        $missingNpwps = [];
+        foreach ($npwpList as $np) {
+            $cleanNp = strtolower(ltrim(trim($np), "'"));
+            if (!in_array($cleanNp, $existingNpwps)) {
+                $missingNpwps[] = $np;
+            }
+        }
+        if (!empty($missingNpwps)) {
+            @unlink($fullPath);
+            return redirect()->route('cms.transaksi.import')
+                ->with('error', 'Import dibatalkan. Data NPWP tidak tersedia: ' . implode(', ', array_slice($missingNpwps, 0, 10)));
+        }
+
         $imported = 0;
         $errors = [];
 
-        for ($r = 1; $r < count($rows); $r++) {
-            $row = $rows[$r];
+        foreach ($dataRows as $row) {
             $npwpClient = isset($row[1]) ? ltrim(trim((string) $row[1]), "'") : '';
             $npwpCabang = isset($row[2]) ? ltrim(trim((string) $row[2]), "'") : '';
             $tahun = isset($row[3]) ? trim((string) $row[3]) : '';
 
-            if (!$npwpClient || !$tahun) continue;
-
             $client = DataClient::where('npwp', $npwpClient)->first();
-            if (!$client) {
-                $errors[] = "Baris " . ($r + 1) . ": Client NPWP {$npwpClient} tidak ditemukan";
-                continue;
-            }
 
             $cabangId = null;
             if ($npwpCabang) {
@@ -818,10 +852,6 @@ class TransaksiController extends Controller
             }
 
             $tipeBadanId = $client->tipe_badan;
-            $badanEntry = Badan::find($tipeBadanId);
-            $isId1 = $badanEntry && $badanEntry->id === 1;
-
-            $omsetTahunanStr = isset($row[4]) ? trim((string) $row[4]) : '';
 
             // UpdateOrCreate transaksi record
             try {
@@ -834,47 +864,20 @@ class TransaksiController extends Controller
                 TransaksiOmset::where('transaksi_id', $transaksi->id)->delete();
 
                 $tabOmset = 0;
-                if ($isId1) {
-                    $omset = (float) preg_replace('/[^0-9]/', '', $omsetTahunanStr);
-                    $tabOmset = $omset;
-                    if ($omset > 0) {
+                for ($mo = 0; $mo < 12; $mo++) {
+                    $val = isset($row[4 + $mo]) ? trim((string) $row[4 + $mo]) : '0';
+                    $nominal = (float) preg_replace('/[^0-9]/', '', $val);
+                    if ($nominal > 0) {
                         TransaksiOmset::create([
                             'transaksi_id' => $transaksi->id,
-                            'bulan' => 0,
-                            'nominal' => $omset,
+                            'bulan' => $mo + 1,
+                            'nominal' => $nominal,
                         ]);
                     }
-                } else {
-                    for ($mo = 0; $mo < 12; $mo++) {
-                        $val = isset($row[5 + $mo]) ? trim((string) $row[5 + $mo]) : '0';
-                        $nominal = (float) preg_replace('/[^0-9]/', '', $val);
-                        if ($nominal > 0) {
-                            TransaksiOmset::create([
-                                'transaksi_id' => $transaksi->id,
-                                'bulan' => $mo + 1,
-                                'nominal' => $nominal,
-                            ]);
-                        }
-                        $tabOmset += $nominal;
-                    }
+                    $tabOmset += $nominal;
                 }
 
                 $transaksi->update(['total_omset' => $tabOmset]);
-
-                // Harta only for induk
-                if (!$cabangId) {
-                    $hartaNama = isset($row[17]) ? trim((string) $row[17]) : '';
-                    $hartaNilai = isset($row[18]) ? trim((string) $row[18]) : '';
-                    if ($hartaNama) {
-                        TransaksiHarta::where('transaksi_id', $transaksi->id)->delete();
-                        TransaksiHarta::create([
-                            'transaksi_id' => $transaksi->id,
-                            'nama' => $hartaNama,
-                            'nilai' => (float) preg_replace('/[^0-9]/', '', $hartaNilai),
-                        ]);
-                        $transaksi->update(['total_harta' => (float) preg_replace('/[^0-9]/', '', $hartaNilai)]);
-                    }
-                }
 
                 $imported++;
             } catch (\Exception $e) {

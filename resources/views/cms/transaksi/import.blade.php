@@ -88,7 +88,6 @@
                             @foreach($months as $m)
                             <th class="text-end">{{ $m }}</th>
                             @endforeach
-                            <th>Harta</th>
                             <th>Status</th>
                         </tr>
                     </thead>
@@ -104,7 +103,6 @@
                             @foreach($item['omset_bulanan'] as $om)
                             <td class="text-end">{{ $om ?: '-' }}</td>
                             @endforeach
-                            <td><small>{{ $item['harta_nama'] ? $item['harta_nama'] . ' (' . number_format((float) preg_replace('/[^0-9]/', '', $item['harta_nilai']), 0, ',', '.') . ')' : '-' }}</small></td>
                             <td>
                                 @if($item['valid'])
                                     @if($item['is_cabang'])
