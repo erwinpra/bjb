@@ -204,7 +204,7 @@
                                 @endforeach
                                 <tr class="fw-bold table-secondary" id="hasilTotalRow">
                                     <td colspan="6" class="text-center">Total</td>
-                                    <td class="text-end text-danger" id="hasilTotalPph">Rp 0</td>
+                                    <td class="text-end text-danger" id="hasilTotalPph">0</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -547,7 +547,7 @@ function populateSummaryTable() {
         var pengurangan = maxVal > 0 ? Math.max(0, maxVal - cumulative) : 0;
         var pphBayar;
         if (maxVal > 0 && cumulative > maxVal) {
-            pphBayar = 'Rp ' + formatNum(String(cumulative * persen / 100));
+            pphBayar = formatNum(String(cumulative * persen / 100));
         } else {
             pphBayar = 'FREE';
         }
@@ -563,10 +563,10 @@ function populateSummaryTable() {
 
         var tr = document.createElement('tr');
         tr.innerHTML = '<td>' + bulanList[mo - 1] + '</td>' +
-            '<td class="text-end">Rp ' + formatNum(String(totalOmset)) + '</td>' +
-            '<td class="text-end">Rp ' + formatNum(String(totalPph)) + '</td>' +
-            '<td class="text-end">Rp ' + formatNum(String(showTotalPb)) + '</td>' +
-            '<td class="text-end">' + (maxVal > 0 ? 'Rp ' + formatNum(String(pengurangan)) : '-') + '</td>' +
+            '<td class="text-end">' + formatNum(String(totalOmset)) + '</td>' +
+            '<td class="text-end">' + formatNum(String(totalPph)) + '</td>' +
+            '<td class="text-end">' + formatNum(String(showTotalPb)) + '</td>' +
+            '<td class="text-end">' + (maxVal > 0 ? formatNum(String(pengurangan)) : '-') + '</td>' +
             '<td class="text-end fw-semibold ' + (pphBayar === 'FREE' ? 'text-success' : 'text-danger') + '">' + pphBayar + '</td>';
         tbody.appendChild(tr);
     }
@@ -590,7 +590,7 @@ function clearInputs() {
         document.getElementById('hasilStatus-' + mo).textContent = '-';
     }
     document.getElementById('hasilPerhitunganSection').classList.add('d-none');
-    document.getElementById('hasilTotalPph').textContent = 'Rp 0';
+    document.getElementById('hasilTotalPph').textContent = '0';
     var a = document.getElementById('alert4M');
     if (a) a.remove();
     toggleButtons();
@@ -737,8 +737,8 @@ function hitungOmset() {
         const omsetCell = document.getElementById('hasilOmset-' + mo);
         if (omsetCell) {
             omsetCell.innerHTML = exceeds400
-                ? '<span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-1"></i>Rp ' + formatNum(String(current)) + ' <span class="badge bg-danger ms-1">>400JT</span></span>'
-                : 'Rp ' + formatNum(String(current));
+                    ? '<span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-1"></i>' + formatNum(String(current)) + ' <span class="badge bg-danger ms-1">>400JT</span></span>'
+                : formatNum(String(current));
         }
 
         if (totalWithCurrent >= LIMIT_4M) cumulativeExceeds4M = true;
@@ -748,21 +748,21 @@ function hitungOmset() {
             if (cumulative >= maxVal) {
                 const potongan = current * persen / 100;
                 totalPotongan += potongan;
-                pphBayar = 'Rp ' + formatNum(String(potongan)); pphClass = 'text-danger';
+                pphBayar = formatNum(String(potongan)); pphClass = 'text-danger';
             } else if (totalWithCurrent > maxVal) {
                 const kelebihan = totalWithCurrent - maxVal;
                 const potongan = kelebihan * persen / 100;
                 totalPotongan += potongan;
-                pphBayar = 'Rp ' + formatNum(String(potongan)); pphClass = 'text-warning';
+                pphBayar = formatNum(String(potongan)); pphClass = 'text-warning';
             } else { pphBayar = 'Free'; pphClass = 'text-success'; }
         } else { pphBayar = '-'; pphClass = ''; }
 
-        const pphFinal = !rumus ? '-' : 'Rp ' + formatNum(String(current * persen / 100));
+        const pphFinal = !rumus ? '-' : formatNum(String(current * persen / 100));
 
-        document.getElementById('hasilBruto-' + mo).textContent = 'Rp ' + formatNum(String(totalWithCurrent));
+        document.getElementById('hasilBruto-' + mo).textContent = formatNum(String(totalWithCurrent));
         var akumEl = document.getElementById('hasilBrutoAkum-' + mo);
         var akumVal = akumCache[activeTabPrefix] ? (akumCache[activeTabPrefix][mo] || 0) : 0;
-        akumEl.textContent = 'Rp ' + formatNum(String(akumVal));
+        akumEl.textContent = formatNum(String(akumVal));
         document.getElementById('hasilPph-' + mo).innerHTML = '<span class="text-danger fw-semibold">' + pphFinal + '</span>';
         document.getElementById('hasilFinal-' + mo).innerHTML = '<span class="fw-semibold ' + pphClass + '">' + pphBayar + '</span>';
 
@@ -779,7 +779,7 @@ function hitungOmset() {
         cumulative += current;
     }
 
-    document.getElementById('hasilTotalPph').textContent = 'Rp ' + formatNum(String(totalPotongan));
+    document.getElementById('hasilTotalPph').textContent = formatNum(String(totalPotongan));
     var hasData = cumulative > 0;
     document.getElementById('hasilPerhitunganSection').classList.toggle('d-none', !hasData);
 }
@@ -975,13 +975,13 @@ document.getElementById('btnPreview').addEventListener('click', function() {
 
         if (isId1) {
             totalOmset = Number((td.omsetTahunan || '').replace(/[^0-9]/g, '') || 0);
-            if (totalOmset > 0) omsetDetails = '<tr><td class="text-muted">Tahunan</td><td class="text-end">Rp ' + formatNum(String(totalOmset)) + '</td></tr>';
+            if (totalOmset > 0) omsetDetails = '<tr><td class="text-muted">Tahunan</td><td class="text-end">' + formatNum(String(totalOmset)) + '</td></tr>';
         } else {
             for (let mo = 1; mo <= 12; mo++) {
                 var omsetVal = (td.omsetBulanan && td.omsetBulanan[mo]) || '0';
                 var omsetNum = Number(omsetVal.replace(/[^0-9]/g, '') || 0);
                 totalOmset += omsetNum;
-                if (omsetNum > 0) omsetDetails += '<tr><td class="text-muted ps-4">' + bulanList[mo - 1] + '</td><td class="text-end">Rp ' + formatNum(String(omsetNum)) + '</td></tr>';
+                if (omsetNum > 0) omsetDetails += '<tr><td class="text-muted ps-4">' + bulanList[mo - 1] + '</td><td class="text-end">' + formatNum(String(omsetNum)) + '</td></tr>';
             }
         }
 
@@ -999,7 +999,7 @@ document.getElementById('btnPreview').addEventListener('click', function() {
             paneHtml += '<div class="mb-3"><h6 class="fw-semibold text-warning border-bottom pb-2">Omset Tahunan</h6>' +
                 '<table class="table table-sm small mb-0"><thead><tr><th>Periode</th><th class="text-end">Omset</th></tr></thead><tbody>' +
                 omsetDetails +
-                '<tr class="fw-bold"><td>Total</td><td class="text-end">Rp ' + formatNum(String(totalOmset)) + '</td></tr>' +
+                '<tr class="fw-bold"><td>Total</td><td class="text-end">' + formatNum(String(totalOmset)) + '</td></tr>' +
                 '</tbody></table></div>';
         }
 
@@ -1016,13 +1016,13 @@ document.getElementById('btnPreview').addEventListener('click', function() {
                 const tot = cumulative + current;
                 let ppb, ppc, ppf;
                 if (cumulative >= maxVal) {
-                    const p = current * persen / 100; totalPotongan += p; ppb = 'Rp ' + formatNum(String(p)); ppc = 'text-danger';
+                    const p = current * persen / 100; totalPotongan += p; ppb = formatNum(String(p)); ppc = 'text-danger';
                 } else if (tot > maxVal) {
-                    const kelebihan = tot - maxVal; const p = kelebihan * persen / 100; totalPotongan += p; ppb = 'Rp ' + formatNum(String(p)); ppc = 'text-warning';
+                    const kelebihan = tot - maxVal; const p = kelebihan * persen / 100; totalPotongan += p; ppb = formatNum(String(p)); ppc = 'text-warning';
                 } else { ppb = 'Free'; ppc = 'text-success'; }
-                ppf = 'Rp ' + formatNum(String(current * persen / 100));
-                var akumPreview = '<td class="text-end">Rp ' + formatNum(String(previewAkumCache[prefix] ? (previewAkumCache[prefix][mo] || 0) : 0)) + '</td>';
-                calcRows += '<tr><td class="text-muted ps-4">' + bulanList[mo - 1] + '</td><td class="text-end">Rp ' + formatNum(String(current)) + '</td><td class="text-end">Rp ' + formatNum(String(tot)) + '</td>' + akumPreview + '<td class="text-end text-danger fw-semibold">' + ppf + '</td><td class="text-end ' + ppc + ' fw-semibold">' + ppb + '</td></tr>';
+                ppf = formatNum(String(current * persen / 100));
+                var akumPreview = '<td class="text-end">' + formatNum(String(previewAkumCache[prefix] ? (previewAkumCache[prefix][mo] || 0) : 0)) + '</td>';
+                calcRows += '<tr><td class="text-muted ps-4">' + bulanList[mo - 1] + '</td><td class="text-end">' + formatNum(String(current)) + '</td><td class="text-end">' + formatNum(String(tot)) + '</td>' + akumPreview + '<td class="text-end text-danger fw-semibold">' + ppf + '</td><td class="text-end ' + ppc + ' fw-semibold">' + ppb + '</td></tr>';
                 cumulative += current;
             }
 
@@ -1032,11 +1032,11 @@ document.getElementById('btnPreview').addEventListener('click', function() {
             paneHtml += '<h6 class="fw-semibold text-secondary border-bottom pb-2">Hasil Perhitungan</h6>' +
                 '<div class="table-responsive"><table class="table table-sm small mb-0"><thead><tr><th>Bulan</th><th class="text-end">Peredaran Bruto</th><th class="text-end">Total Peredaran Bruto Cabang</th>' + akumHeader + '<th class="text-end">PPH Final ' + persenLabel + '%</th><th class="text-end">PPh Final yg harus dibayar</th></tr></thead><tbody>' +
                 calcRows +
-                '<tr class="fw-bold table-secondary"><td colspan="5" class="text-center">Total</td><td class="text-end text-danger">Rp ' + formatNum(String(totalPotongan)) + '</td></tr>' +
+                '<tr class="fw-bold table-secondary"><td colspan="5" class="text-center">Total</td><td class="text-end text-danger">' + formatNum(String(totalPotongan)) + '</td></tr>' +
                 '</tbody></table></div>';
         }
 
-        paneHtml += '<div class="mt-3 pt-2 border-top"><strong>Total Omset:</strong> <span class="text-warning fw-bold">Rp ' + formatNum(String(totalOmset)) + '</span></div>';
+        paneHtml += '<div class="mt-3 pt-2 border-top"><strong>Total Omset:</strong> <span class="text-warning fw-bold">' + formatNum(String(totalOmset)) + '</span></div>';
         contentHtml += '<div class="tab-pane fade ' + isActive + '" id="' + tabId + '" role="tabpanel">' + paneHtml + '</div>';
         first = false;
     });

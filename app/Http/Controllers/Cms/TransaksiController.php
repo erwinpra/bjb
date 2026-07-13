@@ -729,7 +729,7 @@ class TransaksiController extends Controller
             if ($npwpClient) $npwpList[] = $npwpClient;
         }
         $npwpList = array_unique($npwpList);
-        $existingNpwps = DataClient::whereNotNull('npwp')->pluck('npwp')->map(fn($v) => strtolower(trim($v)))->filter()->values()->toArray();
+        $existingNpwps = DataClient::whereNotNull('npwp')->pluck('npwp')->map(function ($v) { return strtolower(trim($v)); })->filter()->values()->toArray();
         $missingNpwps = [];
         foreach ($npwpList as $np) {
             $cleanNp = strtolower(ltrim(trim($np), "'"));
@@ -824,7 +824,7 @@ class TransaksiController extends Controller
             if ($npwpClient) $npwpList[] = $npwpClient;
         }
         $npwpList = array_unique($npwpList);
-        $existingNpwps = DataClient::whereNotNull('npwp')->pluck('npwp')->map(fn($v) => strtolower(trim($v)))->filter()->values()->toArray();
+        $existingNpwps = DataClient::whereNotNull('npwp')->pluck('npwp')->map(function ($v) { return strtolower(trim($v)); })->filter()->values()->toArray();
         $missingNpwps = [];
         foreach ($npwpList as $np) {
             $cleanNp = strtolower(ltrim(trim($np), "'"));
