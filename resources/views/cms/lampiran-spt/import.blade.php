@@ -15,11 +15,15 @@
     <div class="card-body p-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
-                <span class="badge bg-success fs-6">{{ $validCount }} data valid</span>
-                <span class="badge bg-secondary fs-6 ms-2">{{ $totalRows }} total baris</span>
-                @if(!empty($npwpMismatch))
-                    <span class="badge bg-danger fs-6 ms-2">NIK/NPWP tidak sesuai</span>
-                @endif
+                <span class="badge bg-info fs-6 me-2">
+                    <i class="bi bi-person me-1"></i>{{ $client->nama_client ?? 'Unknown' }}
+                    <span class="ms-1 text-white-50">({{ $client->npwp ?? 'N/A' }})</span>
+                </span>
+                <span class="badge bg-primary fs-6 me-2">
+                    <i class="bi bi-calendar me-1"></i>Tahun {{ $tahun }}
+                </span>
+                <span class="badge bg-success fs-6 me-2">{{ $validCount }} data valid</span>
+                <span class="badge bg-secondary fs-6">{{ $totalRows }} total baris</span>
             </div>
         </div>
 
@@ -39,7 +43,6 @@
                         <th>THN PEROLEHAN</th>
                         <th class="text-end">SALDO SAAT INI</th>
                         <th class="text-end">SALDO AWAL</th>
-                        <th class="text-end">NILAI KURS</th>
                         <th>STATUS</th>
                     </tr>
                 </thead>
@@ -55,9 +58,8 @@
                         <td>{{ $item['lokasi_harta'] }}</td>
                         <td>{{ $item['kurs'] }}</td>
                         <td>{{ $item['tahun_perolehan'] }}</td>
-                        <td class="text-end">{{ number_format($item['saldo_saat_ini'], 0, ',', '.') }}</td>
-                        <td class="text-end">{{ number_format($item['saldo_bentuk_awal'], 0, ',', '.') }}</td>
-                        <td class="text-end">{{ number_format($item['nilai_kurs'], 2, ',', '.') }}</td>
+                        <td class="text-end">{{ $item['saldo_saat_ini'] !== '' ? (strpos($item['saldo_saat_ini'], '.') !== false ? $item['saldo_saat_ini'] : $item['saldo_saat_ini'] . '.00') : '-' }}</td>
+                        <td class="text-end">{{ $item['saldo_bentuk_awal'] !== '' ? (strpos($item['saldo_bentuk_awal'], '.') !== false ? $item['saldo_bentuk_awal'] : $item['saldo_bentuk_awal'] . '.00') : '-' }}</td>
                         <td>
                             @if($item['valid'])
                                 <span class="badge bg-success">Valid</span>
@@ -76,17 +78,13 @@
             <input type="hidden" name="temp_path" value="{{ $tempPath }}">
             <input type="hidden" name="client_id" value="{{ $clientId }}">
             <input type="hidden" name="tahun" value="{{ $tahun }}">
-            <a href="{{ route('cms.lampiran-spt.index', ['client_id' => $clientId, 'tahun' => $tahun]) }}" class="btn btn-outline-secondary">
+            <a href="{{ route('cms.lampiran-spt.index') }}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left me-1"></i> Kembali
             </a>
-            @if($validCount > 0 && empty($npwpMismatch))
+            @if($validCount > 0)
             <button type="submit" class="btn btn-success px-4">
                 <i class="bi bi-check-lg me-1"></i> Konfirmasi Import
             </button>
-            @elseif(!empty($npwpMismatch))
-            <div class="text-danger fw-semibold py-2">
-                <i class="bi bi-exclamation-triangle me-1"></i> Import tidak dapat dilanjutkan karena ada NIK/NPWP yang tidak sesuai.
-            </div>
             @endif
         </form>
         @else
