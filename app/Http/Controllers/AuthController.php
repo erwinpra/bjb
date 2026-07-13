@@ -51,6 +51,12 @@ class AuthController extends Controller
             return back()->withErrors(['email' => 'Invalid credentials.']);
         }
 
+        if (!config('services.two_fa.enabled')) {
+            Auth::login($user);
+            $request->session()->regenerate();
+            return redirect()->intended(route('cms.dashboard'));
+        }
+
         $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
         Log::info('[2FA] Kode verifikasi untuk ' . $user->email . ': ' . $code);
@@ -72,6 +78,10 @@ class AuthController extends Controller
 
     public function showVerifyForm()
     {
+        if (!config('services.two_fa.enabled')) {
+            return redirect()->route('login');
+        }
+
         if (!session()->has('two_factor_user_id')) {
             return redirect()->route('login');
         }
@@ -87,6 +97,10 @@ class AuthController extends Controller
 
     public function verifyCode(Request $request)
     {
+        if (!config('services.two_fa.enabled')) {
+            return redirect()->route('login');
+        }
+
         if (!session()->has('two_factor_user_id')) {
             return redirect()->route('login');
         }

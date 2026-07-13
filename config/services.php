@@ -36,4 +36,8 @@ return [
         'secret' => env('CAPTCHA_SECRET', ''),
     ],
 
+    'two_fa' => [
+        'enabled' => filter_var(env('TWO_FA_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+    ],
+
 ];
