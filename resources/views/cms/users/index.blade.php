@@ -10,9 +10,11 @@
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
             <h6 class="fw-semibold mb-0"><i class="bi bi-people me-2"></i>All Users</h6>
+            @cmsCan('user', 'create')
             <a href="{{ route('cms.users.create') }}" class="btn btn-primary btn-sm">
                 <i class="bi bi-plus-lg me-1"></i> Create User
             </a>
+            @endCmsCan
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -45,15 +47,17 @@
                             </td>
                             <td><span class="small text-muted">{{ $user->created_at->format('d M Y') }}</span></td>
                             <td class="text-end pe-4">
+                                @cmsCan('user', 'edit')
                                 <a href="{{ route('cms.users.edit', $user) }}" class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-pencil"></i>
                                 </a>
+                                @endCmsCan
+                                @cmsCan('user', 'delete')
                                 @if($user->id !== auth()->id())
                                 <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteUser{{ $user->id }}">
                                     <i class="bi bi-trash"></i>
                                 </button>
                                 @endif
-
                                 @if($user->id !== auth()->id())
                                 <div class="modal fade" id="deleteUser{{ $user->id }}" tabindex="-1">
                                     <div class="modal-dialog modal-sm modal-dialog-centered">
@@ -76,6 +80,7 @@
                                     </div>
                                 </div>
                                 @endif
+                                @endCmsCan
                             </td>
                         </tr>
                         @empty

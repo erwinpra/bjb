@@ -10,9 +10,11 @@
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
             <h6 class="fw-semibold mb-0"><i class="bi bi-tags me-2"></i>All Kategori Lampiran</h6>
+            @cmsCan('kategori_lampiran', 'create')
             <a href="{{ route('cms.kategori-lampiran.create') }}" class="btn btn-primary btn-sm">
                 <i class="bi bi-plus-lg me-1"></i> Create Kategori
             </a>
+            @endCmsCan
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -30,9 +32,12 @@
                             <td class="ps-4 text-muted small">#{{ $k->id }}</td>
                             <td class="fw-medium">{{ $k->label }}</td>
                             <td class="text-end pe-4">
+                                @cmsCan('kategori_lampiran', 'edit')
                                 <a href="{{ route('cms.kategori-lampiran.edit', $k) }}" class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-pencil"></i>
                                 </a>
+                                @endCmsCan
+                                @cmsCan('kategori_lampiran', 'delete')
                                 <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteKategori{{ $k->id }}">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -51,6 +56,7 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endCmsCan
                             </td>
                         </tr>
                         @empty

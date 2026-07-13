@@ -10,9 +10,11 @@
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
             <h6 class="fw-semibold mb-0"><i class="bi bi-list-check me-2"></i>All Master Lampiran SPT</h6>
+            @cmsCan('master_lampiran_spt', 'create')
             <a href="{{ route('cms.master-lampiran-spt.create') }}" class="btn btn-primary btn-sm">
                 <i class="bi bi-plus-lg me-1"></i> Create Item
             </a>
+            @endCmsCan
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -34,9 +36,12 @@
                             <td><code>{{ $item->sub_kode }}</code></td>
                             <td class="fw-medium">{{ $item->nama }}</td>
                             <td class="text-end pe-4">
+                                @cmsCan('master_lampiran_spt', 'edit')
                                 <a href="{{ route('cms.master-lampiran-spt.edit', $item) }}" class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-pencil"></i>
                                 </a>
+                                @endCmsCan
+                                @cmsCan('master_lampiran_spt', 'delete')
                                 <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteItem{{ $item->id }}">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -55,6 +60,7 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endCmsCan
                             </td>
                         </tr>
                         @empty

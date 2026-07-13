@@ -12,9 +12,11 @@
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
         <h6 class="fw-semibold mb-0"><i class="bi bi-person-badge me-2"></i>Detail Data Client</h6>
         <div class="d-flex gap-2">
+            @cmsCan('data_client', 'edit')
             <a href="{{ route('cms.data-client.edit', $dataClient) }}" class="btn btn-primary btn-sm">
                 <i class="bi bi-pencil me-1"></i> Edit
             </a>
+            @endCmsCan
             <a href="{{ route('cms.data-client.index') }}" class="btn btn-light btn-sm">
                 <i class="bi bi-arrow-left me-1"></i> Kembali
             </a>

@@ -8,6 +8,14 @@ use Illuminate\Http\Request;
 
 class ClientRoleController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('cms.permission:client_roles,view')->only(['index']);
+        $this->middleware('cms.permission:client_roles,create')->only(['create', 'store']);
+        $this->middleware('cms.permission:client_roles,edit')->only(['edit', 'update']);
+        $this->middleware('cms.permission:client_roles,delete')->only(['destroy']);
+    }
+
     public function index()
     {
         $roles = ClientRole::withCount('clients')->latest()->get();

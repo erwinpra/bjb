@@ -11,12 +11,14 @@
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
             <h6 class="fw-semibold mb-0"><i class="bi bi-person-badge me-2"></i>All Data Client</h6>
             <div class="d-flex gap-2">
+                @cmsCan('data_client', 'create')
                 <a href="{{ route('cms.data-client.import') }}" class="btn btn-info btn-sm text-white">
                     <i class="bi bi-upload me-1"></i> Import Excel
                 </a>
                 <a href="{{ route('cms.data-client.create') }}" class="btn btn-primary btn-sm">
                     <i class="bi bi-plus-lg me-1"></i> Create Data Client
                 </a>
+                @endCmsCan
             </div>
         </div>
         <div class="card-body p-0">
@@ -63,9 +65,12 @@
                                 <a href="{{ route('cms.data-client.show', $d) }}" class="btn btn-sm btn-outline-info" title="Lihat Detail">
                                     <i class="bi bi-eye"></i>
                                 </a>
+                                @cmsCan('data_client', 'edit')
                                 <a href="{{ route('cms.data-client.edit', $d) }}" class="btn btn-sm btn-outline-primary" title="Edit">
                                     <i class="bi bi-pencil"></i>
                                 </a>
+                                @endCmsCan
+                                @cmsCan('data_client', 'delete')
                                 <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteDC{{ $d->id }}">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -84,6 +89,7 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endCmsCan
                             </td>
                         </tr>
                         @empty

@@ -27,7 +27,7 @@
                             </div>
                         @endif
 
-                        <form method="POST" action="{{ route('login') }}">
+                        <form method="POST" action="{{ route('login') }}" id="loginForm">
                             @csrf
                             <div class="mb-3">
                                 <label class="form-label small fw-semibold">Email</label>
@@ -52,7 +52,7 @@
                                 </div>
                             @endif
 
-                            <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                            <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold" id="loginBtn">
                                 <i class="bi bi-box-arrow-in-right me-1"></i> Login
                             </button>
                         </form>
@@ -62,5 +62,17 @@
             </div>
         </div>
     </div>
+    <div id="loadingOverlay" class="d-none" style="position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center">
+        <div class="text-center text-white">
+            <div class="spinner-border fs-1" role="status" style="width:3rem;height:3rem"></div>
+            <p class="mt-3 fw-semibold">Memproses...</p>
+        </div>
+    </div>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function() {
+            document.getElementById('loadingOverlay').classList.remove('d-none');
+            document.getElementById('loginBtn').disabled = true;
+        });
+    </script>
 </body>
 </html>

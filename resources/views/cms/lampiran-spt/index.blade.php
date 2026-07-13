@@ -36,9 +36,11 @@
                 <button type="submit" class="btn btn-primary px-4">
                     <i class="bi bi-search me-1"></i> Tampilkan
                 </button>
+                @cmsCan('master_lampiran_spt', 'view')
                 <a href="{{ route('cms.lampiran-spt.master') }}" class="btn btn-outline-secondary ms-2">
                     <i class="bi bi-gear me-1"></i> Kelola Master
                 </a>
+                @endCmsCan
             </div>
         </form>
 
@@ -68,6 +70,7 @@
                         </div>
                         <div class="card-body">
                             <div class="row g-3 align-items-end">
+                                @cmsCan('lampiran_spt', 'create')
                                 <div class="col-md-6">
                                     <form method="POST" action="{{ route('cms.lampiran-spt.import.preview') }}" enctype="multipart/form-data" id="formImport">
                                         @csrf
@@ -89,6 +92,7 @@
                                         Download template Excel, isi data, lalu upload.
                                     </small>
                                 </div>
+                                @endCmsCan
                             </div>
                         </div>
                     </div>
@@ -185,12 +189,16 @@
                                             <input type="text" name="nilai_kurs[]" class="cell-input cell-edit format-currency text-end d-none" value="{{ $d->nilai_kurs > 0 ? number_format($d->nilai_kurs, 0, ',', '.') : '' }}">
                                         </td>
                                         <td class="text-center">
+                                            @cmsCan('lampiran_spt', 'edit')
                                             <button type="button" class="btn btn-outline-primary btn-sm btn-edit-row" title="Edit baris">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
+                                            @endCmsCan
+                                            @cmsCan('lampiran_spt', 'delete')
                                             <button type="button" class="btn btn-outline-danger btn-sm btn-remove-row" title="Hapus baris" data-id="{{ $d->id }}">
                                                 <i class="bi bi-trash3"></i>
                                             </button>
+                                            @endCmsCan
                                         </td>
                                     </tr>
                                     @empty
@@ -206,12 +214,14 @@
                         </div>
 
                         <div class="d-flex justify-content-between mt-3">
+                            @cmsCan('lampiran_spt', 'create')
                             <button type="button" class="btn btn-outline-primary" id="btnAddRow">
                                 <i class="bi bi-plus-lg me-1"></i> Tambah Baris
                             </button>
                             <button type="submit" class="btn btn-primary px-4">
                                 <i class="bi bi-save me-1"></i> Simpan
                             </button>
+                            @endCmsCan
                         </div>
                     </form>
                 </div>
@@ -272,9 +282,11 @@
                                                     <td class="text-end">Rp {{ number_format($item->saldo_bentuk_awal, 0, ',', '.') }}</td>
                                                     <td class="text-end">{{ number_format($item->nilai_kurs, 2, ',', '.') }}</td>
                                                     <td class="text-center">
+                                                        @cmsCan('lampiran_spt', 'delete')
                                                         <button type="button" class="btn btn-outline-danger btn-sm btn-delete-row" data-id="{{ $item->id }}" title="Hapus">
                                                             <i class="bi bi-trash3"></i>
                                                         </button>
+                                                        @endCmsCan
                                                     </td>
                                                 </tr>
                                                 @endforeach

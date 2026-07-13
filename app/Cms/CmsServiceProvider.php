@@ -67,6 +67,14 @@ class CmsServiceProvider extends ServiceProvider
         Blade::directive('cmsSetting', function ($expression) {
             return "<?php echo \\App\\Models\\Cms\\Setting::getValue($expression); ?>";
         });
+
+        Blade::directive('cmsCan', function ($expression) {
+            return "<?php if(auth()->check() && auth()->user()->hasCmsPermission({$expression})): ?>";
+        });
+
+        Blade::directive('endCmsCan', function () {
+            return '<?php endif; ?>';
+        });
     }
 
     protected function registerModules()

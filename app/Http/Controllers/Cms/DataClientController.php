@@ -16,6 +16,14 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class DataClientController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('cms.permission:data_client,view')->only(['index', 'show']);
+        $this->middleware('cms.permission:data_client,create')->only(['create', 'store', 'showImport', 'previewImport', 'confirmImport', 'downloadTemplate']);
+        $this->middleware('cms.permission:data_client,edit')->only(['edit', 'update']);
+        $this->middleware('cms.permission:data_client,delete')->only(['destroy']);
+    }
+
     public function index(Request $request)
     {
         $search = $request->get('search');

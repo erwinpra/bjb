@@ -92,9 +92,11 @@
                 <div class="mt-4 pt-3 border-top">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="fw-semibold mb-0"><i class="bi bi-diagram-2 me-2"></i>Cabang</h6>
+                        @cmsCan('data_client', 'edit')
                         <button type="button" class="btn btn-sm btn-outline-primary" onclick="addCabangRow()">
                             <i class="bi bi-plus-lg me-1"></i> Tambah Cabang
                         </button>
+                        @endCmsCan
                     </div>
                     <div style="overflow-x: auto;">
                         <table class="table table-sm table-bordered mb-0" id="cabangTable">

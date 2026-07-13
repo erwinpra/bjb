@@ -8,6 +8,14 @@ use Illuminate\Http\Request;
 
 class PasalController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('cms.permission:pasal,view')->only(['index', 'show']);
+        $this->middleware('cms.permission:pasal,create')->only(['create', 'store']);
+        $this->middleware('cms.permission:pasal,edit')->only(['edit', 'update']);
+        $this->middleware('cms.permission:pasal,delete')->only(['destroy']);
+    }
+
     public function index()
     {
         $pasal = Pasal::latest()->paginate(15);

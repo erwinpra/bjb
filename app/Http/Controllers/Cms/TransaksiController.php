@@ -21,6 +21,14 @@ use Shuchkin\SimpleXLSX;
 
 class TransaksiController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('cms.permission:transaksi,view')->only(['create', 'loadData', 'checkHarta', 'showImport', 'previewImport', 'preview', 'exportPdf', 'exportExcel', 'getCabangs']);
+        $this->middleware('cms.permission:transaksi,create')->only(['store', 'saveHartaAjax', 'confirmImport', 'downloadTemplate']);
+        $this->middleware('cms.permission:transaksi,edit')->only([]);
+        $this->middleware('cms.permission:transaksi,delete')->only([]);
+    }
+
     public function create()
     {
         $clients = DataClient::all();

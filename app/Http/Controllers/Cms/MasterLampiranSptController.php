@@ -9,6 +9,14 @@ use Illuminate\Http\Request;
 
 class MasterLampiranSptController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('cms.permission:master_lampiran_spt,view')->only(['index', 'show']);
+        $this->middleware('cms.permission:master_lampiran_spt,create')->only(['create', 'store']);
+        $this->middleware('cms.permission:master_lampiran_spt,edit')->only(['edit', 'update']);
+        $this->middleware('cms.permission:master_lampiran_spt,delete')->only(['destroy']);
+    }
+
     public function index()
     {
         $items = MasterLampiranSpt::with('kategori')->latest()->paginate(15);

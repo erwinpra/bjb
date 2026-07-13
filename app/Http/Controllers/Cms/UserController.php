@@ -10,6 +10,14 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('cms.permission:user,view')->only(['index', 'show']);
+        $this->middleware('cms.permission:user,create')->only(['create', 'store']);
+        $this->middleware('cms.permission:user,edit')->only(['edit', 'update']);
+        $this->middleware('cms.permission:user,delete')->only(['destroy']);
+    }
+
     public function index()
     {
         $users = User::with('roles')->paginate(15);

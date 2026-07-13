@@ -39,9 +39,15 @@
                     }
                 @endphp
 
+                @php $userPerms = auth()->user()->roles->flatMap(fn($r) => $r->permissions); @endphp
+
                 @foreach($groups as $groupKey => $groupConfig)
                     @php
-                        $modules = $grouped[$groupKey] ?? [];
+                        $modules = collect($grouped[$groupKey] ?? [])->filter(function($m) use ($userPerms) {
+                            $perms = $m->getPermissions();
+                            if (empty($perms)) return true;
+                            return $userPerms->contains(fn($p) => $p->module === $m->getName() && $p->action === 'view');
+                        })->values()->all();
                         if (empty($modules)) continue;
                         $groupIcon = $groupConfig['icon'] ?? 'circle';
                         $groupLabel = $groupConfig['label'] ?? ucfirst($groupKey);

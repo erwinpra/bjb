@@ -52,8 +52,11 @@ Route::prefix($prefix)
 
         if (config('cms.modules.badan.enabled', true)) {
             Route::get('badan', [BadanController::class, 'index'])->name('badan.index');
+            Route::get('badan/create', [BadanController::class, 'create'])->name('badan.create');
+            Route::post('badan', [BadanController::class, 'store'])->name('badan.store');
             Route::get('badan/{badan}/edit', [BadanController::class, 'edit'])->name('badan.edit');
             Route::put('badan/{badan}', [BadanController::class, 'update'])->name('badan.update');
+            Route::delete('badan/{badan}', [BadanController::class, 'destroy'])->name('badan.destroy');
         }
 
         if (config('cms.modules.master_rumus.enabled', true)) {

@@ -10,6 +10,14 @@ use Illuminate\Http\Request;
 
 class RoleController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('cms.permission:role,view')->only(['index', 'show']);
+        $this->middleware('cms.permission:role,create')->only(['create', 'store']);
+        $this->middleware('cms.permission:role,edit')->only(['edit', 'update']);
+        $this->middleware('cms.permission:role,delete')->only(['destroy']);
+    }
+
     public function index()
     {
         $roles = Role::withCount('users')->get();

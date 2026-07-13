@@ -10,9 +10,11 @@
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
             <h6 class="fw-semibold mb-0"><i class="bi bi-shield-check me-2"></i>All Roles</h6>
+            @cmsCan('role', 'create')
             <a href="{{ route('cms.roles.create') }}" class="btn btn-primary btn-sm">
                 <i class="bi bi-plus-lg me-1"></i> Create Role
             </a>
+            @endCmsCan
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -32,13 +34,15 @@
                             <td><code class="small">{{ $role->slug }}</code></td>
                             <td><span class="badge bg-info rounded-pill">{{ $role->users_count }}</span></td>
                             <td class="text-end pe-4">
+                                @cmsCan('role', 'edit')
                                 <a href="{{ route('cms.roles.edit', $role) }}" class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-pencil"></i> Edit
                                 </a>
+                                @endCmsCan
+                                @cmsCan('role', 'delete')
                                 <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteRole{{ $role->id }}">
                                     <i class="bi bi-trash"></i>
                                 </button>
-                                {{-- Delete Modal --}}
                                 <div class="modal fade" id="deleteRole{{ $role->id }}" tabindex="-1">
                                     <div class="modal-dialog modal-sm modal-dialog-centered">
                                         <div class="modal-content">
@@ -59,6 +63,7 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endCmsCan
                             </td>
                         </tr>
                         @empty

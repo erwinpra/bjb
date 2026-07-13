@@ -9,6 +9,14 @@ use Illuminate\Http\Request;
 
 class MasterRumusController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('cms.permission:master_rumus,view')->only(['index']);
+        $this->middleware('cms.permission:master_rumus,create')->only(['create', 'store']);
+        $this->middleware('cms.permission:master_rumus,edit')->only(['edit', 'update']);
+        $this->middleware('cms.permission:master_rumus,delete')->only([]);
+    }
+
     public function index()
     {
         $rumus = MasterRumus::with('badan')->latest()->paginate(15);

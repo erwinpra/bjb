@@ -11,9 +11,11 @@
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
             <h6 class="fw-semibold mb-0"><i class="bi bi-calculator me-2"></i>All Master Rumus</h6>
             <div class="d-flex gap-2">
+                @cmsCan('master_rumus', 'create')
                 <a href="{{ route('cms.master-rumus.create') }}" class="btn btn-primary btn-sm">
                     <i class="bi bi-plus-lg me-1"></i> Create Master Rumus
                 </a>
+                @endCmsCan
             </div>
         </div>
         <div class="card-body p-0">
@@ -36,7 +38,9 @@
                             <td>Rp {{ number_format($r->max_value, 0, ',', '.') }}</td>
                             <td>{{ number_format($r->potongan_persentase, 2) }}%</td>
                             <td class="text-end pe-4">
+                                @cmsCan('master_rumus', 'edit')
                                 <a href="{{ route('cms.master-rumus.edit', $r) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                                @endCmsCan
                             </td>
                         </tr>
                         @empty

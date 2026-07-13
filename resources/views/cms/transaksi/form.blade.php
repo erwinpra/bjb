@@ -31,7 +31,9 @@
                                 </option>
                             @endforeach
                         </select>
+                        @cmsCan('transaksi', 'create')
                         <a href="{{ route('cms.transaksi.import') }}" class="btn btn-outline-success btn-sm btn-import-transaksi d-none text-nowrap" id="btnImportTransaksi"><i class="bi bi-upload me-1"></i>Import Excel</a>
+                        @endCmsCan
                     </div>
                 </div>
             </div>
@@ -226,9 +228,11 @@
                 <button type="button" class="btn btn-info px-4 text-white" id="btnExportExcel" disabled>
                     <i class="bi bi-file-earmark-spreadsheet me-1"></i> Excel
                 </button>
+                @cmsCan('transaksi', 'create')
                 <button type="button" class="btn btn-success px-4" id="btnSimpan" disabled>
                     <i class="bi bi-check-lg me-1"></i> Simpan
                 </button>
+                @endCmsCan
             </div>
         </form>
     </div>
@@ -371,7 +375,7 @@ function handleClientChange() {
     const id = parseInt(el.value);
     var btnImport = document.getElementById('btnImportTransaksi');
     if (!id) {
-        btnImport.classList.add('d-none');
+        if (btnImport) btnImport.classList.add('d-none');
         document.getElementById('cabangSection').classList.add('d-none');
         document.getElementById('summarySection').classList.add('d-none');
         document.getElementById('hartaSection').classList.add('d-none');
@@ -381,7 +385,7 @@ function handleClientChange() {
         toggleButtons();
         return;
     }
-    btnImport.classList.remove('d-none');
+    if (btnImport) btnImport.classList.remove('d-none');
 
     document.getElementById('summarySection').classList.add('d-none');
     tabData = {};
@@ -658,7 +662,8 @@ function disableAllButtons(v) {
     document.getElementById('btnPreview').disabled = v;
     document.getElementById('btnExportPdf').disabled = v;
     document.getElementById('btnExportExcel').disabled = v;
-    document.getElementById('btnSimpan').disabled = v;
+    var bs = document.getElementById('btnSimpan');
+    if (bs) bs.disabled = v;
 }
 
 function hitungOmset() {
@@ -1091,7 +1096,8 @@ function prepareFormData() {
 }
 
 // --- Simpan button ---
-document.getElementById('btnSimpan').addEventListener('click', function() {
+var btnSimpan = document.getElementById('btnSimpan');
+if (btnSimpan) btnSimpan.addEventListener('click', function() {
     const clientId = parseInt(document.getElementById('clientSelect').value);
     const tahun = document.getElementById('tahunSelect').value;
     if (!clientId || !tahun) { alert('Pilih client dan tahun terlebih dahulu.'); return; }

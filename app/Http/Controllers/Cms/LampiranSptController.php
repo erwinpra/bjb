@@ -14,6 +14,14 @@ use Shuchkin\SimpleXLSX;
 
 class LampiranSptController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('cms.permission:lampiran_spt,view')->only(['index', 'editMaster']);
+        $this->middleware('cms.permission:lampiran_spt,create')->only(['store', 'downloadTemplate', 'previewImport', 'confirmImport']);
+        $this->middleware('cms.permission:lampiran_spt,edit')->only([]);
+        $this->middleware('cms.permission:lampiran_spt,delete')->only(['destroyRow']);
+    }
+
     public function index()
     {
         $clientId = request('client_id');

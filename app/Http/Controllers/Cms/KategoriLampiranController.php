@@ -8,6 +8,14 @@ use Illuminate\Http\Request;
 
 class KategoriLampiranController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('cms.permission:kategori_lampiran,view')->only(['index', 'show']);
+        $this->middleware('cms.permission:kategori_lampiran,create')->only(['create', 'store']);
+        $this->middleware('cms.permission:kategori_lampiran,edit')->only(['edit', 'update']);
+        $this->middleware('cms.permission:kategori_lampiran,delete')->only(['destroy']);
+    }
+
     public function index()
     {
         $kategoris = KategoriLampiran::latest()->paginate(15);
