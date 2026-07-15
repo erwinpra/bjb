@@ -7,6 +7,7 @@ use App\Models\Cms\DataClient;
 use App\Models\Cms\Badan;
 use App\Models\Cms\ClientRole;
 use App\Models\Cms\NpwpCabang;
+use App\Models\Cms\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
@@ -77,6 +78,7 @@ class DataClientController extends Controller
 
         $this->saveCabangs($request, $client);
 
+        ActivityLog::log('create', 'data_client', 'Created data client: ' . $client->nama_client, (string) $client->id);
         return redirect()->route('cms.data-client.index')
             ->with('success', 'Data client created.');
     }
@@ -408,6 +410,7 @@ class DataClientController extends Controller
             $message .= " " . count($errors) . " error: " . implode('; ', array_slice($errors, 0, 5));
         }
 
+        ActivityLog::log('create', 'data_client', 'Import: ' . $message);
         return redirect()->route('cms.data-client.index')
             ->with('success', $message);
     }
@@ -449,12 +452,14 @@ class DataClientController extends Controller
 
         $this->saveCabangs($request, $dataClient);
 
+        ActivityLog::log('update', 'data_client', 'Updated data client: ' . $dataClient->nama_client, (string) $dataClient->id);
         return redirect()->route('cms.data-client.index')
             ->with('success', 'Data client updated.');
     }
 
     public function destroy(DataClient $dataClient)
     {
+        ActivityLog::log('delete', 'data_client', 'Deleted data client: ' . $dataClient->nama_client, (string) $dataClient->id);
         $dataClient->delete();
         return redirect()->route('cms.data-client.index')
             ->with('success', 'Data client deleted.');

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\TwoFactorCode;
+use App\Models\Cms\ActivityLog;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -54,6 +55,7 @@ class AuthController extends Controller
         if (!config('services.two_fa.enabled')) {
             Auth::login($user);
             $request->session()->regenerate();
+            ActivityLog::log('login', 'auth', 'User logged in: ' . $user->email);
             return redirect()->intended(route('cms.dashboard'));
         }
 
@@ -134,6 +136,7 @@ class AuthController extends Controller
 
         session()->forget('two_factor_user_id');
         $request->session()->regenerate();
+        ActivityLog::log('login', 'auth', 'User logged in via 2FA: ' . $user->email);
 
         return redirect()->intended(route('cms.dashboard'));
     }
@@ -164,6 +167,7 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        ActivityLog::log('logout', 'auth', 'User logged out: ' . (Auth::user()->email ?? 'unknown'));
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

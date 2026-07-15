@@ -79,14 +79,14 @@ return [
             'group' => 'client',
         ],
         'client_roles' => [
-            'enabled' => true,
+            'enabled' => false,
             'route' => 'client-roles',
             'icon' => 'person-lock',
             'label' => 'Client Roles',
             'group' => 'setting',
         ],
         'dokumentasi' => [
-            'enabled' => true,
+            'enabled' => false,
             'route' => 'dokumentasi',
             'icon' => 'journal-code',
             'label' => 'Dokumentasi',
@@ -112,6 +112,13 @@ return [
             'icon' => 'list-check',
             'label' => 'Master Lampiran SPT',
             'group' => 'master',
+        ],
+        'activity_log' => [
+            'enabled' => true,
+            'route' => 'activity-logs',
+            'icon' => 'activity',
+            'label' => 'Activity Logs',
+            'group' => 'setting',
         ],
     ],
 

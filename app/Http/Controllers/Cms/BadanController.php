@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Cms;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cms\Badan;
+use App\Models\Cms\ActivityLog;
 use Illuminate\Http\Request;
 
 class BadanController extends Controller
@@ -30,7 +31,8 @@ class BadanController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate(['tipe' => 'required|max:255']);
-        Badan::create($data);
+        $badan = Badan::create($data);
+        ActivityLog::log('create', 'badan', 'Created badan: ' . $badan->tipe, (string) $badan->id);
         return redirect()->route('cms.badan.index')->with('success', 'Badan created.');
     }
 
@@ -43,11 +45,13 @@ class BadanController extends Controller
     {
         $data = $request->validate(['tipe' => 'required|max:255']);
         $badan->update($data);
+        ActivityLog::log('update', 'badan', 'Updated badan: ' . $badan->tipe, (string) $badan->id);
         return redirect()->route('cms.badan.index')->with('success', 'Badan updated.');
     }
 
     public function destroy(Badan $badan)
     {
+        ActivityLog::log('delete', 'badan', 'Deleted badan: ' . $badan->tipe, (string) $badan->id);
         $badan->delete();
         return redirect()->route('cms.badan.index')->with('success', 'Badan deleted.');
     }

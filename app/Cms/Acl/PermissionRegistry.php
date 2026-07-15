@@ -23,7 +23,7 @@ class PermissionRegistry
 
     public static function registerDefaults()
     {
-        $modules = ['role', 'user', 'pasal', 'badan', 'data_client', 'transaksi', 'master_rumus'];
+        $modules = ['role', 'user', 'pasal', 'badan', 'data_client', 'transaksi', 'master_rumus', 'lampiran_spt', 'kategori_lampiran', 'master_lampiran_spt'];
         foreach ($modules as $module) {
             static::register($module, 'view');
             static::register($module, 'create');

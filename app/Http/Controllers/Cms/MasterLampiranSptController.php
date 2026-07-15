@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Cms;
 use App\Http\Controllers\Controller;
 use App\Models\Cms\MasterLampiranSpt;
 use App\Models\Cms\KategoriLampiran;
+use App\Models\Cms\ActivityLog;
 use Illuminate\Http\Request;
 
 class MasterLampiranSptController extends Controller
@@ -37,7 +38,8 @@ class MasterLampiranSptController extends Controller
             'nama' => 'required|max:255',
         ]);
         $data['is_active'] = true;
-        MasterLampiranSpt::create($data);
+        $item = MasterLampiranSpt::create($data);
+        ActivityLog::log('create', 'master_lampiran_spt', 'Created master item: ' . $item->nama, (string) $item->id);
         return redirect()->route('cms.master-lampiran-spt.index')->with('success', 'Master item created.');
     }
 
@@ -54,6 +56,7 @@ class MasterLampiranSptController extends Controller
             'nama' => 'required|max:255',
         ]);
         $masterLampiranSpt->update($data);
+        ActivityLog::log('update', 'master_lampiran_spt', 'Updated master item: ' . $masterLampiranSpt->nama, (string) $masterLampiranSpt->id);
         return redirect()->route('cms.master-lampiran-spt.index')->with('success', 'Master item updated.');
     }
 
@@ -62,6 +65,7 @@ class MasterLampiranSptController extends Controller
         $newStatus = !$masterLampiranSpt->is_active;
         $masterLampiranSpt->update(['is_active' => $newStatus]);
         $status = $newStatus ? 'activated' : 'deactivated';
+        ActivityLog::log('update', 'master_lampiran_spt', $status . ' master item: ' . $masterLampiranSpt->nama, (string) $masterLampiranSpt->id);
         return redirect()->route('cms.master-lampiran-spt.index')->with('success', "Master item {$status}.");
     }
 }

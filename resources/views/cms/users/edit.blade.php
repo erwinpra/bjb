@@ -7,7 +7,26 @@
     <li class="breadcrumb-item active" aria-current="page">{{ $user ? 'Edit' : 'Create' }}</li>
 @endpush
 
+@if(!$user)
+@push('styles')
+<style>
+#loading-overlay {
+    display: none;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(255,255,255,.85); z-index: 9999;
+    justify-content: center; align-items: center; flex-direction: column;
+}
+#loading-overlay.show { display: flex; }
+</style>
+@endpush
+@endif
+
 @section('content')
+    <div id="loading-overlay">
+        <div class="spinner-border text-primary mb-3" role="status" style="width:3rem;height:3rem"></div>
+        <p class="text-muted fw-semibold">Menyimpan data & mengirim email…</p>
+    </div>
+
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white py-3 border-bottom">
             <h6 class="fw-semibold mb-0">
@@ -16,7 +35,7 @@
             </h6>
         </div>
         <div class="card-body p-4">
-            <form method="POST" action="{{ $user ? route('cms.users.update', $user) : route('cms.users.store') }}">
+            <form method="POST" id="user-form" action="{{ $user ? route('cms.users.update', $user) : route('cms.users.store') }}">
                 @csrf
                 @if($user) @method('PUT') @endif
 
@@ -33,16 +52,16 @@
                                class="form-control @error('email') is-invalid @enderror" placeholder="john@example.com">
                         @error('email') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
+                    @if($user)
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold small">
-                            Password @if(!$user)<span class="text-danger">*</span>@endif
-                        </label>
+                        <label class="form-label fw-semibold small">Password</label>
                         <input type="password" name="password"
                                class="form-control @error('password') is-invalid @enderror"
-                               placeholder="{{ $user ? 'Leave empty to keep current' : 'Min 6 characters' }}">
+                               placeholder="Leave empty to keep current">
                         @error('password') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
-                    <div class="col-md-6">
+                    @endif
+                    <div class="{{ $user ? 'col-md-6' : 'col-md-12' }}">
                         <label class="form-label fw-semibold small">Roles</label>
                         <div class="border rounded p-3 bg-light" style="max-height: 160px; overflow-y: auto;">
                             @forelse($roles as $role)
@@ -74,3 +93,13 @@
         </div>
     </div>
 @endsection
+
+@if(!$user)
+@push('scripts')
+<script>
+document.getElementById('user-form').addEventListener('submit', function() {
+    document.getElementById('loading-overlay').classList.add('show');
+});
+</script>
+@endpush
+@endif

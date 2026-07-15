@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Cms;
 use App\Http\Controllers\Controller;
 use App\Models\Cms\Role;
 use App\Models\Cms\Permission;
+use App\Models\Cms\ActivityLog;
 use App\Cms\Acl\PermissionRegistry;
 use Illuminate\Http\Request;
 
@@ -45,6 +46,7 @@ class RoleController extends Controller
             $this->syncPermissions($role, $request->permissions);
         }
 
+        ActivityLog::log('create', 'role', 'Created role: ' . $role->name, (string) $role->id);
         return redirect()->route('cms.roles.index')
             ->with('success', 'Role created.');
     }
@@ -68,12 +70,14 @@ class RoleController extends Controller
         $role->update($data);
         $this->syncPermissions($role, $request->permissions ?? []);
 
+        ActivityLog::log('update', 'role', 'Updated role: ' . $role->name, (string) $role->id);
         return redirect()->route('cms.roles.index')
             ->with('success', 'Role updated.');
     }
 
     public function destroy(Role $role)
     {
+        ActivityLog::log('delete', 'role', 'Deleted role: ' . $role->name, (string) $role->id);
         $role->delete();
         return redirect()->route('cms.roles.index')
             ->with('success', 'Role deleted.');

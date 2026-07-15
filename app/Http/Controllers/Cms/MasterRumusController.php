@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Cms;
 use App\Http\Controllers\Controller;
 use App\Models\Cms\MasterRumus;
 use App\Models\Cms\Badan;
+use App\Models\Cms\ActivityLog;
 use Illuminate\Http\Request;
 
 class MasterRumusController extends Controller
@@ -37,8 +38,8 @@ class MasterRumusController extends Controller
             'potongan_persentase' => 'required|numeric|min:0|max:100',
         ]);
 
-        MasterRumus::create($data);
-
+        $rumus = MasterRumus::create($data);
+        ActivityLog::log('create', 'master_rumus', 'Created master rumus ID: ' . $rumus->id, (string) $rumus->id);
         return redirect()->route('cms.master-rumus.index')
             ->with('success', 'Master rumus created.');
     }
@@ -58,13 +59,14 @@ class MasterRumusController extends Controller
         ]);
 
         $masterRumus->update($data);
-
+        ActivityLog::log('update', 'master_rumus', 'Updated master rumus ID: ' . $masterRumus->id, (string) $masterRumus->id);
         return redirect()->route('cms.master-rumus.index')
             ->with('success', 'Master rumus updated.');
     }
 
     public function destroy(MasterRumus $masterRumus)
     {
+        ActivityLog::log('delete', 'master_rumus', 'Deleted master rumus ID: ' . $masterRumus->id, (string) $masterRumus->id);
         $masterRumus->delete();
         return redirect()->route('cms.master-rumus.index')
             ->with('success', 'Master rumus deleted.');

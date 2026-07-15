@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Cms;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cms\KategoriLampiran;
+use App\Models\Cms\ActivityLog;
 use Illuminate\Http\Request;
 
 class KategoriLampiranController extends Controller
@@ -32,7 +33,8 @@ class KategoriLampiranController extends Controller
         $data = $request->validate([
             'label' => 'required|max:255|unique:cms_kategori_lampiran,label',
         ]);
-        KategoriLampiran::create($data);
+        $kategori = KategoriLampiran::create($data);
+        ActivityLog::log('create', 'kategori_lampiran', 'Created kategori: ' . $kategori->label, (string) $kategori->id);
         return redirect()->route('cms.kategori-lampiran.index')->with('success', 'Kategori created.');
     }
 
@@ -47,11 +49,13 @@ class KategoriLampiranController extends Controller
             'label' => 'required|max:255|unique:cms_kategori_lampiran,label,' . $kategoriLampiran->id,
         ]);
         $kategoriLampiran->update($data);
+        ActivityLog::log('update', 'kategori_lampiran', 'Updated kategori: ' . $kategoriLampiran->label, (string) $kategoriLampiran->id);
         return redirect()->route('cms.kategori-lampiran.index')->with('success', 'Kategori updated.');
     }
 
     public function destroy(KategoriLampiran $kategoriLampiran)
     {
+        ActivityLog::log('delete', 'kategori_lampiran', 'Deleted kategori: ' . $kategoriLampiran->label, (string) $kategoriLampiran->id);
         $kategoriLampiran->delete();
         return redirect()->route('cms.kategori-lampiran.index')->with('success', 'Kategori deleted.');
     }

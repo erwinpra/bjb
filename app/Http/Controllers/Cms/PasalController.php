@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Cms;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cms\Pasal;
+use App\Models\Cms\ActivityLog;
 use Illuminate\Http\Request;
 
 class PasalController extends Controller
@@ -36,8 +37,8 @@ class PasalController extends Controller
 
         $data['is_active'] = $request->boolean('is_active', true);
 
-        Pasal::create($data);
-
+        $pasal = Pasal::create($data);
+        ActivityLog::log('create', 'pasal', 'Created pasal: ' . $pasal->nama_pasal, (string) $pasal->id);
         return redirect()->route('cms.pasal.index')
             ->with('success', 'Pasal created.');
     }
@@ -57,13 +58,14 @@ class PasalController extends Controller
         $data['is_active'] = $request->boolean('is_active', true);
 
         $pasal->update($data);
-
+        ActivityLog::log('update', 'pasal', 'Updated pasal: ' . $pasal->nama_pasal, (string) $pasal->id);
         return redirect()->route('cms.pasal.index')
             ->with('success', 'Pasal updated.');
     }
 
     public function destroy(Pasal $pasal)
     {
+        ActivityLog::log('delete', 'pasal', 'Deleted pasal: ' . $pasal->nama_pasal, (string) $pasal->id);
         $pasal->delete();
         return redirect()->route('cms.pasal.index')
             ->with('success', 'Pasal deleted.');

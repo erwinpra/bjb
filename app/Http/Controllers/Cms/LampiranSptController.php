@@ -7,6 +7,7 @@ use App\Models\Cms\LampiranSptDetail;
 use App\Models\Cms\MasterLampiranSpt;
 use App\Models\Cms\KategoriLampiran;
 use App\Models\Cms\DataClient;
+use App\Models\Cms\ActivityLog;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -177,6 +178,7 @@ class LampiranSptController extends Controller
                 ->delete();
         }
 
+        ActivityLog::log('create', 'lampiran_spt', 'Saved Lampiran SPT for client: ' . ($client->nama_client ?? $clientId) . ' tahun: ' . $tahun);
         return redirect()->route('cms.lampiran-spt.index', ['client_id' => $clientId, 'tahun' => $tahun])
             ->with('success', 'Data Lampiran SPT berhasil disimpan.');
     }
@@ -406,6 +408,7 @@ class LampiranSptController extends Controller
             $message .= " " . count($errors) . " error: " . implode('; ', array_slice($errors, 0, 5));
         }
 
+        ActivityLog::log('create', 'lampiran_spt', 'Import Lampiran SPT client: ' . ($client->nama_client ?? $clientId) . ' tahun: ' . $tahun . ' — ' . $imported . ' rows');
         return redirect()->route('cms.lampiran-spt.index', ['client_id' => $clientId, 'tahun' => $tahun])
             ->with('success', $message);
     }
@@ -432,6 +435,7 @@ class LampiranSptController extends Controller
     {
         $record = LampiranSptDetail::find($id);
         if ($record) {
+            ActivityLog::log('delete', 'lampiran_spt', 'Deleted row ID: ' . $id . ' client: ' . $record->client_id . ' kode: ' . $record->kode, (string) $id);
             $record->delete();
             return response()->json(['success' => true]);
         }

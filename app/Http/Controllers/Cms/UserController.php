@@ -5,8 +5,13 @@ namespace App\Http\Controllers\Cms;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Cms\Role;
+use App\Models\Cms\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
+use App\Mail\WelcomeUser;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -30,17 +35,27 @@ class UserController extends Controller
         return view('cms::users.edit', ['user' => null, 'roles' => $roles]);
     }
 
+    private function generateStrongPassword(): string
+    {
+        $upper = Str::random(3);
+        $lower = Str::random(3);
+        $digits = random_int(100, 999);
+        $special = str_shuffle('!@#$%^&*');
+        $combined = str_shuffle($upper . $lower . $digits . $special[0]);
+        return $combined;
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([
             'name' => 'required|max:255',
             'email' => 'required|email|max:255|unique:users,email',
-            'password' => 'required|min:6',
             'roles' => 'nullable|array',
             'roles.*' => 'exists:cms_roles,id',
         ]);
 
-        $data['password'] = Hash::make($data['password']);
+        $plainPassword = $this->generateStrongPassword();
+        $data['password'] = Hash::make($plainPassword);
 
         $user = User::create($data);
 
@@ -48,8 +63,22 @@ class UserController extends Controller
             $user->roles()->sync($request->roles);
         }
 
-        return redirect()->route('cms.users.index')
-            ->with('success', 'User created successfully.');
+        $emailSent = false;
+        try {
+            Mail::to($user->email)->send(new WelcomeUser($user->name, $user->email, $plainPassword));
+            $emailSent = true;
+        } catch (\Exception $e) {
+            Log::error('Failed to send welcome email to ' . $user->email . ': ' . $e->getMessage());
+        }
+
+        ActivityLog::log('create', 'user', 'Created user: ' . $user->email, (string) $user->id);
+        if ($emailSent) {
+            return redirect()->route('cms.users.index')
+                ->with('success', 'User created. Password sent to ' . $user->email . '.');
+        } else {
+            return redirect()->route('cms.users.index')
+                ->with('warning', 'User created but email failed to send. Password: ' . $plainPassword . '. Please share securely.');
+        }
     }
 
     public function edit(User $user)
@@ -81,6 +110,7 @@ class UserController extends Controller
             $user->roles()->sync($request->roles);
         }
 
+        ActivityLog::log('update', 'user', 'Updated user: ' . $user->email, (string) $user->id);
         return redirect()->route('cms.users.index')
             ->with('success', 'User updated successfully.');
     }
@@ -92,6 +122,7 @@ class UserController extends Controller
                 ->with('error', 'You cannot delete yourself.');
         }
 
+        ActivityLog::log('delete', 'user', 'Deleted user: ' . $user->email, (string) $user->id);
         $user->roles()->detach();
         $user->delete();
 
