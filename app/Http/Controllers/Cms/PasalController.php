@@ -16,10 +16,13 @@ class PasalController extends Controller
         $this->middleware('cms.permission:pasal,delete')->only(['destroy']);
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $pasal = Pasal::latest()->paginate(15);
-        return view('cms::pasal.index', compact('pasal'));
+        $search = $request->get('search');
+        $pasal = Pasal::when($search, function ($q) use ($search) {
+                $q->where('nama_pasal', 'like', "%{$search}%");
+            })->latest()->paginate(15);
+        return view('cms::pasal.index', compact('pasal', 'search'));
     }
 
     public function create()

@@ -16,10 +16,13 @@ class BadanController extends Controller
         $this->middleware('cms.permission:badan,delete')->only(['destroy']);
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $badan = Badan::latest()->paginate(15);
-        return view('cms::badan.index', compact('badan'));
+        $search = $request->get('search');
+        $badan = Badan::when($search, function ($q) use ($search) {
+                $q->where('tipe', 'like', "%{$search}%");
+            })->latest()->paginate(15);
+        return view('cms::badan.index', compact('badan', 'search'));
     }
 
     public function create()

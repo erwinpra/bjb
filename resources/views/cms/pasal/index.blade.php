@@ -8,13 +8,24 @@
 
 @section('content')
     <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
-            <h6 class="fw-semibold mb-0"><i class="bi bi-journal-text me-2"></i>All Pasal</h6>
-            @cmsCan('pasal', 'create')
-            <a href="{{ route('cms.pasal.create') }}" class="btn btn-primary btn-sm">
-                <i class="bi bi-plus-lg me-1"></i> Create Pasal
-            </a>
-            @endCmsCan
+        <div class="card-header bg-white py-3 border-bottom">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h6 class="fw-semibold mb-0"><i class="bi bi-journal-text me-2"></i>All Pasal</h6>
+                <div class="d-flex gap-2">
+                    <form method="GET" action="{{ route('cms.pasal.index') }}" class="d-flex gap-2">
+                        <input type="text" name="search" class="form-control form-control-sm" placeholder="Cari pasal..." value="{{ $search ?? '' }}">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-search"></i></button>
+                        @if(!empty($search))
+                            <a href="{{ route('cms.pasal.index') }}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg"></i></a>
+                        @endif
+                    </form>
+                    @cmsCan('pasal', 'create')
+                    <a href="{{ route('cms.pasal.create') }}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-lg me-1"></i> Create Pasal
+                    </a>
+                    @endCmsCan
+                </div>
+            </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -82,7 +93,7 @@
             </div>
         </div>
         @if($pasal->hasPages())
-        <div class="card-footer bg-white border-top py-3">{{ $pasal->links('pagination::bootstrap-4') }}</div>
+        <div class="card-footer bg-white border-top py-3">{{ $pasal->appends(['search' => $search])->links('pagination::bootstrap-4') }}</div>
         @endif
     </div>
 @endsection

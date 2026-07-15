@@ -283,9 +283,9 @@ class LampiranSptController extends Controller
                 'lokasi_harta' => isset($row[6]) ? trim((string) $row[6]) : '',
                 'kurs' => isset($row[7]) ? trim((string) $row[7]) : '',
                 'tahun_perolehan' => isset($row[8]) ? trim((string) $row[8]) : '',
-                'saldo_saat_ini' => isset($row[9]) ? trim((string) $row[9]) : '0',
-                'saldo_bentuk_awal' => isset($row[10]) ? trim((string) $row[10]) : '0',
-                'nilai_kurs' => isset($row[11]) ? trim((string) $row[11]) : '0',
+                'saldo_saat_ini' => isset($row[9]) ? (float) str_replace(['.', ','], ['', '.'], trim($row[9])) : 0,
+                'saldo_bentuk_awal' => isset($row[10]) ? (float) str_replace(['.', ','], ['', '.'], trim($row[10])) : 0,
+                'nilai_kurs' => isset($row[11]) ? (float) str_replace(['.', ','], ['', '.'], trim($row[11])) : 0,
                 'errors' => $rowErrors,
                 'valid' => $valid,
             ];

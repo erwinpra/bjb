@@ -17,10 +17,17 @@ class MasterRumusController extends Controller
         $this->middleware('cms.permission:master_rumus,delete')->only([]);
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $rumus = MasterRumus::with('badan')->latest()->paginate(15);
-        return view('cms::master-rumus.index', compact('rumus'));
+        $search = $request->get('search');
+        $rumus = MasterRumus::with('badan')
+            ->when($search, function ($q) use ($search) {
+                $q->whereHas('badan', function ($b) use ($search) {
+                    $b->where('tipe', 'like', "%{$search}%");
+                })->orWhere('max_value', 'like', "%{$search}%")
+                  ->orWhere('potongan_persentase', 'like', "%{$search}%");
+            })->latest()->paginate(15);
+        return view('cms::master-rumus.index', compact('rumus', 'search'));
     }
 
     public function create()

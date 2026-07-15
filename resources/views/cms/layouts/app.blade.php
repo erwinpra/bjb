@@ -39,14 +39,14 @@
                     }
                 @endphp
 
-                @php $userPerms = auth()->user()->roles->flatMap(fn($r) => $r->permissions); @endphp
+                @php $userPerms = auth()->user()->roles->flatMap(function($r) { return $r->permissions; }); @endphp
 
                 @foreach($groups as $groupKey => $groupConfig)
                     @php
                         $modules = collect($grouped[$groupKey] ?? [])->filter(function($m) use ($userPerms) {
                             $perms = $m->getPermissions();
                             if (empty($perms)) return true;
-                            return $userPerms->contains(fn($p) => $p->module === $m->getName() && $p->action === 'view');
+                            return $userPerms->contains(function($p) use ($m) { return $p->module === $m->getName() && $p->action === 'view'; });
                         })->values()->all();
                         if (empty($modules)) continue;
                         $groupIcon = $groupConfig['icon'] ?? 'circle';

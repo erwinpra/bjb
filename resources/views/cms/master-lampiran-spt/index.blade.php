@@ -2,19 +2,50 @@
 
 @section('title', 'Master Lampiran SPT')
 
+@push('styles')
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+.select2-container--default .select2-selection--multiple {
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    min-height: 31px;
+}
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    font-size: 0.8rem;
+    padding: 1px 6px;
+}
+</style>
+@endpush
+
 @push('breadcrumb')
     <li class="breadcrumb-item active" aria-current="page">Master Lampiran SPT</li>
 @endpush
 
 @section('content')
     <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
-            <h6 class="fw-semibold mb-0"><i class="bi bi-list-check me-2"></i>All Master Lampiran SPT</h6>
-            @cmsCan('master_lampiran_spt', 'create')
-            <a href="{{ route('cms.master-lampiran-spt.create') }}" class="btn btn-primary btn-sm">
-                <i class="bi bi-plus-lg me-1"></i> Create Item
-            </a>
-            @endCmsCan
+        <div class="card-header bg-white py-3 border-bottom">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h6 class="fw-semibold mb-0"><i class="bi bi-list-check me-2"></i>All Master Lampiran SPT</h6>
+                <div class="d-flex gap-2">
+                    <form method="GET" action="{{ route('cms.master-lampiran-spt.index') }}" class="d-flex gap-2 align-items-center">
+                        <select name="kategori_ids[]" id="kategoriFilter" class="form-select form-select-sm" multiple style="min-width:180px; max-width:240px">
+                            @foreach($kategoris as $k)
+                                <option value="{{ $k->id }}" {{ in_array($k->id, $kategoriIds ?? []) ? 'selected' : '' }}>{{ $k->label }}</option>
+                            @endforeach
+                        </select>
+                        <input type="text" name="search" class="form-control form-control-sm" placeholder="Cari item..." value="{{ $search ?? '' }}" style="width:150px">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-search"></i></button>
+                        @if(!empty($search) || !empty($kategoriIds))
+                            <a href="{{ route('cms.master-lampiran-spt.index') }}" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg"></i></a>
+                        @endif
+                    </form>
+                    @cmsCan('master_lampiran_spt', 'create')
+                    <a href="{{ route('cms.master-lampiran-spt.create') }}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-lg me-1"></i> Create Item
+                    </a>
+                    @endCmsCan
+                </div>
+            </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -76,7 +107,21 @@
             </div>
         </div>
         @if($items->hasPages())
-        <div class="card-footer bg-white border-top py-3">{{ $items->links('pagination::bootstrap-4') }}</div>
+        <div class="card-footer bg-white border-top py-3">{{ $items->appends(['search' => $search, 'kategori_ids' => $kategoriIds])->links('pagination::bootstrap-4') }}</div>
         @endif
     </div>
 @endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('#kategoriFilter').select2({
+        placeholder: 'Filter Kategori',
+        allowClear: true,
+        width: '100%',
+    });
+});
+</script>
+@endpush
