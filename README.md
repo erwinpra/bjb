@@ -43,11 +43,16 @@ Aplikasi **CMS (Content Management System) + Tax PPh Final Calculator** berbasis
 | Table | Key Columns | Relationships |
 |-------|-------------|---------------|
 | `users` | id, name, email, password | CMS admin users |
-| `cms_data_client` | id, nama_client, tipe_badan, client_role_id, npwp, kpp, AR, ptkp, alamat, no_telephone, email, password | `client_role_id -> cms_client_roles`, `tipe_badan -> cms_badan` |
+| `cms_data_client` | id, nama_client, tipe_badan, client_role_id, npwp, kpp, AR, ptkp, alamat_npwp, alamat_tagihan, no_telephone, email, password | `client_role_id -> cms_client_roles`, `tipe_badan -> cms_badan` |
 | `cms_client_roles` | id, name, slug, description, permissions (JSON) | - |
+| `cms_npwp_cabang` | id, data_client_id, nama_client, npwp, kpp, email, no_telephone, alamat_npwp, alamat_tagihan, AR, ptkp | Cabang/branch per client |
 | `cms_transaksi` | id, client_id, tahun, tipe_badan_id, total_omset, total_harta, total_pph | `client_id -> cms_data_client (CASCADE)` |
 | `cms_transaksi_harta` | id, transaksi_id, nama, nilai | `transaksi_id -> cms_transaksi (CASCADE)` |
 | `cms_transaksi_omset` | id, transaksi_id, bulan, nominal | `transaksi_id -> cms_transaksi (CASCADE)` |
+| `cms_lampiran_spt` | id, client_id, tahun | `client_id -> cms_data_client (CASCADE)` |
+| `cms_lampiran_spt_detail` | id, client_id, tahun, kode, deskripsi, nomor_akun, atas_nama, nama_bank_institusi, lokasi_harta, kurs, tahun_perolehan, saldo_saat_ini, saldo_bentuk_awal, nilai_kurs | `client_id -> cms_data_client (CASCADE)` |
+| `cms_kategori_lampiran` | id, label | Kategori grouping for lampiran SPT |
+| `cms_master_lampiran_spt` | id, kategori_id, sub_kode, nama, is_active | `kategori_id -> cms_kategori_lampiran` |
 | `cms_badan` | id, tipe | Entity types: Badan, Perorangan |
 | `cms_master_rumus` | id, tipe_badan, max_value, potongan_persentase | Tax formula rates |
 | `cms_pasal` | id, nama_pasal, is_active | Tax articles |
@@ -132,6 +137,9 @@ DB_PASSWORD=root123
 | GET/PUT | `/admin/badan` | `Cms\BadanController` | `auth`, `cms.auth` |
 | GET/PUT | `/admin/master-rumus` | `Cms\MasterRumusController` | `auth`, `cms.auth` |
 | GET/POST | `/admin/transaksi` | `Cms\TransaksiController` | `auth`, `cms.auth` |
+| GET/POST | `/admin/lampiran-spt` | `Cms\LampiranSptController` | `auth`, `cms.auth` |
+| Resource | `/admin/kategori-lampiran` | `Cms\KategoriLampiranController` | `auth`, `cms.auth` |
+| Resource | `/admin/master-lampiran-spt` | `Cms\MasterLampiranSptController` | `auth`, `cms.auth` |
 
 ---
 
