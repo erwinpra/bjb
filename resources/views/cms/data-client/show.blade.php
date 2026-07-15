@@ -36,21 +36,15 @@
                     </tr>
 
                     <tr>
-                        <td class="text-muted">NPWP/NIK</td>
+                        <td class="text-muted">NIK</td>
                         <td><code>{{ $dataClient->npwp ?: '-' }}</code></td>
                     </tr>
-                    <tr>
-                        <td class="text-muted">NPWP Cabang</td>
-                        <td><code>{{ $dataClient->npwp_cabang ?: '-' }}</code></td>
-                    </tr>
+                    
                     <tr>
                         <td class="text-muted">KPP</td>
                         <td>{{ $dataClient->kpp ?: '-' }}</td>
                     </tr>
-                    <tr>
-                        <td class="text-muted">AR</td>
-                        <td>{{ $dataClient->AR ?: '-' }}</td>
-                    </tr>
+                    
                     <tr>
                         <td class="text-muted">PTKP</td>
                         <td>{{ $dataClient->ptkp ?: '-' }}</td>
@@ -100,7 +94,6 @@
                             <th>Email</th>
                             <th>No. Telp</th>
                             <th>Alamat NPWP</th>
-                            <th>AR</th>
                             <th>PTKP</th>
                         </tr>
                     </thead>
@@ -113,7 +106,6 @@
                             <td><small>{{ $cab->email ?: '-' }}</small></td>
                             <td>{{ $cab->no_telephone ?: '-' }}</td>
                             <td><small class="text-muted">{{ Str::limit($cab->alamat_npwp, 40) ?: '-' }}</small></td>
-                            <td>{{ $cab->AR ?: '-' }}</td>
                             <td>{{ $cab->ptkp ?: '-' }}</td>
                         </tr>
                         @endforeach

@@ -36,6 +36,7 @@ class MasterLampiranSptController extends Controller
             'sub_kode' => 'required|max:255',
             'nama' => 'required|max:255',
         ]);
+        $data['is_active'] = true;
         MasterLampiranSpt::create($data);
         return redirect()->route('cms.master-lampiran-spt.index')->with('success', 'Master item created.');
     }
@@ -50,7 +51,6 @@ class MasterLampiranSptController extends Controller
     {
         $data = $request->validate([
             'kategori_id' => 'required|exists:cms_kategori_lampiran,id',
-            'sub_kode' => 'required|max:255',
             'nama' => 'required|max:255',
         ]);
         $masterLampiranSpt->update($data);
@@ -59,7 +59,9 @@ class MasterLampiranSptController extends Controller
 
     public function destroy(MasterLampiranSpt $masterLampiranSpt)
     {
-        $masterLampiranSpt->delete();
-        return redirect()->route('cms.master-lampiran-spt.index')->with('success', 'Master item deleted.');
+        $newStatus = !$masterLampiranSpt->is_active;
+        $masterLampiranSpt->update(['is_active' => $newStatus]);
+        $status = $newStatus ? 'activated' : 'deactivated';
+        return redirect()->route('cms.master-lampiran-spt.index')->with('success', "Master item {$status}.");
     }
 }

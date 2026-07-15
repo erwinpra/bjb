@@ -105,6 +105,7 @@
                         <input type="hidden" name="client_id" value="{{ $clientId }}">
                         <input type="hidden" name="tahun" value="{{ $tahun }}">
 
+                        @php $masterByKode = $masterItems->keyBy('sub_kode'); @endphp
                         <div class="table-responsive">
                             <table class="table table-bordered align-middle" id="tableLampiran">
                                 <thead class="table-dark" style="font-size:0.8rem">
@@ -131,7 +132,7 @@
                                             <span class="kode-text">{{ $d->kode }}</span>
                                             <select name="kode[]" class="cell-input cell-select d-none">
                                                 <option value="">--</option>
-                                                @foreach($masterItems as $m)
+                                                @foreach($activeMasterItems as $m)
                                                     <option value="{{ $m->sub_kode }}" {{ $d->kode == $m->sub_kode ? 'selected' : '' }}>
                                                         {{ $m->sub_kode }} - {{ $m->nama }}
                                                     </option>
@@ -139,8 +140,8 @@
                                             </select>
                                         </td>
                                         <td>
-                                            <span class="field-display">{{ $d->deskripsi ?: '-' }}</span>
-                                            <input type="text" name="deskripsi[]" class="cell-input cell-edit d-none" value="{{ $d->deskripsi }}">
+                                            <span class="field-display">{{ isset($masterByKode[$d->kode]) ? $masterByKode[$d->kode]->nama : ($d->deskripsi ?: '-') }}</span>
+                                            <input type="text" name="deskripsi[]" class="cell-input cell-edit d-none" value="{{ $d->deskripsi }}" readonly>
                                         </td>
                                         <td>
                                             <span class="field-display">{{ $d->nomor_akun ?: '-' }}</span>
@@ -313,6 +314,19 @@
 .select2-container--default .select2-selection--single .select2-selection__rendered {
     line-height: 1.5;
 }
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: calc(2.25rem + 2px);
+}
+#tableLampiran .select2-container {
+    width: 100% !important;
+}
+#tableLampiran .select2-container--default .select2-selection--single {
+    height: auto;
+    min-height: 28px;
+    padding: 1px 4px;
+    font-size: 0.8rem;
+    border-color: #ced4da;
+}
 .collapse-toggle { cursor: pointer; user-select: none; }
 .collapse-toggle:hover { background-color: #e9ecef; }
 .cell-input, .cell-select {
@@ -380,6 +394,52 @@ document.addEventListener('input', function(e) {
     }
 });
 
+// Populate deskripsi from option text
+function populateDeskripsi(sel) {
+    var tr = sel.closest('tr');
+    if (!tr) return;
+    var text = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : '';
+    var parts = text.split(' - ');
+    var nama = parts.length > 1 ? parts.slice(1).join(' - ') : '';
+    var deskInput = tr.querySelector('input[name="deskripsi[]"]');
+    if (deskInput) {
+        deskInput.value = nama;
+    }
+    var display = tr.querySelector('.field-display');
+    if (display) {
+        display.textContent = nama || '-';
+    }
+}
+
+// Init Select2 on kode select with search
+function initKodeSelect(select) {
+    if (!select) return;
+    $(select).select2({
+        placeholder: '-- Cari Kode --',
+        allowClear: true,
+        width: '100%',
+        dropdownAutoWidth: true,
+    }).on('select2:select select2:clear', function(e) {
+        populateDeskripsi(this);
+    });
+}
+
+// Destroy Select2 on kode select
+function destroyKodeSelect(select) {
+    if (!select) return;
+    var $sel = $(select);
+    if ($sel.hasClass('select2-hidden-accessible')) {
+        $sel.select2('destroy');
+    }
+}
+
+// Auto-populate deskripsi from master when kode changes (native fallback)
+document.addEventListener('change', function(e) {
+    if (e.target.matches('select[name="kode[]"]')) {
+        populateDeskripsi(e.target);
+    }
+});
+
 // Add row
 document.getElementById('btnAddRow')?.addEventListener('click', function() {
     var tbody = document.querySelector('#tableLampiran tbody');
@@ -387,7 +447,7 @@ document.getElementById('btnAddRow')?.addEventListener('click', function() {
     if (emptyRow) emptyRow.remove();
 
     var options = '<option value="">--</option>';
-    @foreach($masterItems as $m)
+    @foreach($activeMasterItems as $m)
         options += '<option value="{{ $m->sub_kode }}">{{ $m->sub_kode }} - {{ $m->nama }}</option>';
     @endforeach
 
@@ -397,7 +457,7 @@ document.getElementById('btnAddRow')?.addEventListener('click', function() {
         <td>
             <select name="kode[]" class="cell-input cell-select">${options}</select>
         </td>
-        <td><input type="text" name="deskripsi[]" class="cell-input"></td>
+        <td><input type="text" name="deskripsi[]" class="cell-input" readonly></td>
         <td><input type="text" name="nomor_akun[]" class="cell-input"></td>
         <td><input type="text" name="atas_nama[]" class="cell-input"></td>
         <td><input type="text" name="nama_bank_institusi[]" class="cell-input"></td>
@@ -421,6 +481,7 @@ document.getElementById('btnAddRow')?.addEventListener('click', function() {
         </td>
     `;
     tbody.appendChild(tr);
+    initKodeSelect(tr.querySelector('select[name="kode[]"]'));
 });
 
 // Toggle edit row
@@ -448,11 +509,27 @@ document.addEventListener('click', function(e) {
     }
 
     if (isEditing) {
+        // Init Select2 on kode select for search
+        if (kodeSelect) {
+            initKodeSelect(kodeSelect);
+        }
         // Format currency on newly shown inputs
         tr.querySelectorAll('.format-currency').forEach(function(inp) {
             if (inp.value) inp.value = formatIdCurrency(inp.value);
         });
+        // Populate deskripsi from master based on current kode selection
+        if (kodeSelect) {
+            var text = kodeSelect.options[kodeSelect.selectedIndex] ? kodeSelect.options[kodeSelect.selectedIndex].text : '';
+            var parts = text.split(' - ');
+            var nama = parts.length > 1 ? parts.slice(1).join(' - ') : '';
+            var deskInput = tr.querySelector('input[name="deskripsi[]"]');
+            if (deskInput) deskInput.value = nama;
+        }
     } else {
+        // Destroy Select2 on kode select
+        if (kodeSelect) {
+            destroyKodeSelect(kodeSelect);
+        }
         // Sync display spans with current input values
         tr.querySelectorAll('.cell-edit').forEach(function(inp) {
             var td = inp.closest('td');

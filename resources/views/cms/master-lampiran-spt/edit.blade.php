@@ -32,8 +32,12 @@
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-semibold small">Sub Kode <span class="text-danger">*</span></label>
-                        <input type="text" name="sub_kode" value="{{ old('sub_kode', $item->sub_kode ?? '') }}" required class="form-control" placeholder="e.g. 0101">
-                        @error('sub_kode') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                        @if($item)
+                            <input type="text" value="{{ $item->sub_kode }}" class="form-control" readonly>
+                        @else
+                            <input type="text" name="sub_kode" value="{{ old('sub_kode') }}" required class="form-control" placeholder="e.g. 0101">
+                            @error('sub_kode') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                        @endif
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-semibold small">Nama <span class="text-danger">*</span></label>

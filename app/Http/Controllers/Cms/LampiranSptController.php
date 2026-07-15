@@ -33,6 +33,7 @@ class LampiranSptController extends Controller
         $tahunPerolehanList = range($currentYear, 2025);
 
         $masterItems = MasterLampiranSpt::orderBy('sub_kode')->get();
+        $activeMasterItems = MasterLampiranSpt::where('is_active', true)->orderBy('sub_kode')->get();
         $kategoris = KategoriLampiran::with('masterLampiranSpts')->orderBy('id')->get();
 
         $details = collect();
@@ -45,10 +46,10 @@ class LampiranSptController extends Controller
 
             $recapGroups = $kategoris->map(function ($kat) use ($details, $masterItems) {
                 $subKodes = $kat->masterLampiranSpts->pluck('sub_kode');
-                $katDetails = $details->whereIn('kode', $subKodes);
+                $katDetails = $details->whereIn('kode', $subKodes->toArray(), true);
 
                 $kodeGroups = $katDetails->groupBy('kode')->map(function ($items, $kode) use ($masterItems) {
-                    $master = $masterItems->where('sub_kode', $kode)->first();
+                    $master = $masterItems->firstWhere('sub_kode', $kode);
                     return [
                         'kode' => $kode,
                         'deskripsi' => $master ? $master->nama : '-',
@@ -70,7 +71,7 @@ class LampiranSptController extends Controller
 
         return view('cms::lampiran-spt.index', compact(
             'clients', 'tahunList', 'tahunPerolehanList', 'clientId', 'tahun',
-            'masterItems', 'kategoris', 'details', 'recapGroups'
+            'masterItems', 'activeMasterItems', 'kategoris', 'details', 'recapGroups'
         ));
     }
 
@@ -131,6 +132,8 @@ class LampiranSptController extends Controller
                 ->with('error', $errorMsg);
         }
 
+        $masterLookup = MasterLampiranSpt::pluck('nama', 'sub_kode');
+
         $savedIds = [];
 
         foreach ($kode as $idx => $val) {
@@ -142,7 +145,7 @@ class LampiranSptController extends Controller
                 'client_id' => $clientId,
                 'tahun' => $tahun,
                 'kode' => $val,
-                'deskripsi' => $deskripsi[$idx] ?? '',
+                'deskripsi' => $masterLookup[$val] ?? ($deskripsi[$idx] ?? ''),
                 'nomor_akun' => $nomorAkun[$idx] ?? '',
                 'atas_nama' => $atasNama[$idx] ?? '',
                 'nama_bank_institusi' => $bank[$idx] ?? '',
@@ -284,11 +287,14 @@ class LampiranSptController extends Controller
 
         $clientId = $client->id;
 
+        // Build master lookup
+        $masterLookup = MasterLampiranSpt::pluck('nama', 'sub_kode');
+
         // Parse data rows starting from row 4 (0-indexed), skipping header rows
         $preview = [];
         $validCount = 0;
 
-        for ($r = 4; $r < count($rows); $r++) {
+        for ($r = 3; $r < count($rows); $r++) {
             $row = $rows[$r];
             $kode = isset($row[0]) ? trim((string) $row[0]) : '';
 
@@ -296,7 +302,7 @@ class LampiranSptController extends Controller
 
             $preview[] = [
                 'kode' => $kode,
-                'deskripsi' => isset($row[1]) ? trim((string) $row[1]) : '',
+                'deskripsi' => $masterLookup[$kode] ?? '',
                 'nomor_akun' => isset($row[2]) ? trim((string) $row[2]) : '',
                 'atas_nama' => isset($row[3]) ? trim((string) $row[3]) : '',
                 'nama_bank_institusi' => isset($row[4]) ? trim((string) $row[4]) : '',
@@ -360,10 +366,12 @@ class LampiranSptController extends Controller
             ->where('tahun', $tahun)
             ->delete();
 
+        $masterLookup = MasterLampiranSpt::pluck('nama', 'sub_kode');
+
         $imported = 0;
         $errors = [];
 
-        for ($r = 4; $r < count($rows); $r++) {
+        for ($r = 3; $r < count($rows); $r++) {
             $row = $rows[$r];
             $kode = isset($row[0]) ? trim((string) $row[0]) : '';
 
@@ -374,7 +382,7 @@ class LampiranSptController extends Controller
                     'client_id' => $clientId,
                     'tahun' => $tahun,
                     'kode' => $kode,
-                    'deskripsi' => isset($row[1]) ? trim((string) $row[1]) : '',
+                    'deskripsi' => $masterLookup[$kode] ?? '',
                     'nomor_akun' => isset($row[2]) ? trim((string) $row[2]) : '',
                     'atas_nama' => isset($row[3]) ? trim((string) $row[3]) : '',
                     'nama_bank_institusi' => isset($row[4]) ? trim((string) $row[4]) : '',

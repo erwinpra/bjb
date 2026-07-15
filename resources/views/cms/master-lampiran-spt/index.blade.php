@@ -25,6 +25,7 @@
                             <th>Kategori</th>
                             <th>Sub Kode</th>
                             <th>Nama</th>
+                            <th style="width:100px">Status</th>
                             <th class="text-end pe-4">Actions</th>
                         </tr>
                     </thead>
@@ -35,6 +36,13 @@
                             <td><span class="badge bg-secondary bg-opacity-10 text-secondary">{{ $item->kategori->label ?? '-' }}</span></td>
                             <td><code>{{ $item->sub_kode }}</code></td>
                             <td class="fw-medium">{{ $item->nama }}</td>
+                            <td>
+                                @if($item->is_active)
+                                    <span class="badge bg-success">Active</span>
+                                @else
+                                    <span class="badge bg-secondary">Inactive</span>
+                                @endif
+                            </td>
                             <td class="text-end pe-4">
                                 @cmsCan('master_lampiran_spt', 'edit')
                                 <a href="{{ route('cms.master-lampiran-spt.edit', $item) }}" class="btn btn-sm btn-outline-primary">
@@ -42,30 +50,18 @@
                                 </a>
                                 @endCmsCan
                                 @cmsCan('master_lampiran_spt', 'delete')
-                                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteItem{{ $item->id }}">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                                <div class="modal fade" id="deleteItem{{ $item->id }}" tabindex="-1">
-                                    <div class="modal-dialog modal-sm modal-dialog-centered">
-                                        <div class="modal-content">
-                                            <div class="modal-header border-0"><h6 class="fw-semibold">Confirm Delete</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                                            <div class="modal-body text-start"><p class="small mb-0">Delete master item <strong>"{{ $item->sub_kode }} - {{ $item->nama }}"</strong>?</p></div>
-                                            <div class="modal-footer border-0 pt-0">
-                                                <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
-                                                <form method="POST" action="{{ route('cms.master-lampiran-spt.destroy', $item) }}">
-                                                    @csrf @method('DELETE')
-                                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                <form method="POST" action="{{ route('cms.master-lampiran-spt.destroy', $item) }}" class="d-inline" onsubmit="return confirm('{{ $item->is_active ? 'Deactivate' : 'Activate' }} master item &quot;{{ $item->sub_kode }} - {{ $item->nama }}&quot;?')">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="btn btn-sm {{ $item->is_active ? 'btn-outline-warning' : 'btn-outline-success' }}" title="{{ $item->is_active ? 'Deactivate' : 'Activate' }}">
+                                        <i class="bi {{ $item->is_active ? 'bi-pause-circle' : 'bi-play-circle' }}"></i>
+                                    </button>
+                                </form>
                                 @endCmsCan
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="5" class="text-center py-5 text-muted">
+                            <td colspan="6" class="text-center py-5 text-muted">
                                 <i class="bi bi-list-check display-4 d-block mb-2 text-secondary opacity-50"></i>
                                 No master items yet.
                             </td>

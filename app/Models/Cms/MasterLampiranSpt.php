@@ -12,6 +12,11 @@ class MasterLampiranSpt extends Model
         'kategori_id',
         'sub_kode',
         'nama',
+        'is_active',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
     ];
 
     public function kategori()
