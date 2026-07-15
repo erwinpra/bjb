@@ -1,4 +1,4 @@
-# BJB - CMS & PPh Final Calculator
+# BJP - CMS & PPh Final Calculator
 
 Aplikasi **CMS (Content Management System) + Tax PPh Final Calculator** berbasis Laravel 8 untuk menghitung Pajak Penghasilan Final (PP 23/2018) untuk wajib pajak di Indonesia.
 
@@ -170,7 +170,7 @@ docker run --name my-mysql-container \
 
 # Import database
 docker exec -i my-mysql-container mysql -u root -proot123 -e "CREATE DATABASE IF NOT EXISTS ajb;"
-docker exec -i my-mysql-container mysql -u root -proot123 ajb < bjb.sql
+docker exec -i my-mysql-container mysql -u root -proot123 ajb < bjp.sql
 
 # Or use Laravel migrations
 php artisan migrate
@@ -181,7 +181,7 @@ php artisan serve
 ```
 
 ---
-
+<!-- 
 ## Estimasi Harga Jual
 
 | Model | Paket | Harga | Target |
@@ -193,7 +193,7 @@ php artisan serve
 | SaaS | Per client/tahun | Rp 2-5 Juta | Diskon tahunan |
 | SaaS | Unlimited client/tahun | Rp 15-30 Juta | Kantor pajak |
 
----
+--- -->
 
 ## Struktur Direktori
 

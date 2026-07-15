@@ -1,6 +1,6 @@
-# Panduan Penggunaan Aplikasi BJB
+# Panduan Penggunaan Aplikasi BJP
 
-Aplikasi BJB digunakan untuk mengelola data wajib pajak dan menghitung PPh Final (Pajak Penghasilan Final) secara otomatis. Berikut panduan lengkap untuk Admin dan Client.
+Aplikasi BJP digunakan untuk mengelola data wajib pajak dan menghitung PPh Final (Pajak Penghasilan Final) secara otomatis. Berikut panduan lengkap untuk Admin dan Client.
 
 ---
 
