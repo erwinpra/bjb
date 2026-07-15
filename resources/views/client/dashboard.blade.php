@@ -18,9 +18,6 @@
         <div class="container">
             <a class="navbar-brand fw-semibold" href="#">
                 <i class="bi bi-person-badge me-2"></i>{{ $client->nama_client }}
-                @if($clientRole)
-                    <span class="badge bg-light text-success ms-2 small">{{ $clientRole->name }}</span>
-                @endif
             </a>
             <div class="d-flex align-items-center gap-2">
                 <span class="text-white-50 small d-none d-md-inline">NPWP: {{ $client->npwp ?? '-' }}</span>
@@ -43,17 +40,27 @@
     <div class="container py-4">
         {{-- Filter --}}
         <div class="row mb-4 align-items-end">
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label fw-semibold small text-muted">Tahun</label>
                 <select id="tahunFilter" class="form-select">
-                    @for($y = now()->year; $y >= now()->year - 10; $y--)
+                    @for($y = 2025; $y <= now()->year; $y++)
                         <option value="{{ $y }}" {{ $y == $tahun ? 'selected' : '' }}>{{ $y }}</option>
                     @endfor
                 </select>
             </div>
+            <div class="col-md-2">
+                <label class="form-label fw-semibold small text-muted">Bandingkan Tahun <span class="text-muted fw-normal">(opsional)</span></label>
+                <select id="vsTahunFilter" class="form-select">
+                    <option value="">-- Tidak ada --</option>
+                    @for($y = 2025; $y <= now()->year; $y++)
+                        <option value="{{ $y }}">{{ $y }}</option>
+                    @endfor
+                </select>
+            </div>
+
             @if($allClients->isNotEmpty())
             <div class="col-md-3">
-                <label class="form-label fw-semibold small text-muted">Lihat Client</label>
+                <label class="form-label fw-semibold small text-muted">Lihat</label>
                 <select id="viewClientFilter" class="form-select">
                     @if($client->hasClientPermission('client.view-all'))
                         <option value="{{ Auth::guard('client')->user()->id }}">-- Akun Saya --</option>
@@ -172,7 +179,7 @@
         {{-- Cabang Tabs --}}
         <div id="cabangSection" class="mb-4 d-none">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-2 d-flex align-items-center gap-2 flex-wrap">
+                    <div class="card-header bg-white py-2 d-flex align-items-center gap-2 flex-wrap">
                     <small class="fw-semibold text-muted me-2">Rincian Omset:</small>
                     <ul class="nav nav-pills" id="cabangTab" role="tablist" style="font-size:0.85rem"></ul>
                 </div>
@@ -213,6 +220,8 @@
                 </div>
             </div>
         </div>
+
+
     </div>
 
     <script>
@@ -230,10 +239,15 @@
     }
 
     let _dashboardData = null;
+    let _bandingData = null;
 
     function loadData(tahun) {
         const viewClient = document.getElementById('viewClientFilter');
+        const vsTahun = document.getElementById('vsTahunFilter').value;
         let url = '/client/dashboard/data?tahun=' + tahun;
+        if (vsTahun) {
+            url += '&tahun_banding=' + vsTahun;
+        }
         if (viewClient && viewClient.value) {
             url += '&view_client_id=' + viewClient.value;
         }
@@ -241,26 +255,53 @@
             .then(res => res.json())
             .then(data => {
                 _dashboardData = data;
+                _bandingData = data.banding || null;
+
+                var banding = _bandingData;
                 document.getElementById('totalHarta').textContent = formatNum(data.total_harta);
                 document.getElementById('totalOmset').textContent = formatNum(data.total_omset);
                 document.getElementById('totalPph').textContent = formatNum(data.total_pph);
 
+                var hartaCard = document.getElementById('totalHarta').closest('.card-body');
+                var omsetCard = document.getElementById('totalOmset').closest('.card-body');
+                var pphCard = document.getElementById('totalPph').closest('.card-body');
+                [hartaCard, omsetCard, pphCard].forEach(function(c) {
+                    var old = c.querySelector('.vs-label');
+                    if (old) old.remove();
+                });
+                if (banding) {
+                    var vsTahunLabel = document.getElementById('vsTahunFilter').value;
+                    var addVs = function(id, val) {
+                        var el = document.getElementById(id);
+                        var card = el.closest('.card-body');
+                        var div = document.createElement('div');
+                        div.className = 'vs-label small text-muted mt-1';
+                        div.innerHTML = '<span class="fw-semibold">Thn ' + vsTahunLabel + ':</span> Rp ' + formatNum(val || 0);
+                        card.appendChild(div);
+                    };
+                    addVs('totalHarta', banding.total_harta);
+                    addVs('totalOmset', banding.total_omset);
+                    addVs('totalPph', banding.total_pph);
+                }
+
                 renderCabangTabs(data);
-                // Show charts for first tab (induk) by default
                 updateChartsForTab(data, 0);
             });
     }
 
     function updateChartsForTab(data, idx) {
         var tabs = data.tabs || [];
+        var banding = _bandingData;
+        var bandingTabs = banding ? (banding.tabs || []) : [];
+        var vsTahun = document.getElementById('vsTahunFilter').value;
+
         if (!tabs.length) {
-            renderOmsetChart(data);
+            renderOmsetChart(data, banding ? (banding.omset_per_bulan || null) : null, vsTahun);
             renderHartaChart(data);
             return;
         }
         var tab = tabs[idx] || tabs[0];
         var tabHarta = tab.harta || { total: 0, detail: [], by_kategori: { labels: [], values: [], colors: [] } };
-        // Build per-tab data object for chart rendering
         var tabData = {
             exists: tab.detail_bulan && tab.detail_bulan.some(function(r) { return r.omset; }),
             omset_per_bulan: tab.detail_bulan ? tab.detail_bulan.map(function(r) { return parseNum(r.omset); }) : [],
@@ -270,7 +311,12 @@
             harta_detail: tabHarta.detail,
             harta_by_kategori: tabHarta.by_kategori,
         };
-        renderOmsetChart(tabData);
+        var bandingOmset = null;
+        if (banding && bandingTabs[idx]) {
+            var bt = bandingTabs[idx];
+            bandingOmset = bt.detail_bulan ? bt.detail_bulan.map(function(r) { return parseNum(r.omset); }) : [];
+        }
+        renderOmsetChart(tabData, bandingOmset, vsTahun);
         renderHartaChart(tabData);
     }
 
@@ -324,9 +370,12 @@
 
     function renderCabangTabs(data) {
         var tabs = data.tabs || [];
+        var banding = _bandingData;
+        var bandingTabs = banding ? (banding.tabs || []) : [];
         var section = document.getElementById('cabangSection');
         var tabNav = document.getElementById('cabangTab');
         var tabContent = document.getElementById('cabangTabContent');
+        var vsTahun = document.getElementById('vsTahunFilter').value;
 
         tabNav.innerHTML = '';
         tabContent.innerHTML = '';
@@ -341,8 +390,8 @@
             var isActive = idx === 0;
             var tabId = 'tab-' + idx;
             var isInduk = tab.key === 'induk';
+            var bandingTab = bandingTabs[idx] || null;
 
-            // Nav pill — use NPWP as label
             var tabLabel = tab.npwp || tab.label || '-';
             var li = document.createElement('li');
             li.className = 'nav-item';
@@ -360,39 +409,57 @@
             li.appendChild(btn);
             tabNav.appendChild(li);
 
-            // Tab content
             var html = '<div class="tab-pane' + (isActive ? ' show active' : '') + '" id="' + tabId + '" role="tabpanel">';
             html += '<div class="p-3">';
             html += '<div class="mb-2"><small class="text-muted">' + escHtml(tab.label) + ' &middot; NPWP: ' + escHtml(tab.npwp || '-') + ' &middot; KPP: ' + escHtml(tab.kpp || '-') + '</small></div>';
             html += '<div class="table-responsive">';
             html += '<table class="table table-sm table-bordered mb-0" style="white-space:nowrap"><thead class="table-light"><tr>';
-            html += '<th>Bulan</th><th class="text-end">Omset</th><th class="text-end">Total Peredaran Bruto</th>';
+            html += '<th>Bulan</th><th class="text-end">Omset</th>';
+            if (bandingTab) { html += '<th class="text-end">Omset ' + vsTahun + '</th>'; }
+            html += '<th class="text-end">Total Peredaran Bruto</th>';
+            if (bandingTab) { html += '<th class="text-end">Total Bruto ' + vsTahun + '</th>'; }
             if (isInduk) {
                 html += '<th class="text-end">Total Peredaran Bruto Akum' + (cabangCount > 0 ? ' (' + cabangCount + ' Cabang)' : '') + '</th>';
             }
-            html += '<th class="text-end">PPH Final</th><th class="text-end">PPh Final yg harus dibayar</th>';
+            html += '<th class="text-end">PPH Final</th>';
+            if (bandingTab) { html += '<th class="text-end">PPH Final ' + vsTahun + '</th>'; }
+            html += '<th class="text-end">PPh Final yg harus dibayar</th>';
+            if (bandingTab) { html += '<th class="text-end">PPh Bayar ' + vsTahun + '</th>'; }
             html += '</tr></thead><tbody>';
 
-            var tabOmset = 0;
-            var tabPotongan = 0;
-            (tab.detail_bulan || []).forEach(function(row) {
+            var tabOmset = 0, tabPotongan = 0;
+            var bandOmset = 0, bandPotongan = 0;
+            (tab.detail_bulan || []).forEach(function(row, ri) {
+                var bRow = bandingTab ? (bandingTab.detail_bulan || [])[ri] : null;
                 tabOmset += parseNum(row.omset);
                 tabPotongan += parseNum(row.pphBayar);
+                if (bRow) { bandOmset += parseNum(bRow.omset); bandPotongan += parseNum(bRow.pphBayar); }
                 html += '<tr>';
                 html += '<td>' + row.bulan + '</td>';
                 html += '<td class="text-end">' + (row.omset || '-') + '</td>';
+                if (bandingTab) { html += '<td class="text-end">' + (bRow && bRow.omset ? bRow.omset : '-') + '</td>'; }
                 html += '<td class="text-end">' + (row.totalBruto || '-') + '</td>';
+                if (bandingTab) { html += '<td class="text-end">' + (bRow && bRow.totalBruto ? bRow.totalBruto : '-') + '</td>'; }
                 if (isInduk) {
                     html += '<td class="text-end">' + (row.omset ? (row.totalBrutoAkum || '-') : '-') + '</td>';
                 }
                 html += '<td class="text-end">' + (row.pphFinal || '-') + '</td>';
+                if (bandingTab) { html += '<td class="text-end">' + (bRow && bRow.pphFinal ? bRow.pphFinal : '-') + '</td>'; }
                 html += '<td class="text-end">' + (row.pphBayar || '-') + '</td>';
+                if (bandingTab) { html += '<td class="text-end">' + (bRow && bRow.pphBayar ? bRow.pphBayar : '-') + '</td>'; }
                 html += '</tr>';
             });
 
-            html += '<tr class="table-secondary fw-bold"><td>Total</td><td class="text-end">Rp ' + formatNum(tabOmset) + '</td><td></td>';
+            html += '<tr class="table-secondary fw-bold"><td>Total</td><td class="text-end">Rp ' + formatNum(tabOmset) + '</td>';
+            if (bandingTab) { html += '<td class="text-end">Rp ' + formatNum(bandOmset) + '</td>'; }
+            html += '<td></td>';
+            if (bandingTab) { html += '<td></td>'; }
             if (isInduk) { html += '<td></td>'; }
-            html += '<td></td><td class="text-end">Rp ' + formatNum(tabPotongan) + '</td></tr>';
+            html += '<td></td>';
+            if (bandingTab) { html += '<td></td>'; }
+            html += '<td class="text-end">Rp ' + formatNum(tabPotongan) + '</td>';
+            if (bandingTab) { html += '<td class="text-end">Rp ' + formatNum(bandPotongan) + '</td>'; }
+            html += '</tr>';
             html += '</tbody></table></div></div></div>';
             tabContent.innerHTML += html;
         });
@@ -459,11 +526,15 @@
         }
     }
 
-    function renderOmsetChart(data) {
+    function renderOmsetChart(data, bandingOmset, vsTahun) {
         const canvas = document.getElementById('omsetChart');
         const noData = document.getElementById('noData');
 
-        if (!data.exists || data.omset_per_bulan.every(function(v) { return v === 0; })) {
+        var noDataAll = (data.omset_per_bulan || []).every(function(v) { return v === 0; });
+        if (bandingOmset) {
+            noDataAll = noDataAll && bandingOmset.every(function(v) { return v === 0; });
+        }
+        if (noDataAll) {
             canvas.classList.add('d-none');
             noData.classList.remove('d-none');
             return;
@@ -474,31 +545,49 @@
 
         if (omsetChart) omsetChart.destroy();
 
+        var datasets = [{
+            label: 'Omset (Rp)',
+            data: data.omset_per_bulan,
+            borderColor: '#198754',
+            backgroundColor: 'rgba(25, 135, 84, 0.1)',
+            fill: true,
+            tension: 0.3,
+            pointBackgroundColor: '#198754',
+            pointRadius: 4,
+            borderWidth: 2,
+        }];
+
+        if (bandingOmset) {
+            datasets.push({
+                label: 'Omset ' + (vsTahun || '') + ' (Rp)',
+                data: bandingOmset,
+                borderColor: '#0d6efd',
+                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                fill: true,
+                tension: 0.3,
+                pointBackgroundColor: '#0d6efd',
+                pointRadius: 4,
+                borderWidth: 2,
+                borderDash: [5, 3],
+            });
+        }
+
         omsetChart = new Chart(canvas, {
             type: 'line',
-            data: {
-                labels: bulanLabels,
-                datasets: [{
-                    label: 'Omset (Rp)',
-                    data: data.omset_per_bulan,
-                    borderColor: '#198754',
-                    backgroundColor: 'rgba(25, 135, 84, 0.1)',
-                    fill: true,
-                    tension: 0.3,
-                    pointBackgroundColor: '#198754',
-                    pointRadius: 4,
-                    borderWidth: 2,
-                }]
-            },
+            data: { labels: bulanLabels, datasets: datasets },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false },
+                    legend: {
+                        display: !!bandingOmset,
+                        position: 'top',
+                        labels: { boxWidth: 12, padding: 12, font: { size: 11 } }
+                    },
                     tooltip: {
                         callbacks: {
                             label: function(ctx) {
-                                return 'Rp ' + formatNum(ctx.parsed.y);
+                                return ctx.dataset.label + ': Rp ' + formatNum(ctx.parsed.y);
                             }
                         }
                     }
@@ -592,6 +681,10 @@
     // Render harta modal with cabang tabs when opened
     document.getElementById('hartaModal').addEventListener('shown.bs.modal', function() {
         renderHartaModal();
+    });
+
+    document.getElementById('vsTahunFilter').addEventListener('change', function() {
+        loadData(document.getElementById('tahunFilter').value);
     });
 
     loadData({{ $tahun }});

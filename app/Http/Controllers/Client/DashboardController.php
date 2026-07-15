@@ -7,7 +7,7 @@ use App\Models\Cms\Badan;
 use App\Models\Cms\DataClient;
 use App\Models\Cms\MasterRumus;
 use App\Models\Cms\Transaksi;
-use App\Models\Cms\LampiranSpt;
+use App\Models\Cms\LampiranSptDetail;
 use App\Models\Cms\KategoriLampiran;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -52,21 +52,63 @@ class DashboardController extends Controller
     {
         $client = $this->resolveClient();
         $tahun = $request->tahun ?? date('Y');
+        $tahunBanding = $request->tahun_banding;
 
+        $ini = $this->loadYearData($client, $tahun);
+        $banding = $tahunBanding ? $this->loadYearData($client, $tahunBanding) : null;
+
+        $vsTahunan = null;
+        if ($banding) {
+            $growth = function ($now, $prev) {
+                return $prev > 0 ? round(($now - $prev) / $prev * 100, 1) : null;
+            };
+            $vsTahunan = [
+                'tahun_ini' => (int) $tahun,
+                'tahun_banding' => (int) $tahunBanding,
+                'growth_omset' => $growth($ini['total_omset'], $banding['total_omset']),
+                'growth_harta' => $growth($ini['total_harta'], $banding['total_harta']),
+                'growth_pph' => $growth($ini['total_pph'], $banding['total_pph']),
+            ];
+        }
+
+        return response()->json([
+            'exists' => $ini['exists'],
+            'total_harta' => $ini['total_harta'],
+            'total_omset' => $ini['total_omset'],
+            'total_pph' => $ini['total_pph'],
+            'harta_detail' => $ini['harta_detail'],
+            'harta_by_kategori' => $ini['harta_by_kategori'],
+            'omset_per_bulan' => $ini['omset_per_bulan'],
+            'bulan_labels' => ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
+            'cabang_count' => $ini['cabang_count'],
+            'tabs' => $ini['tabs'],
+            'banding' => $banding ? [
+                'exists' => $banding['exists'],
+                'total_harta' => $banding['total_harta'],
+                'total_omset' => $banding['total_omset'],
+                'total_pph' => $banding['total_pph'],
+                'harta_detail' => $banding['harta_detail'],
+                'harta_by_kategori' => $banding['harta_by_kategori'],
+                'omset_per_bulan' => $banding['omset_per_bulan'],
+                'cabang_count' => $banding['cabang_count'],
+                'tabs' => $banding['tabs'],
+            ] : null,
+            'vs_tahunan' => $vsTahunan,
+        ]);
+    }
+
+    protected function loadYearData($client, $tahun)
+    {
         $transaksis = Transaksi::where('client_id', $client->id)
             ->where('tahun', $tahun)
             ->with(['harta', 'omset'])
             ->get()
-            ->keyBy(function ($t) {
-                return $t->npwp_cabang_id ? 'cabang_' . $t->npwp_cabang_id : 'induk';
-            });
+            ->keyBy(fn($t) => $t->npwp_cabang_id ? 'cabang_' . $t->npwp_cabang_id : 'induk');
 
         $allTabs = $this->buildTabsData($client, $tahun, $transaksis);
 
         $omsetPerBulan = [];
-        for ($mo = 1; $mo <= 12; $mo++) {
-            $omsetPerBulan[$mo] = 0;
-        }
+        for ($mo = 1; $mo <= 12; $mo++) $omsetPerBulan[$mo] = 0;
         foreach ($allTabs as $tab) {
             foreach ($tab['omset_per_bulan'] as $mo => $val) {
                 $omsetPerBulan[$mo] += $val;
@@ -109,87 +151,45 @@ class DashboardController extends Controller
         }
         unset($at, $db);
 
-        // Load harta from LampiranSpt grouped by kategori
+        // Harta from LampiranSptDetail
         $chartColors = ['#dc3545','#fd7e14','#ffc107','#198754','#0d6efd','#6f42c1','#20c997'];
-
-        $allHartaItems = LampiranSpt::where('client_id', $client->id)
+        $allDetailItems = LampiranSptDetail::where('client_id', $client->id)
             ->where('tahun', $tahun)
-            ->where('nilai', '>', 0)
+            ->where('saldo_saat_ini', '>', 0)
             ->with('masterItem.kategori')
             ->get();
 
+        $itemsByKode = $allDetailItems->groupBy('kode');
         $totalHarta = 0;
         $hartaDetail = [];
         $hartaByKategori = [];
 
-        foreach ($allHartaItems as $item) {
-            $katLabel = $item->masterItem->kategori->label ?? 'Lainnya';
-            $nama = $item->masterItem->sub_kode . ' ' . $item->masterItem->nama;
-            $nilai = (float) $item->nilai;
+        foreach ($itemsByKode as $kode => $detailItems) {
+            $first = $detailItems->first();
+            $master = $first->masterItem;
+            $katLabel = $master->kategori->label ?? 'Lainnya';
+            $nama = ($master->sub_kode ?? $kode) . ' ' . ($master->nama ?? '');
+            $nilai = (float) $detailItems->sum('saldo_saat_ini');
             $totalHarta += $nilai;
-
-            $hartaDetail[] = [
-                'kategori' => $katLabel,
-                'nama' => $nama,
-                'nilai' => $nilai,
-            ];
-
-            if (!isset($hartaByKategori[$katLabel])) {
-                $hartaByKategori[$katLabel] = 0;
-            }
-            $hartaByKategori[$katLabel] += $nilai;
+            $hartaDetail[] = ['kategori' => $katLabel, 'nama' => $nama, 'nilai' => $nilai];
+            $hartaByKategori[$katLabel] = ($hartaByKategori[$katLabel] ?? 0) + $nilai;
         }
 
-        // Per-tab harta data
-        $hartaByTab = [];
         foreach ($allTabs as &$at) {
-            $npwpCabangId = $at['key'] === 'induk' ? null : ($at['npwp_cabang_id'] ?? null);
-            $tabHartaItems = $allHartaItems->filter(function ($item) use ($npwpCabangId) {
-                return $item->npwp_cabang_id == $npwpCabangId;
-            });
-
-            $tabTotal = 0;
-            $tabDetail = [];
-            $tabByKat = [];
-
-            foreach ($tabHartaItems as $item) {
-                $katLabel = $item->masterItem->kategori->label ?? 'Lainnya';
-                $nama = $item->masterItem->sub_kode . ' ' . $item->masterItem->nama;
-                $nilai = (float) $item->nilai;
-                $tabTotal += $nilai;
-
-                $tabDetail[] = [
-                    'kategori' => $katLabel,
-                    'nama' => $nama,
-                    'nilai' => $nilai,
-                ];
-
-                if (!isset($tabByKat[$katLabel])) {
-                    $tabByKat[$katLabel] = 0;
-                }
-                $tabByKat[$katLabel] += $nilai;
-            }
-
-            $katLabels = array_keys($tabByKat);
-            $katValues = array_values($tabByKat);
+            $isInduk = $at['key'] === 'induk';
+            $katLabels = array_keys($hartaByKategori);
+            $katValues = array_values($hartaByKategori);
             $katColors = [];
             foreach ($katLabels as $i => $l) {
                 $katColors[] = $chartColors[$i % count($chartColors)];
             }
-
-            $at['harta'] = [
-                'total' => $tabTotal,
-                'detail' => $tabDetail,
-                'by_kategori' => [
-                    'labels' => $katLabels,
-                    'values' => $katValues,
-                    'colors' => $katColors,
-                ],
-            ];
+            $at['harta'] = $isInduk ? [
+                'total' => $totalHarta, 'detail' => $hartaDetail,
+                'by_kategori' => ['labels' => $katLabels, 'values' => $katValues, 'colors' => $katColors],
+            ] : ['total' => 0, 'detail' => [], 'by_kategori' => ['labels' => [], 'values' => [], 'colors' => []]];
         }
         unset($at);
 
-        // Format for chart.js (aggregate)
         $katLabels = array_keys($hartaByKategori);
         $katValues = array_values($hartaByKategori);
         $katColors = [];
@@ -197,22 +197,17 @@ class DashboardController extends Controller
             $katColors[] = $chartColors[$i % count($chartColors)];
         }
 
-        return response()->json([
+        return [
             'exists' => $transaksis->isNotEmpty(),
             'total_harta' => $totalHarta,
             'total_omset' => $totalOmset,
             'total_pph' => $totalPph,
             'harta_detail' => $hartaDetail,
-            'harta_by_kategori' => [
-                'labels' => $katLabels,
-                'values' => $katValues,
-                'colors' => $katColors,
-            ],
+            'harta_by_kategori' => ['labels' => $katLabels, 'values' => $katValues, 'colors' => $katColors],
             'omset_per_bulan' => array_values($omsetPerBulan),
-            'bulan_labels' => ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
             'cabang_count' => count($allTabs) - 1,
             'tabs' => $allTabs,
-        ]);
+        ];
     }
 
     protected function buildTabsData($client, $tahun, $transaksis = null)
@@ -400,19 +395,22 @@ class DashboardController extends Controller
 
         $allTabs = $this->buildTabsData($client, $tahun);
 
-        // Load harta from LampiranSpt
-        $lampiranItems = LampiranSpt::where('client_id', $client->id)
+        // Load harta from LampiranSptDetail
+        $detailItems = LampiranSptDetail::where('client_id', $client->id)
             ->where('tahun', $tahun)
-            ->where('nilai', '>', 0)
+            ->where('saldo_saat_ini', '>', 0)
             ->with('masterItem.kategori')
-            ->get();
+            ->get()
+            ->groupBy('kode');
 
         $harta = [];
         $totalHarta = 0;
-        foreach ($lampiranItems as $item) {
-            $katLabel = $item->masterItem->kategori->label ?? 'Lainnya';
-            $nama = $katLabel . ' - ' . $item->masterItem->sub_kode . ' ' . $item->masterItem->nama;
-            $nilai = (float) $item->nilai;
+        foreach ($detailItems as $kode => $items) {
+            $first = $items->first();
+            $master = $first->masterItem;
+            $katLabel = $master->kategori->label ?? 'Lainnya';
+            $nama = $katLabel . ' - ' . ($master->sub_kode ?? $kode) . ' ' . ($master->nama ?? '');
+            $nilai = (float) $items->sum('saldo_saat_ini');
             $harta[] = ['nama' => $nama, 'nilai' => $nilai];
             $totalHarta += $nilai;
         }

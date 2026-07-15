@@ -28,4 +28,9 @@ class LampiranSptDetail extends Model
     {
         return $this->belongsTo(DataClient::class, 'client_id');
     }
+
+    public function masterItem()
+    {
+        return $this->belongsTo(MasterLampiranSpt::class, 'kode', 'sub_kode');
+    }
 }

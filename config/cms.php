@@ -86,7 +86,7 @@ return [
             'group' => 'setting',
         ],
         'dokumentasi' => [
-            'enabled' => false,
+            'enabled' => true,
             'route' => 'dokumentasi',
             'icon' => 'journal-code',
             'label' => 'Dokumentasi',
