@@ -75,10 +75,10 @@
             @endif
             @if($client->hasClientPermission('dashboard.export'))
             <div class="col-md-auto d-flex gap-2">
-                <a href="{{ route('client.dashboard.export-pdf', ['tahun' => $tahun]) }}" class="btn btn-sm btn-danger export-link">
+                <a href="{{ route('client.dashboard.export-pdf', ['tahun' => $tahun] + (request('view_client_id') ? ['view_client_id' => request('view_client_id')] : [])) }}" class="btn btn-sm btn-danger export-link">
                     <i class="bi bi-filetype-pdf me-1"></i> PDF
                 </a>
-                <a href="{{ route('client.dashboard.export-excel', ['tahun' => $tahun]) }}" class="btn btn-sm btn-success export-link">
+                <a href="{{ route('client.dashboard.export-excel', ['tahun' => $tahun] + (request('view_client_id') ? ['view_client_id' => request('view_client_id')] : [])) }}" class="btn btn-sm btn-success export-link">
                     <i class="bi bi-file-earmark-spreadsheet me-1"></i> Excel
                 </a>
             </div>

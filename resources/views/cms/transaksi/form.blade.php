@@ -15,6 +15,14 @@
         <form id="formTransaksi" method="POST" action="{{ route('cms.transaksi.store') }}">
             @csrf
 
+            {{-- Loading Overlay --}}
+            <div id="loadingOverlay" class="d-none" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,255,255,0.85);z-index:1060;display:flex;align-items:center;justify-content:center;">
+                <div class="text-center">
+                    <div class="spinner-border text-primary mb-2" role="status" style="width:2.5rem;height:2.5rem;"></div>
+                    <div class="small text-muted">Memuat data...</div>
+                </div>
+            </div>
+
             {{-- Data Client --}}
             <div class="row g-4 mb-4">
                 <div class="col-12">
@@ -418,10 +426,12 @@ function handleClientChange() {
     const contentContainer = document.getElementById('cabangTabContent');
     const clientCabangs = cabangData[id] || [];
 
+    // Always clear old tab DOM to prevent stale hidden inputs
+    tabsContainer.innerHTML = '';
+    contentContainer.innerHTML = '';
+
     if (clientCabangs && clientCabangs.length > 0) {
         hasCabang = true;
-        tabsContainer.innerHTML = '';
-        contentContainer.innerHTML = '';
         buildTab('induk', c ? c.nama_client : 'Induk', c ? (c.npwp || '-') : '-', null, true, c ? (c.kpp || '-') : '-');
 
         // Sort cabangs by last 3 digits of NPWP
@@ -787,9 +797,12 @@ function hitungOmset() {
 function loadDataFromDb() {
     const clientId = parseInt(document.getElementById('clientSelect').value);
     const tahun = document.getElementById('tahunSelect').value;
-    if (!clientId || !tahun) return;
+    if (!clientId || !tahun) return Promise.resolve();
 
-    fetch('/admin/transaksi/load-data?client_id=' + clientId + '&tahun=' + tahun)
+    var overlay = document.getElementById('loadingOverlay');
+    if (overlay) overlay.classList.remove('d-none');
+
+    return fetch('/admin/transaksi/load-data?client_id=' + clientId + '&tahun=' + tahun)
         .then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
         .then(function(data) {
             if (data.exists) {
@@ -815,7 +828,10 @@ function loadDataFromDb() {
             restoreCurrentInputs();
             toggleButtons();
         })
-        .catch(function(err) { console.error('Load data error:', err); });
+        .catch(function(err) { console.error('Load data error:', err); })
+        .finally(function() {
+            if (overlay) overlay.classList.add('d-none');
+        });
 }
 
 document.getElementById('tahunSelect').addEventListener('change', function() {

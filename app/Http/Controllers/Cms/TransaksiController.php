@@ -847,6 +847,10 @@ class TransaksiController extends Controller
             $tahun = isset($row[3]) ? trim((string) $row[3]) : '';
 
             $client = DataClient::where('npwp', $npwpClient)->first();
+            if (!$client) {
+                $errors[] = "Baris " . ($r + 1) . ": Client dengan NPWP {$npwpClient} tidak ditemukan";
+                continue;
+            }
 
             $cabangId = null;
             if ($npwpCabang) {
