@@ -38,7 +38,7 @@
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold small" id="npwpLabel">NPWP</label>
+                        <label class="form-label fw-semibold small" id="npwpLabel">NIK</label>
                         <input type="text" name="npwp" id="npwpField" value="{{ old('npwp', $dataClient->npwp ?? '') }}" class="form-control @error('npwp') is-invalid @enderror" placeholder="15-16 digit angka" maxlength="16" inputmode="numeric">
                         <div id="npwpWarning" class="text-danger small mt-1 d-none"><i class="bi bi-exclamation-triangle me-1"></i><span id="npwpWarningText"></span></div>
                         @error('npwp') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -47,10 +47,7 @@
                         <label class="form-label fw-semibold small">KPP</label>
                         <input type="text" name="kpp" value="{{ old('kpp', $dataClient->kpp ?? '') }}" class="form-control" placeholder="Kantor Pelayanan Pajak">
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold small">NPWP Cabang</label>
-                        <input type="text" name="npwp_cabang" value="{{ old('npwp_cabang', $dataClient->npwp_cabang ?? '') }}" class="form-control" placeholder="NPWP Cabang (opsional)">
-                    </div>
+                   
                     <div class="col-md-6">
                         <label class="form-label fw-semibold small">No. Telephone</label>
                         <input type="text" name="no_telephone" value="{{ old('no_telephone', $dataClient->no_telephone ?? '') }}" class="form-control" placeholder="0812-XXXX-XXXX">
@@ -58,6 +55,10 @@
                     <div class="col-md-6">
                         <label class="form-label fw-semibold small">Email</label>
                         <input type="email" name="email" value="{{ old('email', $dataClient->email ?? '') }}" class="form-control" placeholder="client@example.com">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small">PTKP</label>
+                        <input type="text" name="ptkp" value="{{ old('ptkp', $dataClient->ptkp ?? '') }}" class="form-control" placeholder="PTKP">
                     </div>
                     @if($dataClient)
                         <div class="col-md-6">
@@ -103,11 +104,12 @@
                             <thead class="table-light">
                                 <tr>
                                     <th style="min-width:140px">Nama</th>
-                                    <th style="min-width:120px">NPWP</th>
+                                    <th style="min-width:120px">NIK</th>
                                     <th style="min-width:120px">KPP</th>
                                     <th style="min-width:160px">Email</th>
                                     <th style="min-width:110px">No. Telp</th>
-                                    <th style="min-width:100px">AR</th>
+                                    <th style="min-width:160px">Alamat NPWP</th>
+                                    <th style="min-width:160px">Alamat Tagihan</th>
                                     <th style="min-width:80px">PTKP</th>
                                     <th style="width:50px"></th>
                                 </tr>
@@ -125,7 +127,8 @@
                                         <td><input type="text" name="cabang_kpp[]" value="{{ $cab->kpp }}" class="form-control form-control-sm"></td>
                                         <td><input type="email" name="cabang_email[]" value="{{ $cab->email }}" class="form-control form-control-sm"></td>
                                         <td><input type="text" name="cabang_no_telephone[]" value="{{ $cab->no_telephone }}" class="form-control form-control-sm"></td>
-                                        <td><input type="text" name="cabang_AR[]" value="{{ $cab->AR }}" class="form-control form-control-sm"></td>
+                                        <td><input type="text" name="cabang_alamat_npwp[]" value="{{ $cab->alamat_npwp }}" class="form-control form-control-sm"></td>
+                                        <td><input type="text" name="cabang_alamat_tagihan[]" value="{{ $cab->alamat_tagihan }}" class="form-control form-control-sm"></td>
                                         <td><input type="text" name="cabang_ptkp[]" value="{{ $cab->ptkp }}" class="form-control form-control-sm"></td>
                                         <td class="text-center">
                                             <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove()">
@@ -191,10 +194,10 @@
         const hasNonDigit = /[^0-9]/.test(val);
 
         if (hasNonDigit) {
-            warningText.textContent = 'NPWP/NIK hanya boleh terdiri dari 15-16 digit angka. Simbol atau huruf tidak diperbolehkan.';
+            warningText.textContent = 'NIK hanya boleh terdiri dari 15-16 digit angka. Simbol atau huruf tidak diperbolehkan.';
             warning.classList.remove('d-none');
         } else if (val.length > 0 && val.length < 15) {
-            warningText.textContent = 'NPWP/NIK minimal 15 digit angka (saat ini ' + val.length + ' digit).';
+            warningText.textContent = 'NIK minimal 15 digit angka (saat ini ' + val.length + ' digit).';
             warning.classList.remove('d-none');
         } else {
             warning.classList.add('d-none');
@@ -218,11 +221,12 @@
                 <input type="hidden" name="cabang_id[]" value="">
                 <input type="text" name="cabang_nama[]" class="form-control form-control-sm" placeholder="Nama cabang">
             </td>
-            <td><input type="text" name="cabang_npwp[]" class="form-control form-control-sm" placeholder="NPWP"></td>
+            <td><input type="text" name="cabang_npwp[]" class="form-control form-control-sm" placeholder="NIK"></td>
             <td><input type="text" name="cabang_kpp[]" class="form-control form-control-sm" placeholder="KPP"></td>
             <td><input type="email" name="cabang_email[]" class="form-control form-control-sm" placeholder="Email"></td>
             <td><input type="text" name="cabang_no_telephone[]" class="form-control form-control-sm" placeholder="No. Telp"></td>
-            <td><input type="text" name="cabang_AR[]" class="form-control form-control-sm" placeholder="AR"></td>
+            <td><input type="text" name="cabang_alamat_npwp[]" class="form-control form-control-sm" placeholder="Alamat NPWP"></td>
+            <td><input type="text" name="cabang_alamat_tagihan[]" class="form-control form-control-sm" placeholder="Alamat Tagihan"></td>
             <td><input type="text" name="cabang_ptkp[]" class="form-control form-control-sm" placeholder="PTKP"></td>
             <td class="text-center">
                 <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove()">

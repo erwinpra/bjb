@@ -112,11 +112,10 @@ class LampiranSptSeeder extends Seeder
 
             if (isset($data[$label])) {
                 foreach ($data[$label] as [$subKode, $nama]) {
-                    MasterLampiranSpt::firstOrCreate([
-                        'kategori_id' => $kategori->id,
-                        'sub_kode' => $subKode,
-                        'nama' => $nama,
-                    ]);
+                    MasterLampiranSpt::firstOrCreate(
+                        ['kategori_id' => $kategori->id, 'sub_kode' => $subKode],
+                        ['nama' => $nama, 'is_active' => true],
+                    );
                 }
             }
         }

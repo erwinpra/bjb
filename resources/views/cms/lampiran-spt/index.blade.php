@@ -74,14 +74,16 @@
                                 <div class="col-md-6">
                                     <form method="POST" action="{{ route('cms.lampiran-spt.import.preview') }}" enctype="multipart/form-data" id="formImport">
                                         @csrf
-                                        <input type="hidden" name="client_id" value="{{ $clientId }}">
-                                        <input type="hidden" name="tahun" value="{{ $tahun }}">
                                         <div class="input-group">
                                             <input type="file" name="file" class="form-control" accept=".xlsx,.xls,.csv" required>
                                             <button type="submit" class="btn btn-success">
                                                 <i class="bi bi-eye me-1"></i> Preview
                                             </button>
                                         </div>
+                                        <small class="text-muted d-block mt-1">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            Client dan tahun akan dibaca dari file Excel (baris NIK/NPWP dan tahun).
+                                        </small>
                                     </form>
                                 </div>
                                 <div class="col-md-6">
@@ -97,18 +99,33 @@
                         </div>
                     </div>
 
+                    {{-- Per Page & Pagination --}}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <form method="GET" action="{{ route('cms.lampiran-spt.index') }}" class="d-flex align-items-center gap-2">
+                            <input type="hidden" name="client_id" value="{{ $clientId }}">
+                            <input type="hidden" name="tahun" value="{{ $tahun }}">
+                            <label class="small text-muted mb-0">Tampilkan</label>
+                            <select name="per_page" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+                                <option value="10" {{ ($perPage ?? 10) == 10 ? 'selected' : '' }}>10</option>
+                                <option value="20" {{ ($perPage ?? 10) == 20 ? 'selected' : '' }}>20</option>
+                                <option value="50" {{ ($perPage ?? 10) == 50 ? 'selected' : '' }}>50</option>
+                            </select>
+                            <small class="text-muted">{{ $details->total() ?? 0 }} data</small>
+                        </form>
+                    </div>
+
                     {{-- Input Table --}}
                     <form method="POST" action="{{ route('cms.lampiran-spt.store') }}" id="formLampiran">
                         @csrf
                         <input type="hidden" name="client_id" value="{{ $clientId }}">
                         <input type="hidden" name="tahun" value="{{ $tahun }}">
 
+                        @php $masterByKode = $masterItems->keyBy('sub_kode'); @endphp
                         <div class="table-responsive">
                             <table class="table table-bordered align-middle" id="tableLampiran">
                                 <thead class="table-dark" style="font-size:0.8rem">
                                     <tr>
                                         <th style="width:120px">KODE</th>
-                                        <th style="width:200px">NIK/NPWP</th>
                                         <th style="width:200px">DESKRIPSI</th>
                                         <th style="width:200px">NOMOR AKUN</th>
                                         <th style="width:200px">ATAS NAMA</th>
@@ -130,7 +147,7 @@
                                             <span class="kode-text">{{ $d->kode }}</span>
                                             <select name="kode[]" class="cell-input cell-select d-none">
                                                 <option value="">--</option>
-                                                @foreach($masterItems as $m)
+                                                @foreach($activeMasterItems as $m)
                                                     <option value="{{ $m->sub_kode }}" {{ $d->kode == $m->sub_kode ? 'selected' : '' }}>
                                                         {{ $m->sub_kode }} - {{ $m->nama }}
                                                     </option>
@@ -138,14 +155,8 @@
                                             </select>
                                         </td>
                                         <td>
-                                            @php
-                                                $clientData = \App\Models\Cms\DataClient::find($clientId);
-                                            @endphp
-                                            <input type="text" name="nik_npwp[]" class="cell-input" value="{{ optional($clientData)->npwp ?? '' }}" readonly>
-                                        </td>
-                                        <td>
-                                            <span class="field-display">{{ $d->deskripsi ?: '-' }}</span>
-                                            <input type="text" name="deskripsi[]" class="cell-input cell-edit d-none" value="{{ $d->deskripsi }}">
+                                            <span class="field-display">{{ isset($masterByKode[$d->kode]) ? $masterByKode[$d->kode]->nama : ($d->deskripsi ?: '-') }}</span>
+                                            <input type="text" name="deskripsi[]" class="cell-input cell-edit d-none" value="{{ $d->deskripsi }}" readonly>
                                         </td>
                                         <td>
                                             <span class="field-display">{{ $d->nomor_akun ?: '-' }}</span>
@@ -177,16 +188,16 @@
                                             </select>
                                         </td>
                                         <td>
-                                            <span class="field-display text-end">{{ $d->saldo_saat_ini > 0 ? 'Rp ' . number_format($d->saldo_saat_ini, 0, ',', '.') : '-' }}</span>
-                                            <input type="text" name="saldo_saat_ini[]" class="cell-input cell-edit format-currency text-end d-none" value="{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '' }}">
+                                            <span class="field-display text-end">{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 2, ',', '.') : '-' }}</span>
+                                            <input type="text" name="saldo_saat_ini[]" class="cell-input cell-edit format-currency text-end d-none" value="{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 2, ',', '.') : '' }}">
                                         </td>
                                         <td>
-                                            <span class="field-display text-end">{{ $d->saldo_bentuk_awal > 0 ? 'Rp ' . number_format($d->saldo_bentuk_awal, 0, ',', '.') : '-' }}</span>
-                                            <input type="text" name="saldo_bentuk_awal[]" class="cell-input cell-edit format-currency text-end d-none" value="{{ $d->saldo_bentuk_awal > 0 ? number_format($d->saldo_bentuk_awal, 0, ',', '.') : '' }}">
+                                            <span class="field-display text-end">{{ $d->saldo_bentuk_awal > 0 ? number_format($d->saldo_bentuk_awal, 2, ',', '.') : '-' }}</span>
+                                            <input type="text" name="saldo_bentuk_awal[]" class="cell-input cell-edit format-currency text-end d-none" value="{{ $d->saldo_bentuk_awal > 0 ? number_format($d->saldo_bentuk_awal, 2, ',', '.') : '' }}">
                                         </td>
                                         <td>
-                                            <span class="field-display text-end">{{ $d->nilai_kurs > 0 ? number_format($d->nilai_kurs, 0, ',', '.') : '-' }}</span>
-                                            <input type="text" name="nilai_kurs[]" class="cell-input cell-edit format-currency text-end d-none" value="{{ $d->nilai_kurs > 0 ? number_format($d->nilai_kurs, 0, ',', '.') : '' }}">
+                                            <span class="field-display text-end">{{ $d->nilai_kurs > 0 ? number_format($d->nilai_kurs, 2, ',', '.') : '-' }}</span>
+                                            <input type="text" name="nilai_kurs[]" class="cell-input cell-edit format-currency text-end d-none" value="{{ $d->nilai_kurs > 0 ? number_format($d->nilai_kurs, 2, ',', '.') : '' }}">
                                         </td>
                                         <td class="text-center">
                                             @cmsCan('lampiran_spt', 'edit')
@@ -203,7 +214,7 @@
                                     </tr>
                                     @empty
                                     <tr class="empty-row">
-                                        <td colspan="13" class="text-center text-muted py-4">
+                                        <td colspan="12" class="text-center text-muted py-4">
                                             <i class="bi bi-plus-circle d-block mb-1 fs-4"></i>
                                             Klik "Tambah Baris" untuk menambah data
                                         </td>
@@ -224,97 +235,82 @@
                             @endCmsCan
                         </div>
                     </form>
+
+                    @if($details->hasPages())
+                    <div class="mt-3 d-flex justify-content-center">
+                        {{ $details->appends(['client_id' => $clientId, 'tahun' => $tahun, 'per_page' => $perPage])->links('pagination::bootstrap-4') }}
+                    </div>
+                    @endif
                 </div>
 
                 {{-- Tab: Recap --}}
                 <div class="tab-pane fade" id="tabContent-recap" role="tabpanel">
-                    @if($details->isNotEmpty())
+                    @php
+                        $grandHarga = $recapGroups->sum('subHarga');
+                        $grandNilai = $recapGroups->sum('subNilai');
+                    @endphp
+                    @foreach($recapGroups as $rg)
                         @php
-                            $grouped = $details->groupBy('kode');
-                            $grandTotal = $details->sum('saldo_saat_ini');
+                            $collapseId = 'recap-collapse-' . $loop->index;
+                            $kat = $rg['kategori'];
+                            $kodeGroups = $rg['kodeGroups'];
+                            $hasItems = $kodeGroups->isNotEmpty();
                         @endphp
-                        @foreach($grouped as $kode => $items)
-                            @php
-                                $collapseId = 'recap-collapse-' . $loop->index;
-                                $subTotal = $items->sum('saldo_saat_ini');
-                                $first = $items->first();
-                                $masterLabel = $masterItems->where('sub_kode', $kode)->first();
-                                $label = $masterLabel ? $masterLabel->sub_kode . ' - ' . $masterLabel->nama : $kode;
-                            @endphp
-                            <div class="card border mb-3">
-                                <div class="card-header bg-light py-2 collapse-toggle"
-                                    role="button" data-bs-toggle="collapse"
-                                    data-bs-target="#{{ $collapseId }}" aria-expanded="false">
-                                    <h6 class="fw-semibold mb-0 d-flex justify-content-between align-items-center">
-                                        <span>{{ $label }} <small class="text-muted fw-normal">(Rp {{ number_format($subTotal, 0, ',', '.') }})</small></span>
-                                        <i class="bi bi-chevron-down collapse-icon transition-rotate"></i>
-                                    </h6>
-                                </div>
-                                <div class="collapse" id="{{ $collapseId }}">
-                                    <div class="card-body p-0">
-                                        <table class="table table-sm mb-0">
-                                            <thead class="table-light">
-                                                <tr>
-                                                    <th>#</th>
-                                                    <th>NOMOR AKUN</th>
-                                                    <th>ATAS NAMA</th>
-                                                    <th>BANK/INSTITUSI</th>
-                                                    <th>LOKASI</th>
-                                                    <th>KURS</th>
-                                                    <th>THN PEROLEHAN</th>
-                                                    <th class="text-end">SALDO SAAT INI</th>
-                                                    <th class="text-end">SALDO AWAL</th>
-                                                    <th class="text-end">NILAI KURS</th>
-                                                    <th style="width:50px">AKSI</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach($items as $idx => $item)
-                                                <tr data-row-id="{{ $item->id }}">
-                                                    <td>{{ $idx + 1 }}</td>
-                                                    <td>{{ $item->nomor_akun }}</td>
-                                                    <td>{{ $item->atas_nama }}</td>
-                                                    <td>{{ $item->nama_bank_institusi }}</td>
-                                                    <td>{{ $item->lokasi_harta }}</td>
-                                                    <td>{{ $item->kurs }}</td>
-                                                    <td>{{ $item->tahun_perolehan }}</td>
-                                                    <td class="text-end">Rp {{ number_format($item->saldo_saat_ini, 0, ',', '.') }}</td>
-                                                    <td class="text-end">Rp {{ number_format($item->saldo_bentuk_awal, 0, ',', '.') }}</td>
-                                                    <td class="text-end">{{ number_format($item->nilai_kurs, 2, ',', '.') }}</td>
-                                                    <td class="text-center">
-                                                        @cmsCan('lampiran_spt', 'delete')
-                                                        <button type="button" class="btn btn-outline-danger btn-sm btn-delete-row" data-id="{{ $item->id }}" title="Hapus">
-                                                            <i class="bi bi-trash3"></i>
-                                                        </button>
-                                                        @endCmsCan
-                                                    </td>
-                                                </tr>
-                                                @endforeach
-                                                <tr class="table-active fw-bold">
-                                                    <td colspan="7" class="text-end">TOTAL {{ $label }}</td>
-                                                    <td class="text-end text-primary">Rp {{ number_format($subTotal, 0, ',', '.') }}</td>
-                                                    <td class="text-end text-primary">Rp {{ number_format($items->sum('saldo_bentuk_awal'), 0, ',', '.') }}</td>
-                                                    <td></td>
-                                                    <td></td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
+                        <div class="card border mb-3">
+                            <div class="card-header bg-light py-2 collapse-toggle"
+                                role="button" data-bs-toggle="collapse"
+                                data-bs-target="#{{ $collapseId }}" aria-expanded="false">
+                                <h6 class="fw-semibold mb-0 d-flex justify-content-between align-items-center">
+                                    <span>{{ $kat->label }}</span>
+                                    <i class="bi bi-chevron-down collapse-icon transition-rotate"></i>
+                                </h6>
+                            </div>
+                            <div class="collapse" id="{{ $collapseId }}">
+                                <div class="card-body p-0">
+                                    @if($hasItems)
+                                    <table class="table table-sm mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th style="width:40px">#</th>
+                                                <th style="width:80px">KODE</th>
+                                                <th>DESKRIPSI</th>
+                                                <th class="text-end" style="width:180px">HARGA PEROLEHAN</th>
+                                                <th class="text-end" style="width:180px">NILAI SAAT INI</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($kodeGroups as $idx => $g)
+                                            <tr>
+                                                <td>{{ $idx + 1 }}</td>
+                                                <td><code>{{ $g['kode'] }}</code></td>
+                                                <td>{{ $g['deskripsi'] }}</td>
+                                                <td class="text-end">{{ number_format($g['total_harga'], 0, ',', '.') }}</td>
+                                                <td class="text-end">{{ number_format($g['total_nilai'], 0, ',', '.') }}</td>
+                                            </tr>
+                                            @endforeach
+                                            <tr class="table-active fw-bold">
+                                                <td colspan="3" class="text-end">TOTAL {{ $kat->label }}</td>
+                                                <td class="text-end text-primary">{{ number_format($rg['subHarga'], 0, ',', '.') }}</td>
+                                                <td class="text-end text-primary">{{ number_format($rg['subNilai'], 0, ',', '.') }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    @else
+                                    <div class="text-center text-muted py-3">
+                                        <small>Belum ada data untuk kategori ini.</small>
                                     </div>
+                                    @endif
                                 </div>
                             </div>
-                        @endforeach
-                        <div class="d-flex justify-content-end mt-2">
-                            <div class="bg-danger text-white fw-bold fs-6 px-4 py-2 rounded">
-                                TOTAL HARTA: Rp {{ number_format($grandTotal, 0, ',', '.') }}
-                            </div>
                         </div>
-                    @else
-                        <div class="text-center text-muted py-5">
-                            <i class="bi bi-hand-index display-4 d-block mb-2 text-secondary opacity-50"></i>
-                            Belum ada data Lampiran SPT untuk client ini.
-                            <br><small>Isi data pada tab <strong>Lampiran SPT</strong> terlebih dahulu.</small>
+                    @endforeach
+                    <div class="d-flex justify-content-end mt-3">
+                        <div class="bg-danger text-white fw-bold fs-6 px-4 py-2 rounded d-flex gap-5">
+                            <span>TOTAL HARGA PEROLEHAN: {{ number_format($grandHarga, 0, ',', '.') }}</span>
+                            <span>TOTAL NILAI SAAT INI: {{ number_format($grandNilai, 0, ',', '.') }}</span>
                         </div>
-                    @endif
+                    </div>
+
                 </div>
             </div>
         @else
@@ -338,6 +334,19 @@
 }
 .select2-container--default .select2-selection--single .select2-selection__rendered {
     line-height: 1.5;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: calc(2.25rem + 2px);
+}
+#tableLampiran .select2-container {
+    width: 100% !important;
+}
+#tableLampiran .select2-container--default .select2-selection--single {
+    height: auto;
+    min-height: 28px;
+    padding: 1px 4px;
+    font-size: 0.8rem;
+    border-color: #ced4da;
 }
 .collapse-toggle { cursor: pointer; user-select: none; }
 .collapse-toggle:hover { background-color: #e9ecef; }
@@ -391,13 +400,64 @@ $(document).ready(function() {
     });
 });
 
+function formatIdCurrency(val) {
+    if (!val) return '';
+    // Remove thousand separator dots, replace decimal comma with dot
+    var num = parseFloat(val.replace(/\./g, '').replace(',', '.'));
+    if (isNaN(num)) return val;
+    return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+}
+
 // Format currency inputs
 document.addEventListener('input', function(e) {
     if (e.target.classList.contains('format-currency')) {
-        var val = e.target.value.replace(/[^0-9]/g, '');
-        if (val) {
-            e.target.value = new Intl.NumberFormat('id-ID').format(parseInt(val, 10));
-        }
+        e.target.value = formatIdCurrency(e.target.value);
+    }
+});
+
+// Populate deskripsi from option text
+function populateDeskripsi(sel) {
+    var tr = sel.closest('tr');
+    if (!tr) return;
+    var text = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : '';
+    var parts = text.split(' - ');
+    var nama = parts.length > 1 ? parts.slice(1).join(' - ') : '';
+    var deskInput = tr.querySelector('input[name="deskripsi[]"]');
+    if (deskInput) {
+        deskInput.value = nama;
+    }
+    var display = tr.querySelector('.field-display');
+    if (display) {
+        display.textContent = nama || '-';
+    }
+}
+
+// Init Select2 on kode select with search
+function initKodeSelect(select) {
+    if (!select) return;
+    $(select).select2({
+        placeholder: '-- Cari Kode --',
+        allowClear: true,
+        width: '100%',
+        dropdownAutoWidth: true,
+    }).on('select2:select select2:clear', function(e) {
+        populateDeskripsi(this);
+    });
+}
+
+// Destroy Select2 on kode select
+function destroyKodeSelect(select) {
+    if (!select) return;
+    var $sel = $(select);
+    if ($sel.hasClass('select2-hidden-accessible')) {
+        $sel.select2('destroy');
+    }
+}
+
+// Auto-populate deskripsi from master when kode changes (native fallback)
+document.addEventListener('change', function(e) {
+    if (e.target.matches('select[name="kode[]"]')) {
+        populateDeskripsi(e.target);
     }
 });
 
@@ -408,19 +468,17 @@ document.getElementById('btnAddRow')?.addEventListener('click', function() {
     if (emptyRow) emptyRow.remove();
 
     var options = '<option value="">--</option>';
-    @foreach($masterItems as $m)
+    @foreach($activeMasterItems as $m)
         options += '<option value="{{ $m->sub_kode }}">{{ $m->sub_kode }} - {{ $m->nama }}</option>';
     @endforeach
 
     var tr = document.createElement('tr');
     tr.className = 'row-new';
-    var clientNpwp = '{{ optional(\App\Models\Cms\DataClient::find($clientId))->npwp ?? '' }}';
     tr.innerHTML = `
         <td>
             <select name="kode[]" class="cell-input cell-select">${options}</select>
         </td>
-        <td><input type="text" name="nik_npwp[]" class="cell-input" value="` + clientNpwp + `"></td>
-        <td><input type="text" name="deskripsi[]" class="cell-input"></td>
+        <td><input type="text" name="deskripsi[]" class="cell-input" readonly></td>
         <td><input type="text" name="nomor_akun[]" class="cell-input"></td>
         <td><input type="text" name="atas_nama[]" class="cell-input"></td>
         <td><input type="text" name="nama_bank_institusi[]" class="cell-input"></td>
@@ -444,6 +502,7 @@ document.getElementById('btnAddRow')?.addEventListener('click', function() {
         </td>
     `;
     tbody.appendChild(tr);
+    initKodeSelect(tr.querySelector('select[name="kode[]"]'));
 });
 
 // Toggle edit row
@@ -471,14 +530,27 @@ document.addEventListener('click', function(e) {
     }
 
     if (isEditing) {
+        // Init Select2 on kode select for search
+        if (kodeSelect) {
+            initKodeSelect(kodeSelect);
+        }
         // Format currency on newly shown inputs
         tr.querySelectorAll('.format-currency').forEach(function(inp) {
-            if (inp.value) {
-                var num = inp.value.replace(/[^0-9]/g, '');
-                if (num) inp.value = new Intl.NumberFormat('id-ID').format(parseInt(num, 10));
-            }
+            if (inp.value) inp.value = formatIdCurrency(inp.value);
         });
+        // Populate deskripsi from master based on current kode selection
+        if (kodeSelect) {
+            var text = kodeSelect.options[kodeSelect.selectedIndex] ? kodeSelect.options[kodeSelect.selectedIndex].text : '';
+            var parts = text.split(' - ');
+            var nama = parts.length > 1 ? parts.slice(1).join(' - ') : '';
+            var deskInput = tr.querySelector('input[name="deskripsi[]"]');
+            if (deskInput) deskInput.value = nama;
+        }
     } else {
+        // Destroy Select2 on kode select
+        if (kodeSelect) {
+            destroyKodeSelect(kodeSelect);
+        }
         // Sync display spans with current input values
         tr.querySelectorAll('.cell-edit').forEach(function(inp) {
             var td = inp.closest('td');
@@ -488,8 +560,7 @@ document.addEventListener('click', function(e) {
             var val = inp.value.trim();
             var isCurrency = inp.classList.contains('format-currency');
             if (isCurrency) {
-                var num = val.replace(/[^0-9]/g, '');
-                display.textContent = num ? 'Rp ' + new Intl.NumberFormat('id-ID').format(parseInt(num, 10)) : '-';
+                display.textContent = formatIdCurrency(val) || '-';
             } else if (inp.tagName === 'SELECT') {
                 display.textContent = val || '-';
             } else {
