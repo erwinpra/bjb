@@ -4,22 +4,36 @@ namespace App\Http\Controllers\Cms;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cms\ActivityLog;
+use Illuminate\Http\Request;
 
 class ActivityLogController extends Controller
 {
     public function __construct()
     {
         $this->middleware('cms.permission:activity_log,view')->only(['index', 'show']);
-        $this->middleware('cms.permission:activity_log,delete')->only(['destroy']);
+        $this->middleware('cms.permission:activity_log,delete')->only(['destroy', 'clear']);
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $logs = ActivityLog::with('user')
-            ->latest()
-            ->paginate(50);
+        $search = $request->get('search');
+        $perPage = $request->get('per_page', 20);
 
-        return view('cms::activity-logs.index', compact('logs'));
+        $logs = ActivityLog::with('user')
+            ->when($search, function ($q) use ($search) {
+                $q->where('action', 'like', "%{$search}%")
+                  ->orWhere('module', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('ip_address', 'like', "%{$search}%")
+                  ->orWhereHas('user', function ($u) use ($search) {
+                      $u->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                  });
+            })
+            ->latest()
+            ->paginate($perPage);
+
+        return view('cms::activity-logs.index', compact('logs', 'search', 'perPage'));
     }
 
     public function show(ActivityLog $activityLog)

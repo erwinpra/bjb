@@ -105,6 +105,6 @@ Route::prefix($prefix)
             Route::get('activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
             Route::get('activity-logs/{activityLog}', [ActivityLogController::class, 'show'])->name('activity-logs.show');
             Route::delete('activity-logs/{activityLog}', [ActivityLogController::class, 'destroy'])->name('activity-logs.destroy');
-            Route::post('activity-logs/clear', [ActivityLogController::class, 'clear'])->name('activity-logs.clear');
+            Route::post('activity-logs/clear', [ActivityLogController::class, 'clear'])->name('activity-logs.clear')->middleware('cms.permission:activity_log,delete');
         }
     });

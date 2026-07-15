@@ -28,8 +28,8 @@ class ActivityLog extends Model
             'module' => $module,
             'target_id' => $targetId,
             'description' => $description,
-            'ip_address' => $request?->ip(),
-            'user_agent' => $request?->userAgent(),
+            'ip_address' => $request ? $request->ip() : null,
+            'user_agent' => $request ? $request->userAgent() : null,
         ]);
     }
 }

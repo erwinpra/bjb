@@ -103,7 +103,9 @@ class DashboardController extends Controller
             ->where('tahun', $tahun)
             ->with(['harta', 'omset'])
             ->get()
-            ->keyBy(fn($t) => $t->npwp_cabang_id ? 'cabang_' . $t->npwp_cabang_id : 'induk');
+            ->keyBy(function ($t) {
+                return $t->npwp_cabang_id ? 'cabang_' . $t->npwp_cabang_id : 'induk';
+            });
 
         $allTabs = $this->buildTabsData($client, $tahun, $transaksis);
 
