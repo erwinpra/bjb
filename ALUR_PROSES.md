@@ -1,6 +1,6 @@
-# Panduan Penggunaan Aplikasi BJB
+# Panduan Penggunaan Aplikasi BJP
 
-Aplikasi BJB digunakan untuk mengelola data wajib pajak dan menghitung PPh Final (Pajak Penghasilan Final) secara otomatis. Berikut panduan lengkap untuk Admin dan Client.
+Aplikasi BJP digunakan untuk mengelola data wajib pajak dan menghitung PPh Final (Pajak Penghasilan Final) secara otomatis. Berikut panduan lengkap untuk Admin dan Client.
 
 ---
 
@@ -25,40 +25,70 @@ Aplikasi BJB digunakan untuk mengelola data wajib pajak dan menghitung PPh Final
 
 ### Melihat Daftar Client
 - Masuk ke menu **Data Client** di sidebar kiri
-- Tabel menampilkan: Nama, Tipe Badan, Client Role, NPWP, Email, KPP
+- Tabel menampilkan: Nama, Tipe Badan, NPWP, Email, KPP, PTKP
+- Tersedia fitur pencarian (search) berdasarkan Nama, NPWP, Email, atau KPP
 
 ### Menambah Client Baru
 1. Klik tombol **Create Data Client**
 2. Isi formulir:
    - **Nama Client** — Nama lengkap wajib pajak
    - **Tipe Badan** — Pilih "Badan" (PT/CV) atau "Perorangan"
-   - **Client Role** — Pilih level akses (Client / Viewer / Staff / Super Admin)
-   - **NPWP atau NIK** — 16 digit angka
+   - **NPWP atau NIK** — 16 digit angka (label otomatis berubah sesuai tipe badan)
    - **KPP** — Kantor Pelayanan Pajak
    - **No. Telephone & Email** — Kontak client
-   - **Alamat** — Alamat lengkap
+   - **PTKP** — Status PTKP
+   - **Alamat NPWP & Alamat Tagihan** — Alamat lengkap
 3. Password akan dibuat otomatis — **catat dan bagikan ke client**
 4. Klik **Create Data Client**
 
 ### Mengedit Client
 1. Klik ikon pensil ✏️ pada client yang ingin diedit
 2. Ubah data yang diperlukan
-3. Jika ingin mengganti password, isi kolom Password (kosongkan jika tidak diubah)
-4. Klik **Update Data Client**
+3. **Cabang**: Dapat menambah/mengedit cabang client beserta alamat NPWP dan alamat tagihan masing-masing
+4. Jika ingin mengganti password, isi kolom Password (kosongkan jika tidak diubah)
+5. Klik **Update Data Client**
 
 ### Import Data Client dari Excel
 1. Klik tombol **Import Excel**
 2. Pilih **Tipe Badan** (Badan atau Perorangan)
 3. Upload file Excel (format .xlsx)
-4. Aplikasi akan menampilkan **Preview** — data baru (hijau) dan data yang sudah ada (merah)
-5. Klik **Confirm Import** untuk menyimpan data baru
-6. Password dibuat otomatis untuk setiap client baru
+4. Aplikasi akan menampilkan **Preview** — data baru (hijau), data yang sudah ada (kuning), dan cabang (biru)
+5. Jika ada data dengan NPWP yang sama, pilih mode **Skip** (lewati) atau **Update** (perbarui)
+6. Klik **Confirm Import** untuk menyimpan
+7. Password dibuat otomatis untuk setiap client baru
 
-> **Tips**: Download template Excel terlebih dahulu dengan klik **Import Template** agar formatnya sesuai.
+> **Tips**: Download template Excel terlebih dahulu dengan klik **Download Template** agar formatnya sesuai.
 
 ---
 
-## 3. Mengelola Transaksi PPh (untuk Admin)
+## 3. Master Data (untuk Admin)
+
+Semua menu Master berada di group **Master** pada sidebar kiri. Setiap halaman master dilengkapi fitur pencarian dan pagination.
+
+### Pasal
+- Kelola daftar pasal pajak
+- Pencarian berdasarkan nama pasal
+
+### Badan
+- Kelola tipe badan (PT, CV, Perorangan, dll.)
+- Pencarian berdasarkan tipe
+
+### Master Rumus
+- Atur batas omset dan tarif potongan per tipe badan
+- Pencarian berdasarkan tipe badan, max value, atau persentase
+
+### Kategori Lampiran
+- Kelola kategori untuk pengelompokan Lampiran SPT
+- Pencarian berdasarkan label
+
+### Master Lampiran SPT
+- Kelola daftar kode item lampiran SPT (sub_kode, nama, kategori)
+- **Filter Kategori**: Pilih satu atau lebih kategori menggunakan dropdown multiple select
+- **Pencarian**: Cari berdasarkan sub_kode, nama, atau label kategori
+
+---
+
+## 4. Mengelola Transaksi PPh (untuk Admin)
 
 ### Membuat Transaksi Baru
 1. Masuk ke menu **Transaksi** di sidebar kiri
@@ -96,7 +126,38 @@ Aplikasi BJB digunakan untuk mengelola data wajib pajak dan menghitung PPh Final
 
 ---
 
-## 4. Dashboard Client (untuk Client)
+## 5. Mengelola Lampiran SPT (untuk Admin)
+
+### Input Lampiran SPT
+1. Masuk ke menu **Lampiran SPT** di sidebar kiri
+2. Pilih **Client** dan **Tahun** pajak
+3. Klik **Tampilkan**
+4. Data akan ditampilkan dalam dua tab:
+   - **Lampiran SPT** — Tabel input data lampiran (edit inline, tambah baris, hapus)
+   - **Recap** — Ringkasan per kategori
+
+### Fitur di Tab Lampiran SPT
+- **Tambah Baris** — Klik tombol "Tambah Baris" untuk menambah data baru
+- **Edit Inline** — Klik ikon pensil pada baris untuk mengedit, klik centang untuk menyimpan
+- **Hapus** — Klik ikon trash untuk menghapus baris
+- **Simpan** — Klik "Simpan" untuk menyimpan semua perubahan
+- **Per Page** — Atur jumlah baris per halaman: 10, 20, atau 50
+- **Pagination** — Navigasi halaman data
+
+### Import Lampiran SPT dari Excel
+1. Di halaman Lampiran SPT, klik **Import Excel**
+2. Upload file Excel (format .xlsx/.xls/.csv)
+3. Aplikasi akan menampilkan **Preview** data yang akan diimpor
+4. Jika ada NIK/NPWP tidak sesuai, import tidak bisa dilanjutkan
+5. Klik **Konfirmasi Import**
+
+### Master Kategori (Read-only)
+- Masuk ke **Lampiran SPT → Kelola Master** (tombol gear)
+- Menampilkan daftar kategori dan sub-item master lampiran SPT
+
+---
+
+## 6. Dashboard Client (untuk Client)
 
 ### Setelah Login
 Setelah client login, akan muncul halaman Dashboard yang menampilkan:
@@ -127,7 +188,7 @@ Grafik garis menunjukkan omset setiap bulan, sehingga mudah melihat tren penghas
 
 ---
 
-## 5. Level Akses Client
+## 7. Level Akses Client
 
 Setiap client memiliki **Role** (peran) yang menentukan fitur apa saja yang bisa digunakan:
 
@@ -157,7 +218,7 @@ Jika Anda memiliki akses **Lihat Data Client Lain**, akan muncul dropdown **"Lih
 
 ---
 
-## 6. Cara Ganti Password
+## 8. Cara Ganti Password
 
 ### Untuk Admin CMS
 1. Klik **Profile** di pojok kiri bawah sidebar
@@ -173,7 +234,7 @@ Jika Anda memiliki akses **Lihat Data Client Lain**, akan muncul dropdown **"Lih
 
 ---
 
-## 7. Tips & Troubleshooting
+## 9. Tips & Troubleshooting
 
 ### Jika Lupa Password
 - **Admin lupa password**: Hubungi super admin atau developer
@@ -195,7 +256,7 @@ Jika Anda memiliki akses **Lihat Data Client Lain**, akan muncul dropdown **"Lih
 
 ---
 
-## 8. Istilah Penting
+## 10. Istilah Penting
 
 | Istilah | Arti |
 |---------|------|
