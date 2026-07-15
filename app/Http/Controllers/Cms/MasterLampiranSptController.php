@@ -18,10 +18,27 @@ class MasterLampiranSptController extends Controller
         $this->middleware('cms.permission:master_lampiran_spt,delete')->only(['destroy']);
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $items = MasterLampiranSpt::with('kategori')->latest()->paginate(15);
-        return view('cms::master-lampiran-spt.index', compact('items'));
+        $search = $request->get('search');
+        $kategoriIds = $request->get('kategori_ids', []);
+
+        $kategoris = KategoriLampiran::orderBy('label')->get();
+
+        $items = MasterLampiranSpt::with('kategori')
+            ->when($search, function ($q) use ($search) {
+                $q->where('sub_kode', 'like', "%{$search}%")
+                  ->orWhere('nama', 'like', "%{$search}%")
+                  ->orWhereHas('kategori', function ($k) use ($search) {
+                      $k->where('label', 'like', "%{$search}%");
+                  });
+            })
+            ->when($kategoriIds, function ($q) use ($kategoriIds) {
+                $q->whereIn('kategori_id', $kategoriIds);
+            })
+            ->latest()->paginate(15);
+
+        return view('cms::master-lampiran-spt.index', compact('items', 'search', 'kategoris', 'kategoriIds'));
     }
 
     public function create()

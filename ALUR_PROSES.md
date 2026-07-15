@@ -189,7 +189,7 @@ Jika Anda memiliki akses **Lihat Data Client Lain**, akan muncul dropdown **"Lih
 - Cek daftar client, mungkin sudah terdaftar sebelumnya
 
 ### Format Nomor yang Benar
-- **NPWP/NIK**: 16 digit angka, tanpa spasi atau tanda hubung
+- **NIK**: 16 digit angka, tanpa spasi atau tanda hubung
 - **Nomor Telepon**: Bisa pakai format 08xx-xxxx-xxxx
 - **Nilai Uang**: Cukup masukkan angka saja (contoh: 50000000)
 

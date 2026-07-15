@@ -475,6 +475,8 @@ class DataClientController extends Controller
         $phones = $request->cabang_no_telephone ?? [];
         $ars = $request->cabang_AR ?? [];
         $ptkps = $request->cabang_ptkp ?? [];
+        $alamatNpwps = $request->cabang_alamat_npwp ?? [];
+        $alamatTagihans = $request->cabang_alamat_tagihan ?? [];
 
         $existingIds = $client->cabangs()->pluck('id')->toArray();
         $submittedIds = [];
@@ -492,6 +494,8 @@ class DataClientController extends Controller
                 'no_telephone' => isset($phones[$i]) ? trim($phones[$i]) : null,
                 'AR' => isset($ars[$i]) ? trim($ars[$i]) : null,
                 'ptkp' => isset($ptkps[$i]) ? trim($ptkps[$i]) : null,
+                'alamat_npwp' => isset($alamatNpwps[$i]) ? trim($alamatNpwps[$i]) : null,
+                'alamat_tagihan' => isset($alamatTagihans[$i]) ? trim($alamatTagihans[$i]) : null,
             ];
 
             if ($cabangId && in_array($cabangId, $existingIds)) {
@@ -501,8 +505,6 @@ class DataClientController extends Controller
                 $data['data_client_id'] = $client->id;
                 $data['tipe_badan'] = $client->tipe_badan;
                 $data['client_role_id'] = $client->client_role_id;
-                $data['alamat_npwp'] = $client->alamat_npwp;
-                $data['alamat_tagihan'] = $client->alamat_tagihan;
                 $data['password'] = Hash::make(Str::random(12));
                 $cabang = NpwpCabang::create($data);
                 $submittedIds[] = $cabang->id;

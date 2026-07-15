@@ -37,7 +37,7 @@
                         <tr>
                             <th>Nama Client</th>
                             <th>Tipe Badan</th>
-                            <th>NPWP/NIK</th>
+                            <th>NIK</th>
                             <th>Email</th>
                             <th>KPP</th>
                             <th class="text-center">Cabang</th>

@@ -23,10 +23,11 @@ class LampiranSptController extends Controller
         $this->middleware('cms.permission:lampiran_spt,delete')->only(['destroyRow']);
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $clientId = request('client_id');
-        $tahun = request('tahun', date('Y'));
+        $clientId = $request->get('client_id');
+        $tahun = $request->get('tahun', date('Y'));
+        $perPage = $request->get('per_page', 10);
 
         $clients = DataClient::orderBy('nama_client')->get();
         $currentYear = (int) date('Y');
@@ -40,14 +41,19 @@ class LampiranSptController extends Controller
         $details = collect();
         $recapGroups = collect();
         if ($clientId) {
-            $details = LampiranSptDetail::where('client_id', $clientId)
+            $allDetails = LampiranSptDetail::where('client_id', $clientId)
                 ->where('tahun', $tahun)
                 ->orderBy('id')
                 ->get();
 
-            $recapGroups = $kategoris->map(function ($kat) use ($details, $masterItems) {
+            $details = LampiranSptDetail::where('client_id', $clientId)
+                ->where('tahun', $tahun)
+                ->orderBy('id')
+                ->paginate($perPage);
+
+            $recapGroups = $kategoris->map(function ($kat) use ($allDetails, $masterItems) {
                 $subKodes = $kat->masterLampiranSpts->pluck('sub_kode');
-                $katDetails = $details->whereIn('kode', $subKodes->toArray(), true);
+                $katDetails = $allDetails->whereIn('kode', $subKodes->toArray(), true);
 
                 $kodeGroups = $katDetails->groupBy('kode')->map(function ($items, $kode) use ($masterItems) {
                     $master = $masterItems->firstWhere('sub_kode', $kode);
@@ -72,7 +78,8 @@ class LampiranSptController extends Controller
 
         return view('cms::lampiran-spt.index', compact(
             'clients', 'tahunList', 'tahunPerolehanList', 'clientId', 'tahun',
-            'masterItems', 'activeMasterItems', 'kategoris', 'details', 'recapGroups'
+            'masterItems', 'activeMasterItems', 'kategoris', 'details', 'recapGroups',
+            'perPage'
         ));
     }
 
@@ -278,13 +285,13 @@ class LampiranSptController extends Controller
 
         $tahun = (int) $tahun;
 
-        // Look up client by NPWP/NIK
+        // Look up client by NIK
         $client = DataClient::where('npwp', $npwpFile)->first();
 
         if (!$client) {
             @unlink($fullPath);
             return redirect()->route('cms.lampiran-spt.index')
-                ->with('error', 'Client dengan NIK/NPWP "' . $npwpFile . '" tidak ditemukan di database.');
+                ->with('error', 'Client dengan NIK "' . $npwpFile . '" tidak ditemukan di database.');
         }
 
         $clientId = $client->id;

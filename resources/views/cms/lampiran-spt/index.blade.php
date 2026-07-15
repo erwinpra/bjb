@@ -99,6 +99,21 @@
                         </div>
                     </div>
 
+                    {{-- Per Page & Pagination --}}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <form method="GET" action="{{ route('cms.lampiran-spt.index') }}" class="d-flex align-items-center gap-2">
+                            <input type="hidden" name="client_id" value="{{ $clientId }}">
+                            <input type="hidden" name="tahun" value="{{ $tahun }}">
+                            <label class="small text-muted mb-0">Tampilkan</label>
+                            <select name="per_page" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+                                <option value="10" {{ ($perPage ?? 10) == 10 ? 'selected' : '' }}>10</option>
+                                <option value="20" {{ ($perPage ?? 10) == 20 ? 'selected' : '' }}>20</option>
+                                <option value="50" {{ ($perPage ?? 10) == 50 ? 'selected' : '' }}>50</option>
+                            </select>
+                            <small class="text-muted">{{ $details->total() ?? 0 }} data</small>
+                        </form>
+                    </div>
+
                     {{-- Input Table --}}
                     <form method="POST" action="{{ route('cms.lampiran-spt.store') }}" id="formLampiran">
                         @csrf
@@ -220,6 +235,12 @@
                             @endCmsCan
                         </div>
                     </form>
+
+                    @if($details->hasPages())
+                    <div class="mt-3 d-flex justify-content-center">
+                        {{ $details->appends(['client_id' => $clientId, 'tahun' => $tahun, 'per_page' => $perPage])->links('pagination::bootstrap-4') }}
+                    </div>
+                    @endif
                 </div>
 
                 {{-- Tab: Recap --}}

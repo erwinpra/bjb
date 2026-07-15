@@ -56,6 +56,10 @@
                         <label class="form-label fw-semibold small">Email</label>
                         <input type="email" name="email" value="{{ old('email', $dataClient->email ?? '') }}" class="form-control" placeholder="client@example.com">
                     </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small">PTKP</label>
+                        <input type="text" name="ptkp" value="{{ old('ptkp', $dataClient->ptkp ?? '') }}" class="form-control" placeholder="PTKP">
+                    </div>
                     @if($dataClient)
                         <div class="col-md-6">
                             <label class="form-label fw-semibold small">Password</label>
@@ -104,6 +108,8 @@
                                     <th style="min-width:120px">KPP</th>
                                     <th style="min-width:160px">Email</th>
                                     <th style="min-width:110px">No. Telp</th>
+                                    <th style="min-width:160px">Alamat NPWP</th>
+                                    <th style="min-width:160px">Alamat Tagihan</th>
                                     <th style="min-width:80px">PTKP</th>
                                     <th style="width:50px"></th>
                                 </tr>
@@ -121,7 +127,8 @@
                                         <td><input type="text" name="cabang_kpp[]" value="{{ $cab->kpp }}" class="form-control form-control-sm"></td>
                                         <td><input type="email" name="cabang_email[]" value="{{ $cab->email }}" class="form-control form-control-sm"></td>
                                         <td><input type="text" name="cabang_no_telephone[]" value="{{ $cab->no_telephone }}" class="form-control form-control-sm"></td>
-                                        
+                                        <td><input type="text" name="cabang_alamat_npwp[]" value="{{ $cab->alamat_npwp }}" class="form-control form-control-sm"></td>
+                                        <td><input type="text" name="cabang_alamat_tagihan[]" value="{{ $cab->alamat_tagihan }}" class="form-control form-control-sm"></td>
                                         <td><input type="text" name="cabang_ptkp[]" value="{{ $cab->ptkp }}" class="form-control form-control-sm"></td>
                                         <td class="text-center">
                                             <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove()">
@@ -187,10 +194,10 @@
         const hasNonDigit = /[^0-9]/.test(val);
 
         if (hasNonDigit) {
-            warningText.textContent = 'NPWP/NIK hanya boleh terdiri dari 15-16 digit angka. Simbol atau huruf tidak diperbolehkan.';
+            warningText.textContent = 'NIK hanya boleh terdiri dari 15-16 digit angka. Simbol atau huruf tidak diperbolehkan.';
             warning.classList.remove('d-none');
         } else if (val.length > 0 && val.length < 15) {
-            warningText.textContent = 'NPWP/NIK minimal 15 digit angka (saat ini ' + val.length + ' digit).';
+            warningText.textContent = 'NIK minimal 15 digit angka (saat ini ' + val.length + ' digit).';
             warning.classList.remove('d-none');
         } else {
             warning.classList.add('d-none');
@@ -218,7 +225,8 @@
             <td><input type="text" name="cabang_kpp[]" class="form-control form-control-sm" placeholder="KPP"></td>
             <td><input type="email" name="cabang_email[]" class="form-control form-control-sm" placeholder="Email"></td>
             <td><input type="text" name="cabang_no_telephone[]" class="form-control form-control-sm" placeholder="No. Telp"></td>
-            
+            <td><input type="text" name="cabang_alamat_npwp[]" class="form-control form-control-sm" placeholder="Alamat NPWP"></td>
+            <td><input type="text" name="cabang_alamat_tagihan[]" class="form-control form-control-sm" placeholder="Alamat Tagihan"></td>
             <td><input type="text" name="cabang_ptkp[]" class="form-control form-control-sm" placeholder="PTKP"></td>
             <td class="text-center">
                 <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove()">

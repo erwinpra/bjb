@@ -17,10 +17,13 @@ class KategoriLampiranController extends Controller
         $this->middleware('cms.permission:kategori_lampiran,delete')->only(['destroy']);
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $kategoris = KategoriLampiran::latest()->paginate(15);
-        return view('cms::kategori-lampiran.index', compact('kategoris'));
+        $search = $request->get('search');
+        $kategoris = KategoriLampiran::when($search, function ($q) use ($search) {
+                $q->where('label', 'like', "%{$search}%");
+            })->latest()->paginate(15);
+        return view('cms::kategori-lampiran.index', compact('kategoris', 'search'));
     }
 
     public function create()
