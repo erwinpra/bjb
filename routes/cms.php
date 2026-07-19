@@ -75,6 +75,7 @@ Route::prefix($prefix)
             Route::get('lampiran-spt/import/template', [LampiranSptController::class, 'downloadTemplate'])->name('lampiran-spt.import.template');
             Route::post('lampiran-spt/import/preview', [LampiranSptController::class, 'previewImport'])->name('lampiran-spt.import.preview');
             Route::post('lampiran-spt/import/confirm', [LampiranSptController::class, 'confirmImport'])->name('lampiran-spt.import.confirm');
+            Route::post('lampiran-spt/row', [LampiranSptController::class, 'saveRow'])->name('lampiran-spt.row.save');
             Route::delete('lampiran-spt/row/{id}', [LampiranSptController::class, 'destroyRow'])->name('lampiran-spt.row.destroy');
         }
 

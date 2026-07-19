@@ -18,7 +18,7 @@ class LampiranSptController extends Controller
     public function __construct()
     {
         $this->middleware('cms.permission:lampiran_spt,view')->only(['index', 'editMaster']);
-        $this->middleware('cms.permission:lampiran_spt,create')->only(['store', 'downloadTemplate', 'previewImport', 'confirmImport']);
+        $this->middleware('cms.permission:lampiran_spt,create')->only(['store', 'saveRow', 'downloadTemplate', 'previewImport', 'confirmImport']);
         $this->middleware('cms.permission:lampiran_spt,edit')->only([]);
         $this->middleware('cms.permission:lampiran_spt,delete')->only(['destroyRow']);
     }
@@ -51,21 +51,23 @@ class LampiranSptController extends Controller
                 ->orderBy('id')
                 ->paginate($perPage);
 
-            $recapGroups = $kategoris->map(function ($kat) use ($allDetails, $masterItems) {
-                $subKodes = $kat->masterLampiranSpts->pluck('sub_kode');
-                $katDetails = $allDetails->whereIn('kode', $subKodes->toArray(), true);
+            $recapGroups = $kategoris->map(function ($kat) use ($allDetails) {
+                $masterSubs = $kat->masterLampiranSpts->sortBy('sub_kode');
 
-                $kodeGroups = $katDetails->groupBy('kode')->map(function ($items, $kode) use ($masterItems) {
-                    $master = $masterItems->firstWhere('sub_kode', $kode);
+                $kodeGroups = $masterSubs->map(function ($ms) use ($allDetails) {
+                    $sk = (string) $ms->sub_kode;
+                    $items = $allDetails->filter(function ($d) use ($sk) {
+                        return (string) $d->kode === $sk;
+                    });
                     return [
-                        'kode' => $kode,
-                        'deskripsi' => $master ? $master->nama : '-',
+                        'kode' => $sk,
+                        'deskripsi' => $ms->nama,
                         'total_harga' => $items->sum('saldo_saat_ini'),
                         'total_nilai' => $items->sum('saldo_bentuk_awal'),
                     ];
                 })->filter(function ($g) {
                     return $g['total_harga'] > 0 || $g['total_nilai'] > 0;
-                })->sortBy('kode')->values();
+                })->values();
 
                 return [
                     'kategori' => $kat,
@@ -94,100 +96,43 @@ class LampiranSptController extends Controller
         $tahun = $request->tahun;
         $client = DataClient::find($clientId);
 
-        $kode = $request->input('kode', []);
-        $deskripsi = $request->input('deskripsi', []);
-        $nomorAkun = $request->input('nomor_akun', []);
-        $atasNama = $request->input('atas_nama', []);
-        $bank = $request->input('nama_bank_institusi', []);
-        $lokasi = $request->input('lokasi_harta', []);
-        $kurs = $request->input('kurs', []);
-        $tahunPerolehan = $request->input('tahun_perolehan', []);
-        $saldoIni = $request->input('saldo_saat_ini', []);
-        $saldoAwal = $request->input('saldo_bentuk_awal', []);
-        $nilaiKurs = $request->input('nilai_kurs', []);
-        $nikNpwp = $request->input('nik_npwp', []);
-
-        // Validate NIK/NPWP against selected client
-        $clientNpwp = $client ? trim($client->npwp ?? '') : '';
-
-        $npwpMismatch = false;
-        foreach ($kode as $idx => $val) {
-            if (empty($val)) continue;
-
-            $npwpInput = trim($nikNpwp[$idx] ?? '');
-
-            if (empty($clientNpwp)) {
-                $npwpMismatch = true;
-                break;
-            }
-
-            if (empty($npwpInput)) {
-                $npwpMismatch = true;
-                break;
-            }
-
-            if (strtolower($npwpInput) !== strtolower($clientNpwp)) {
-                $npwpMismatch = true;
-                break;
-            }
-        }
-
-        if ($npwpMismatch) {
-            $errorMsg = empty($clientNpwp)
-                ? 'Data gagal disimpan. Client tidak memiliki NIK/NPWP.'
-                : 'Data gagal disimpan. NIK/NPWP tidak sesuai dengan client terpilih.';
-            return redirect()->route('cms.lampiran-spt.index', ['client_id' => $clientId, 'tahun' => $tahun])
-                ->with('error', $errorMsg);
-        }
-
+        $allRows = $request->input('rows', []);
         $masterLookup = MasterLampiranSpt::pluck('nama', 'sub_kode');
 
-        $savedIds = [];
+        foreach ($allRows as $row) {
+            $kodeVal = $row['kode'] ?? '';
+            if ($kodeVal === '') continue;
 
-        foreach ($kode as $idx => $val) {
-            if (empty($val)) continue;
-
-            $rowId = $request->input('row_id.' . $idx);
+            $rowId = $row['row_id'] ?? null;
 
             $data = [
                 'client_id' => $clientId,
                 'tahun' => $tahun,
-                'kode' => $val,
-                'deskripsi' => $masterLookup[$val] ?? ($deskripsi[$idx] ?? ''),
-                'nomor_akun' => $nomorAkun[$idx] ?? '',
-                'atas_nama' => $atasNama[$idx] ?? '',
-                'nama_bank_institusi' => $bank[$idx] ?? '',
-                'lokasi_harta' => $lokasi[$idx] ?? '',
-                'kurs' => $kurs[$idx] ?? '',
-                'tahun_perolehan' => $tahunPerolehan[$idx] ?? null,
-                'saldo_saat_ini' => $this->parseNumericValue($saldoIni[$idx] ?? '0'),
-                'saldo_bentuk_awal' => $this->parseNumericValue($saldoAwal[$idx] ?? '0'),
-                'nilai_kurs' => $this->parseNumericValue($nilaiKurs[$idx] ?? '0'),
+                'kode' => $kodeVal,
+                'deskripsi' => $masterLookup[$kodeVal] ?? ($row['deskripsi'] ?? ''),
+                'nomor_akun' => $row['nomor_akun'] ?? '',
+                'atas_nama' => $row['atas_nama'] ?? '',
+                'nama_bank_institusi' => $row['nama_bank_institusi'] ?? '',
+                'lokasi_harta' => $row['lokasi_harta'] ?? '',
+                'kurs' => $row['kurs'] ?? '',
+                'tahun_perolehan' => $row['tahun_perolehan'] ?? null,
+                'saldo_saat_ini' => $this->parseNumericValue($row['saldo_saat_ini'] ?? '0'),
+                'saldo_bentuk_awal' => $this->parseNumericValue($row['saldo_bentuk_awal'] ?? '0'),
+                'nilai_kurs' => $this->parseNumericValue($row['nilai_kurs'] ?? '0'),
             ];
 
             if ($rowId) {
                 $record = LampiranSptDetail::find($rowId);
                 if ($record) {
                     $record->update($data);
-                    $savedIds[] = $record->id;
                 }
             } else {
-                $record = LampiranSptDetail::create($data);
-                $savedIds[] = $record->id;
+                LampiranSptDetail::create($data);
             }
         }
 
-        // Delete removed rows (only if there are saved rows)
-        if (!empty($savedIds)) {
-            LampiranSptDetail::where('client_id', $clientId)
-                ->where('tahun', $tahun)
-                ->whereNotIn('id', $savedIds)
-                ->delete();
-        }
-
         ActivityLog::log('create', 'lampiran_spt', 'Saved Lampiran SPT for client: ' . ($client->nama_client ?? $clientId) . ' tahun: ' . $tahun);
-        return redirect()->route('cms.lampiran-spt.index', ['client_id' => $clientId, 'tahun' => $tahun])
-            ->with('success', 'Data Lampiran SPT berhasil disimpan.');
+        return response()->json(['success' => true]);
     }
 
     public function downloadTemplate()
@@ -307,7 +252,7 @@ class LampiranSptController extends Controller
             $row = $rows[$r];
             $kode = isset($row[0]) ? trim((string) $row[0]) : '';
 
-            if (empty($kode)) continue;
+            if ($kode === '') continue;
 
             $preview[] = [
                 'kode' => $kode,
@@ -384,7 +329,7 @@ class LampiranSptController extends Controller
             $row = $rows[$r];
             $kode = isset($row[0]) ? trim((string) $row[0]) : '';
 
-            if (empty($kode)) continue;
+            if ($kode === '') continue;
 
             try {
                 LampiranSptDetail::create([
@@ -436,6 +381,39 @@ class LampiranSptController extends Controller
             $val = str_replace('.', '', $val);
         }
         return (float) $val;
+    }
+
+    public function saveRow(Request $request)
+    {
+        $request->validate([
+            'client_id' => 'required|exists:cms_data_client,id',
+            'tahun' => 'required|integer|min:2000',
+            'kode' => 'required|string',
+        ]);
+
+        $clientId = $request->client_id;
+        $tahun = $request->tahun;
+        $masterLookup = MasterLampiranSpt::pluck('nama', 'sub_kode');
+
+        $data = [
+            'client_id' => $clientId,
+            'tahun' => $tahun,
+            'kode' => $request->kode,
+            'deskripsi' => $masterLookup[$request->kode] ?? ($request->deskripsi ?? ''),
+            'nomor_akun' => $request->nomor_akun ?? '',
+            'atas_nama' => $request->atas_nama ?? '',
+            'nama_bank_institusi' => $request->nama_bank_institusi ?? '',
+            'lokasi_harta' => $request->lokasi_harta ?? '',
+            'kurs' => $request->kurs ?? '',
+            'tahun_perolehan' => $request->tahun_perolehan ?? null,
+            'saldo_saat_ini' => $this->parseNumericValue($request->saldo_saat_ini ?? '0'),
+            'saldo_bentuk_awal' => $this->parseNumericValue($request->saldo_bentuk_awal ?? '0'),
+            'nilai_kurs' => $this->parseNumericValue($request->nilai_kurs ?? '0'),
+        ];
+
+        LampiranSptDetail::create($data);
+
+        return response()->json(['success' => true]);
     }
 
     public function destroyRow($id)

@@ -63,15 +63,16 @@
                     @endif
                     <div class="{{ $user ? 'col-md-6' : 'col-md-12' }}">
                         <label class="form-label fw-semibold small">Roles</label>
-                        <div class="border rounded p-3 bg-light" style="max-height: 160px; overflow-y: auto;">
+                        <div class="border rounded p-3 bg-light">
                             @forelse($roles as $role)
                             <div class="form-check">
-                                <input type="checkbox"
+                                <input type="radio"
                                        class="form-check-input"
-                                       name="roles[]"
+                                       name="roles"
                                        value="{{ $role->id }}"
                                        id="role_{{ $role->id }}"
-                                       {{ $user && $user->roles->contains($role->id) ? 'checked' : '' }}>
+                                       {{ $user && $user->roles->contains($role->id) ? 'checked' : '' }}
+                                       {{ $loop->first && !$user ? 'checked' : '' }}>
                                 <label class="form-check-label small" for="role_{{ $role->id }}">
                                     {{ $role->name }}
                                 </label>

@@ -50,8 +50,7 @@ class UserController extends Controller
         $data = $request->validate([
             'name' => 'required|max:255',
             'email' => 'required|email|max:255|unique:users,email',
-            'roles' => 'nullable|array',
-            'roles.*' => 'exists:cms_roles,id',
+            'roles' => 'nullable|exists:cms_roles,id',
         ]);
 
         $plainPassword = $this->generateStrongPassword();
@@ -60,7 +59,7 @@ class UserController extends Controller
         $user = User::create($data);
 
         if ($request->roles) {
-            $user->roles()->sync($request->roles);
+            $user->roles()->sync([$request->roles]);
         }
 
         $emailSent = false;
@@ -94,8 +93,7 @@ class UserController extends Controller
             'name' => 'required|max:255',
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
             'password' => 'nullable|min:6',
-            'roles' => 'nullable|array',
-            'roles.*' => 'exists:cms_roles,id',
+            'roles' => 'nullable|exists:cms_roles,id',
         ]);
 
         if ($data['password'] ?? null) {
@@ -107,7 +105,7 @@ class UserController extends Controller
         $user->update($data);
 
         if ($request->has('roles')) {
-            $user->roles()->sync($request->roles);
+            $user->roles()->sync([$request->roles]);
         }
 
         ActivityLog::log('update', 'user', 'Updated user: ' . $user->email, (string) $user->id);

@@ -55,28 +55,22 @@
             </div>
 
             <div class="row g-4 mb-4">
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <div class="card bg-primary bg-opacity-10 border-0 text-center py-3">
                         <div class="fs-2 fw-bold text-primary">{{ $totalRows }}</div>
                         <small class="text-muted">Total Baris Data</small>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <div class="card bg-success bg-opacity-10 border-0 text-center py-3">
                         <div class="fs-2 fw-bold text-success">{{ $newCount }}</div>
                         <small class="text-muted">Data Baru</small>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-4">
                     <div class="card bg-warning bg-opacity-10 border-0 text-center py-3">
                         <div class="fs-2 fw-bold text-warning">{{ $updateCount }}</div>
-                        <small class="text-muted">Sudah Ada (NPWP sama)</small>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card bg-info bg-opacity-10 border-0 text-center py-3">
-                        <div class="fs-2 fw-bold text-info">{{ $cabangCount ?? 0 }}</div>
-                        <small class="text-muted">Cabang</small>
+                        <small class="text-muted">Sudah Ada (NIK sama)</small>
                     </div>
                 </div>
             </div>
@@ -85,7 +79,7 @@
             @if($updateCount > 0)
             <div class="alert alert-warning py-3 mb-4">
                 <h6 class="fw-semibold mb-2"><i class="bi bi-exclamation-triangle me-1"></i>Pilihan Mode Import</h6>
-                <p class="mb-2 small">Ditemukan <strong>{{ $updateCount }}</strong> data dengan NPWP yang sudah terdaftar. Pilih tindakan:</p>
+                <p class="mb-2 small">Ditemukan <strong>{{ $updateCount }}</strong> data dengan NIK yang sudah terdaftar. Pilih tindakan:</p>
                 <div class="d-flex gap-4">
                     <div class="form-check">
                         <input class="form-check-input" type="radio" name="import_mode" id="modeSkip" value="skip" checked>
@@ -105,7 +99,7 @@
 
             <h6 class="fw-semibold mb-3">Preview Data</h6>
             <div class="mb-3">
-                <input type="text" id="searchPreview" class="form-control form-control-sm" placeholder="Cari nama atau NPWP..." style="max-width:300px">
+                <input type="text" id="searchPreview" class="form-control form-control-sm" placeholder="Cari nama atau NIK..." style="max-width:300px">
             </div>
             <div style="overflow-x: auto; max-height:400px">
                 <table class="table table-sm table-hover mb-0" id="previewTable">
@@ -114,11 +108,10 @@
                             <th>#</th>
                             <th>KPP</th>
                             <th>Nama</th>
-                            <th>NPWP</th>
-                            <th>NPWP Cabang</th>
+                            <th>NIK</th>
                             <th>Email</th>
                             <th>HP</th>
-                            <th>Alamat NPWP</th>
+                            <th>Alamat NIK</th>
                             <th>Alamat Tagihan</th>
                             <th>AR</th>
                             <th>PTKP</th>
@@ -127,12 +120,11 @@
                     </thead>
                     <tbody>
                         @forelse($preview as $i => $item)
-                        <tr class="{{ $item['is_cabang'] ? 'table-info' : ($item['exists'] ? 'table-warning' : '') }}">
+                        <tr class="{{ $item['exists'] ? 'table-warning' : '' }}">
                             <td>{{ $i + 1 }}</td>
                             <td>{{ $item['kpp'] ?: '-' }}</td>
                             <td>{{ $item['nama'] }}</td>
                             <td><code>{{ $item['npwp'] ?: '-' }}</code></td>
-                            <td><code>{{ $item['npwp_cabang'] ?: '-' }}</code></td>
                             <td><small>{{ $item['email'] ?: '-' }}</small></td>
                             <td>{{ $item['hp'] ?: '-' }}</td>
                             <td><small class="text-muted">{{ Str::limit($item['alamat_npwp'], 40) ?: '-' }}</small></td>
@@ -140,9 +132,7 @@
                             <td>{{ $item['ar'] ?: '-' }}</td>
                             <td>{{ $item['ptkp'] ?: '-' }}</td>
                             <td>
-                                @if($item['is_cabang'])
-                                    <span class="badge bg-info text-white">Cabang</span>
-                                @elseif($item['exists'])
+                                @if($item['exists'])
                                     <span class="badge bg-warning text-dark">Akan Diupdate</span>
                                 @else
                                     <span class="badge bg-success">Baru</span>
@@ -150,7 +140,7 @@
                             </td>
                         </tr>
                         @empty
-                        <tr><td colspan="12" class="text-center text-muted py-4">Tidak ada data.</td></tr>
+                        <tr><td colspan="10" class="text-center text-muted py-4">Tidak ada data.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -200,7 +190,7 @@
             });
             document.getElementById('confirmForm').addEventListener('submit', function(e) {
                 var mode = document.getElementById('importModeInput').value;
-                if (mode === 'update' && !confirm('Data dengan NPWP yang sama akan diperbarui. Lanjutkan?')) {
+                if (mode === 'update' && !confirm('Data dengan NIK yang sama akan diperbarui. Lanjutkan?')) {
                     e.preventDefault();
                 } else if (mode === 'skip' && !confirm('Import {{ $newCount }} data baru? Data yang sudah ada akan dilewati.')) {
                     e.preventDefault();

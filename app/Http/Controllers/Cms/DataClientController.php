@@ -95,7 +95,7 @@ class DataClientController extends Controller
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        $headers = ['No', 'KPP', 'Nama', 'NIK', 'NPWP Cabang', 'Email', 'HP', 'Alamat NPWP', 'Alamat Tagihan', 'AR', 'PTKP'];
+        $headers = ['No', 'KPP', 'Nama', 'NIK', 'Email', 'HP', 'Alamat NIK', 'Alamat Tagihan', 'AR', 'PTKP'];
         foreach ($headers as $i => $header) {
             $col = chr(65 + $i);
             $sheet->setCellValue($col . '1', $header);
@@ -106,13 +106,12 @@ class DataClientController extends Controller
         $sheet->getColumnDimension('B')->setWidth(15);
         $sheet->getColumnDimension('C')->setWidth(30);
         $sheet->getColumnDimension('D')->setWidth(20);
-        $sheet->getColumnDimension('E')->setWidth(20);
-        $sheet->getColumnDimension('F')->setWidth(30);
-        $sheet->getColumnDimension('G')->setWidth(20);
+        $sheet->getColumnDimension('E')->setWidth(30);
+        $sheet->getColumnDimension('F')->setWidth(20);
+        $sheet->getColumnDimension('G')->setWidth(40);
         $sheet->getColumnDimension('H')->setWidth(40);
-        $sheet->getColumnDimension('I')->setWidth(40);
+        $sheet->getColumnDimension('I')->setWidth(15);
         $sheet->getColumnDimension('J')->setWidth(15);
-        $sheet->getColumnDimension('K')->setWidth(15);
 
         $writer = new Xlsx($spreadsheet);
         $filename = 'Template_Import_Data_Client.xlsx';
@@ -167,15 +166,12 @@ class DataClientController extends Controller
         $preview = [];
         $newCount = 0;
         $updateCount = 0;
-        $cabangCount = 0;
         $invalidNpwp = [];
-        $lastPreviewNpwp = null;
         for ($r = 1; $r < count($rows); $r++) {
             $row = $rows[$r];
             $kpp = isset($row[1]) ? trim((string) $row[1]) : '';
             $nama = isset($row[2]) ? trim((string) $row[2]) : '';
             $npwp = isset($row[3]) ? ltrim(trim((string) $row[3]), "'") : '';
-            $npwpCabang = isset($row[4]) ? ltrim(trim((string) $row[4]), "'") : '';
 
             if (!$nama && !$npwp) continue;
 
@@ -187,12 +183,9 @@ class DataClientController extends Controller
                 $invalidNpwp[] = $nama ?: $npwp;
             }
 
-            $isCabang = $lastPreviewNpwp !== null && $npwpKey === $lastPreviewNpwp && $npwpCabang !== '';
-            $exists = !$isCabang && $npwp !== '' && in_array($npwpKey, $existingNPs);
+            $exists = $npwp !== '' && in_array($npwpKey, $existingNPs);
 
-            if ($isCabang) {
-                $cabangCount++;
-            } elseif ($exists) {
+            if ($exists) {
                 $updateCount++;
             } else {
                 $newCount++;
@@ -202,36 +195,24 @@ class DataClientController extends Controller
                 'kpp' => $kpp,
                 'nama' => $nama,
                 'npwp' => $npwp,
-                'npwp_cabang' => $npwpCabang ?: '',
-                'email' => isset($row[5]) ? trim((string) $row[5]) : '',
-                'hp' => isset($row[6]) ? trim((string) $row[6]) : '',
-                'alamat_npwp' => isset($row[7]) ? trim((string) $row[7]) : '',
-                'alamat_tagihan' => isset($row[8]) ? trim((string) $row[8]) : '',
-                'ar' => isset($row[9]) ? trim((string) $row[9]) : '',
-                'ptkp' => isset($row[10]) ? trim((string) $row[10]) : '',
+                'email' => isset($row[4]) ? trim((string) $row[4]) : '',
+                'hp' => isset($row[5]) ? trim((string) $row[5]) : '',
+                'alamat_npwp' => isset($row[6]) ? trim((string) $row[6]) : '',
+                'alamat_tagihan' => isset($row[7]) ? trim((string) $row[7]) : '',
+                'ar' => isset($row[8]) ? trim((string) $row[8]) : '',
+                'ptkp' => isset($row[9]) ? trim((string) $row[9]) : '',
                 'exists' => $exists,
-                'is_cabang' => $isCabang,
                 'npwp_valid' => $npwpValid,
             ];
-
-            if (!$isCabang) {
-                $lastPreviewNpwp = $npwpKey;
-            }
         }
 
         $badan = Badan::all();
-
-        return view('cms::data-client.import', compact(
-            'badan', 'headers', 'totalRows', 'preview', 'newCount', 'updateCount', 'cabangCount', 'tipeBadan', 'tempPath'
-        ));
 
         if (count($invalidNpwp)) {
             @unlink($fullPath);
             return redirect()->route('cms.data-client.import')
-                ->with('error', 'NPWP harus 15-16 digit angka. Data berikut memiliki NPWP tidak valid: ' . implode(', ', array_slice($invalidNpwp, 0, 10)));
+                ->with('error', 'NIK harus 15-16 digit angka. Data berikut memiliki NIK tidak valid: ' . implode(', ', array_slice($invalidNpwp, 0, 10)));
         }
-
-        $badan = Badan::all();
 
         return view('cms::data-client.import', compact(
             'badan', 'headers', 'totalRows', 'preview', 'newCount', 'updateCount', 'tipeBadan', 'tempPath'
@@ -266,7 +247,6 @@ class DataClientController extends Controller
         $imported = 0;
         $updated = 0;
         $skipped = 0;
-        $cabangCreated = 0;
         $errors = [];
 
         $existingClients = DataClient::whereNotNull('npwp')->get()->keyBy(function ($d) {
@@ -278,50 +258,17 @@ class DataClientController extends Controller
         $defaultRole = \App\Models\Cms\ClientRole::where('slug', 'client')->first();
         $defaultRoleId = $defaultRole ? $defaultRole->id : null;
 
-        $lastNpwp = null;
-        $lastClientId = null;
-
         for ($r = 1; $r < count($rows); $r++) {
             $row = $rows[$r];
             $kpp = isset($row[1]) ? trim((string) $row[1]) : '';
             $nama = isset($row[2]) ? trim((string) $row[2]) : '';
             $npwp = isset($row[3]) ? ltrim(trim((string) $row[3]), "'") : '';
-            $npwpCabang = isset($row[4]) ? ltrim(trim((string) $row[4]), "'") : '';
 
             if (!$nama && !$npwp) continue;
 
             $npwpKey = $npwp ? strtolower(trim($npwp)) : '';
 
-            if ($lastNpwp !== null && $npwpKey === $lastNpwp && $npwpCabang !== '') {
-                $cabangData = [
-                    'data_client_id' => $lastClientId,
-                    'nama_client' => $nama ?: '-',
-                    'tipe_badan' => $tipeBadan,
-                    'client_role_id' => $defaultRoleId,
-                    'npwp' => $npwpCabang ?: null,
-                    'kpp' => $kpp ?: null,
-                    'email' => isset($row[5]) ? trim((string) $row[5]) : null,
-                    'no_telephone' => isset($row[6]) ? trim((string) $row[6]) : null,
-                    'alamat_npwp' => isset($row[7]) ? trim((string) $row[7]) : null,
-                    'alamat_tagihan' => isset($row[8]) ? trim((string) $row[8]) : null,
-                    'AR' => isset($row[9]) ? trim((string) $row[9]) : null,
-                    'ptkp' => isset($row[10]) ? trim((string) $row[10]) : null,
-                    'password' => Hash::make(Str::random(12)),
-                ];
-
-                if ($cabangData['email'] === '') $cabangData['email'] = null;
-
-                try {
-                    $cabang = NpwpCabang::create($cabangData);
-                    DataClient::where('id', $lastClientId)->update(['npwp_cabang_id' => $cabang->id]);
-                    $cabangCreated++;
-                } catch (\Exception $e) {
-                    $errors[] = "Baris " . ($r + 1) . " ({$nama} - cabang): " . $e->getMessage();
-                }
-                continue;
-            }
-
-            $email = isset($row[5]) ? trim((string) $row[5]) : '';
+            $email = isset($row[4]) ? trim((string) $row[4]) : '';
             if ($email === '') $email = null;
 
             $rowData = [
@@ -329,14 +276,13 @@ class DataClientController extends Controller
                 'tipe_badan' => $tipeBadan,
                 'client_role_id' => $defaultRoleId,
                 'npwp' => $npwp ?: null,
-                'npwp_cabang' => $npwpCabang ?: null,
                 'kpp' => $kpp ?: null,
                 'email' => $email,
-                'no_telephone' => isset($row[6]) ? trim((string) $row[6]) : null,
-                'alamat_npwp' => isset($row[7]) ? trim((string) $row[7]) : null,
-                'alamat_tagihan' => isset($row[8]) ? trim((string) $row[8]) : null,
-                'AR' => isset($row[9]) ? trim((string) $row[9]) : null,
-                'ptkp' => isset($row[10]) ? trim((string) $row[10]) : null,
+                'no_telephone' => isset($row[5]) ? trim((string) $row[5]) : null,
+                'alamat_npwp' => isset($row[6]) ? trim((string) $row[6]) : null,
+                'alamat_tagihan' => isset($row[7]) ? trim((string) $row[7]) : null,
+                'AR' => isset($row[8]) ? trim((string) $row[8]) : null,
+                'ptkp' => isset($row[9]) ? trim((string) $row[9]) : null,
             ];
 
             if ($npwpKey && isset($existingClients[$npwpKey])) {
@@ -353,15 +299,12 @@ class DataClientController extends Controller
                     try {
                         $client->update($rowData);
                         $updated++;
-                        $lastClientId = $client->id;
                     } catch (\Exception $e) {
                         $errors[] = "Baris " . ($r + 1) . " ({$nama}): " . $e->getMessage();
                     }
                 } else {
                     $skipped++;
-                    $lastClientId = $existingClients[$npwpKey]->id;
                 }
-                $lastNpwp = $npwpKey;
                 continue;
             }
 
@@ -377,25 +320,19 @@ class DataClientController extends Controller
                 $imported++;
                 $existingNpwps[] = $npwpKey;
                 if ($email) $existingEmails[] = strtolower($email);
-                $lastClientId = $client->id;
             } catch (\Exception $e) {
                 if ($email && str_contains($e->getMessage(), 'email_unique')) {
                     $rowData['email'] = null;
                     try {
                         $client = DataClient::create($rowData);
                         $imported++;
-                        $lastClientId = $client->id;
                     } catch (\Exception $e2) {
                         $errors[] = "Baris " . ($r + 1) . " ({$nama}): " . $e2->getMessage();
-                        $lastClientId = null;
                     }
                 } else {
                     $errors[] = "Baris " . ($r + 1) . " ({$nama}): " . $e->getMessage();
-                    $lastClientId = null;
                 }
             }
-
-            $lastNpwp = $npwpKey;
         }
 
         @unlink($fullPath);
@@ -404,7 +341,6 @@ class DataClientController extends Controller
         if ($imported > 0) $parts[] = "{$imported} data baru ditambahkan";
         if ($updated > 0) $parts[] = "{$updated} data diupdate";
         if ($skipped > 0) $parts[] = "{$skipped} data dilewati";
-        if ($cabangCreated > 0) $parts[] = "{$cabangCreated} cabang ditambahkan";
         $message = "Import selesai. " . implode(', ', $parts) . ".";
         if (count($errors)) {
             $message .= " " . count($errors) . " error: " . implode('; ', array_slice($errors, 0, 5));

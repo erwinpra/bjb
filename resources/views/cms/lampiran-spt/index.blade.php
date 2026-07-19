@@ -115,7 +115,7 @@
                     </div>
 
                     {{-- Input Table --}}
-                    <form method="POST" action="{{ route('cms.lampiran-spt.store') }}" id="formLampiran">
+                    <form method="POST" action="{{ route('cms.lampiran-spt.store') }}" id="formLampiran" onsubmit="return false;">
                         @csrf
                         <input type="hidden" name="client_id" value="{{ $clientId }}">
                         <input type="hidden" name="tahun" value="{{ $tahun }}">
@@ -141,14 +141,13 @@
                                 </thead>
                                 <tbody>
                                     @forelse($details as $d)
-                                    <tr class="row-edit">
+                                    <tr class="row-edit" data-row-id="{{ $d->id }}">
                                         <td>
-                                            <input type="hidden" name="row_id[]" value="{{ $d->id }}">
                                             <span class="kode-text">{{ $d->kode }}</span>
-                                            <select name="kode[]" class="cell-input cell-select d-none">
+                                            <select class="cell-input cell-select d-none">
                                                 <option value="">--</option>
                                                 @foreach($activeMasterItems as $m)
-                                                    <option value="{{ $m->sub_kode }}" {{ $d->kode == $m->sub_kode ? 'selected' : '' }}>
+                                                    <option value="{{ $m->sub_kode }}" {{ $d->kode === $m->sub_kode ? 'selected' : '' }}>
                                                         {{ $m->sub_kode }} - {{ $m->nama }}
                                                     </option>
                                                 @endforeach
@@ -156,31 +155,31 @@
                                         </td>
                                         <td>
                                             <span class="field-display">{{ isset($masterByKode[$d->kode]) ? $masterByKode[$d->kode]->nama : ($d->deskripsi ?: '-') }}</span>
-                                            <input type="text" name="deskripsi[]" class="cell-input cell-edit d-none" value="{{ $d->deskripsi }}" readonly>
+                                            <input type="text" class="cell-input cell-edit d-none" value="{{ $d->deskripsi }}" readonly>
                                         </td>
                                         <td>
                                             <span class="field-display">{{ $d->nomor_akun ?: '-' }}</span>
-                                            <input type="text" name="nomor_akun[]" class="cell-input cell-edit d-none" value="{{ $d->nomor_akun }}">
+                                            <input type="text" class="cell-input cell-edit d-none" value="{{ $d->nomor_akun }}">
                                         </td>
                                         <td>
                                             <span class="field-display">{{ $d->atas_nama ?: '-' }}</span>
-                                            <input type="text" name="atas_nama[]" class="cell-input cell-edit d-none" value="{{ $d->atas_nama }}">
+                                            <input type="text" class="cell-input cell-edit d-none" value="{{ $d->atas_nama }}">
                                         </td>
                                         <td>
                                             <span class="field-display">{{ $d->nama_bank_institusi ?: '-' }}</span>
-                                            <input type="text" name="nama_bank_institusi[]" class="cell-input cell-edit d-none" value="{{ $d->nama_bank_institusi }}">
+                                            <input type="text" class="cell-input cell-edit d-none" value="{{ $d->nama_bank_institusi }}">
                                         </td>
                                         <td>
                                             <span class="field-display">{{ $d->lokasi_harta ?: '-' }}</span>
-                                            <input type="text" name="lokasi_harta[]" class="cell-input cell-edit d-none" value="{{ $d->lokasi_harta }}">
+                                            <input type="text" class="cell-input cell-edit d-none" value="{{ $d->lokasi_harta }}">
                                         </td>
                                         <td>
                                             <span class="field-display">{{ $d->kurs ?: '-' }}</span>
-                                            <input type="text" name="kurs[]" class="cell-input cell-edit d-none" value="{{ $d->kurs }}">
+                                            <input type="text" class="cell-input cell-edit d-none" value="{{ $d->kurs }}">
                                         </td>
                                         <td>
                                             <span class="field-display">{{ $d->tahun_perolehan ?: '-' }}</span>
-                                            <select name="tahun_perolehan[]" class="cell-input cell-select cell-edit d-none">
+                                            <select class="cell-input cell-select cell-edit d-none">
                                                 <option value="">--</option>
                                                 @foreach($tahunPerolehanList as $t)
                                                     <option value="{{ $t }}" {{ $d->tahun_perolehan == $t ? 'selected' : '' }}>{{ $t }}</option>
@@ -188,16 +187,16 @@
                                             </select>
                                         </td>
                                         <td>
-                                            <span class="field-display text-end">{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 2, ',', '.') : '-' }}</span>
-                                            <input type="text" name="saldo_saat_ini[]" class="cell-input cell-edit format-currency text-end d-none" value="{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 2, ',', '.') : '' }}">
+                                            <span class="field-display text-end">{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '-' }}</span>
+                                            <input type="text" class="cell-input cell-edit format-number text-end d-none" value="{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '' }}">
                                         </td>
                                         <td>
                                             <span class="field-display text-end">{{ $d->saldo_bentuk_awal > 0 ? number_format($d->saldo_bentuk_awal, 2, ',', '.') : '-' }}</span>
-                                            <input type="text" name="saldo_bentuk_awal[]" class="cell-input cell-edit format-currency text-end d-none" value="{{ $d->saldo_bentuk_awal > 0 ? number_format($d->saldo_bentuk_awal, 2, ',', '.') : '' }}">
+                                            <input type="text" class="cell-input cell-edit format-currency text-end d-none" value="{{ $d->saldo_bentuk_awal > 0 ? number_format($d->saldo_bentuk_awal, 2, ',', '.') : '' }}">
                                         </td>
                                         <td>
                                             <span class="field-display text-end">{{ $d->nilai_kurs > 0 ? number_format($d->nilai_kurs, 2, ',', '.') : '-' }}</span>
-                                            <input type="text" name="nilai_kurs[]" class="cell-input cell-edit format-currency text-end d-none" value="{{ $d->nilai_kurs > 0 ? number_format($d->nilai_kurs, 2, ',', '.') : '' }}">
+                                            <input type="text" class="cell-input cell-edit format-currency text-end d-none" value="{{ $d->nilai_kurs > 0 ? number_format($d->nilai_kurs, 2, ',', '.') : '' }}">
                                         </td>
                                         <td class="text-center">
                                             @cmsCan('lampiran_spt', 'edit')
@@ -229,7 +228,7 @@
                             <button type="button" class="btn btn-outline-primary" id="btnAddRow">
                                 <i class="bi bi-plus-lg me-1"></i> Tambah Baris
                             </button>
-                            <button type="submit" class="btn btn-primary px-4">
+                            <button type="button" class="btn btn-primary px-4" id="btnSimpan">
                                 <i class="bi bi-save me-1"></i> Simpan
                             </button>
                             @endCmsCan
@@ -246,8 +245,12 @@
                 {{-- Tab: Recap --}}
                 <div class="tab-pane fade" id="tabContent-recap" role="tabpanel">
                     @php
-                        $grandHarga = $recapGroups->sum('subHarga');
-                        $grandNilai = $recapGroups->sum('subNilai');
+                        $hutangHarga = $recapGroups->where('kategori.label', 'TOTAL HUTANG')->sum('subHarga');
+                        $hutangNilai = $recapGroups->where('kategori.label', 'TOTAL HUTANG')->sum('subNilai');
+                        $totalPerolehanHarga = $recapGroups->sum('subHarga') - $hutangHarga;
+                        $totalPerolehanNilai = $recapGroups->sum('subNilai') - $hutangNilai;
+                        $netHarga = $totalPerolehanHarga - $hutangHarga;
+                        $netNilai = $totalPerolehanNilai - $hutangNilai;
                     @endphp
                     @foreach($recapGroups as $rg)
                         @php
@@ -305,9 +308,15 @@
                         </div>
                     @endforeach
                     <div class="d-flex justify-content-end mt-3">
-                        <div class="bg-danger text-white fw-bold fs-6 px-4 py-2 rounded d-flex gap-5">
-                            <span>TOTAL HARGA PEROLEHAN: {{ number_format($grandHarga, 0, ',', '.') }}</span>
-                            <span>TOTAL NILAI SAAT INI: {{ number_format($grandNilai, 0, ',', '.') }}</span>
+                        <div class="bg-primary text-white fw-bold fs-6 px-4 py-2 rounded d-flex gap-5">
+                            <span>TOTAL PEROLEHAN: {{ number_format($totalPerolehanHarga, 0, ',', '.') }}</span>
+                            <span>TOTAL NILAI SAAT INI: {{ number_format($totalPerolehanNilai, 0, ',', '.') }}</span>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end mt-2">
+                        <div class="bg-dark text-white fw-bold fs-6 px-4 py-2 rounded d-flex gap-5">
+                            <span>NET: {{ number_format($netHarga, 0, ',', '.') }}</span>
+                            <span>NET: {{ number_format($netNilai, 0, ',', '.') }}</span>
                         </div>
                     </div>
 
@@ -402,16 +411,31 @@ $(document).ready(function() {
 
 function formatIdCurrency(val) {
     if (!val) return '';
-    // Remove thousand separator dots, replace decimal comma with dot
     var num = parseFloat(val.replace(/\./g, '').replace(',', '.'));
     if (isNaN(num)) return val;
     return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 }
 
-// Format currency inputs
-document.addEventListener('input', function(e) {
+function formatNumber(val) {
+    if (!val) return '';
+    var num = parseInt(val.replace(/\./g, ''), 10);
+    if (isNaN(num)) return val;
+    return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(num);
+}
+
+// Format inputs (blur for currency to allow free typing, input for number only)
+document.addEventListener('blur', function(e) {
     if (e.target.classList.contains('format-currency')) {
-        e.target.value = formatIdCurrency(e.target.value);
+        var val = e.target.value.replace(/\./g, '').replace(',', '.');
+        var num = parseFloat(val);
+        if (!isNaN(num)) {
+            e.target.value = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+        }
+    }
+}, true);
+document.addEventListener('input', function(e) {
+    if (e.target.classList.contains('format-number')) {
+        e.target.value = formatNumber(e.target.value);
     }
 });
 
@@ -422,13 +446,12 @@ function populateDeskripsi(sel) {
     var text = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : '';
     var parts = text.split(' - ');
     var nama = parts.length > 1 ? parts.slice(1).join(' - ') : '';
-    var deskInput = tr.querySelector('input[name="deskripsi[]"]');
-    if (deskInput) {
-        deskInput.value = nama;
-    }
-    var display = tr.querySelector('.field-display');
-    if (display) {
-        display.textContent = nama || '-';
+    var deskTd = tr.cells[1];
+    if (deskTd) {
+        var inp = deskTd.querySelector('input');
+        if (inp) inp.value = nama;
+        var display = deskTd.querySelector('.field-display');
+        if (display) display.textContent = nama || '-';
     }
 }
 
@@ -456,7 +479,8 @@ function destroyKodeSelect(select) {
 
 // Auto-populate deskripsi from master when kode changes (native fallback)
 document.addEventListener('change', function(e) {
-    if (e.target.matches('select[name="kode[]"]')) {
+    var td = e.target.closest('td');
+    if (e.target.tagName === 'SELECT' && td && td.cellIndex === 0) {
         populateDeskripsi(e.target);
     }
 });
@@ -467,42 +491,246 @@ document.getElementById('btnAddRow')?.addEventListener('click', function() {
     var emptyRow = tbody.querySelector('.empty-row');
     if (emptyRow) emptyRow.remove();
 
-    var options = '<option value="">--</option>';
-    @foreach($activeMasterItems as $m)
-        options += '<option value="{{ $m->sub_kode }}">{{ $m->sub_kode }} - {{ $m->nama }}</option>';
-    @endforeach
-
     var tr = document.createElement('tr');
     tr.className = 'row-new';
-    tr.innerHTML = `
-        <td>
-            <select name="kode[]" class="cell-input cell-select">${options}</select>
-        </td>
-        <td><input type="text" name="deskripsi[]" class="cell-input" readonly></td>
-        <td><input type="text" name="nomor_akun[]" class="cell-input"></td>
-        <td><input type="text" name="atas_nama[]" class="cell-input"></td>
-        <td><input type="text" name="nama_bank_institusi[]" class="cell-input"></td>
-        <td><input type="text" name="lokasi_harta[]" class="cell-input"></td>
-        <td><input type="text" name="kurs[]" class="cell-input"></td>
-        <td>
-            <select name="tahun_perolehan[]" class="cell-input cell-select">
-                <option value="">--</option>
-                @foreach($tahunPerolehanList as $t)
-                    <option value="{{ $t }}">{{ $t }}</option>
-                @endforeach
-            </select>
-        </td>
-        <td><input type="text" name="saldo_saat_ini[]" class="cell-input format-currency text-end"></td>
-        <td><input type="text" name="saldo_bentuk_awal[]" class="cell-input format-currency text-end"></td>
-        <td><input type="text" name="nilai_kurs[]" class="cell-input format-currency text-end"></td>
-        <td class="text-center">
-            <button type="button" class="btn btn-outline-danger btn-sm btn-remove-row" title="Hapus baris">
-                <i class="bi bi-trash3"></i>
-            </button>
-        </td>
-    `;
+
+    function makeTd() {
+        return document.createElement('td');
+    }
+
+    // KODE
+    var td1 = makeTd();
+    var selKode = document.createElement('select');
+    selKode.className = 'cell-input cell-select';
+    var opt0 = document.createElement('option');
+    opt0.value = '';
+    opt0.textContent = '--';
+    selKode.appendChild(opt0);
+    @foreach($activeMasterItems as $m)
+    (function() {
+        var o = document.createElement('option');
+        o.value = '{{ $m->sub_kode }}';
+        o.textContent = '{{ $m->sub_kode }} - {{ $m->nama }}';
+        selKode.appendChild(o);
+    })();
+    @endforeach
+    td1.appendChild(selKode);
+    tr.appendChild(td1);
+
+    // DESKRIPSI
+    var td2 = makeTd();
+    var inpDesk = document.createElement('input');
+    inpDesk.type = 'text';
+    inpDesk.className = 'cell-input';
+    inpDesk.readOnly = true;
+    td2.appendChild(inpDesk);
+    tr.appendChild(td2);
+
+    // NOMOR AKUN
+    var td3 = makeTd();
+    var inpAkun = document.createElement('input');
+    inpAkun.type = 'text';
+    inpAkun.className = 'cell-input';
+    td3.appendChild(inpAkun);
+    tr.appendChild(td3);
+
+    // ATAS NAMA
+    var td4 = makeTd();
+    var inpNama = document.createElement('input');
+    inpNama.type = 'text';
+    inpNama.className = 'cell-input';
+    td4.appendChild(inpNama);
+    tr.appendChild(td4);
+
+    // NAMA BANK/INSTITUSI
+    var td5 = makeTd();
+    var inpBank = document.createElement('input');
+    inpBank.type = 'text';
+    inpBank.className = 'cell-input';
+    td5.appendChild(inpBank);
+    tr.appendChild(td5);
+
+    // LOKASI HARTA
+    var td6 = makeTd();
+    var inpLokasi = document.createElement('input');
+    inpLokasi.type = 'text';
+    inpLokasi.className = 'cell-input';
+    td6.appendChild(inpLokasi);
+    tr.appendChild(td6);
+
+    // KURS
+    var td7 = makeTd();
+    var inpKurs = document.createElement('input');
+    inpKurs.type = 'text';
+    inpKurs.className = 'cell-input';
+    td7.appendChild(inpKurs);
+    tr.appendChild(td7);
+
+    // THN PEROLEHAN
+    var td8 = makeTd();
+    var selTahun = document.createElement('select');
+    selTahun.className = 'cell-input cell-select';
+    var topt0 = document.createElement('option');
+    topt0.value = '';
+    topt0.textContent = '--';
+    selTahun.appendChild(topt0);
+    @foreach($tahunPerolehanList as $t)
+    (function() {
+        var o = document.createElement('option');
+        o.value = '{{ $t }}';
+        o.textContent = '{{ $t }}';
+        selTahun.appendChild(o);
+    })();
+    @endforeach
+    td8.appendChild(selTahun);
+    tr.appendChild(td8);
+
+    // SALDO SAAT INI
+    var td9 = makeTd();
+    var inpSaldoIni = document.createElement('input');
+    inpSaldoIni.type = 'text';
+    inpSaldoIni.className = 'cell-input format-number text-end';
+    td9.appendChild(inpSaldoIni);
+    tr.appendChild(td9);
+
+    // SALDO BENTUK AWAL
+    var td10 = makeTd();
+    var inpSaldoAwal = document.createElement('input');
+    inpSaldoAwal.type = 'text';
+    inpSaldoAwal.className = 'cell-input format-currency text-end';
+    td10.appendChild(inpSaldoAwal);
+    tr.appendChild(td10);
+
+    // NILAI KURS
+    var td11 = makeTd();
+    var inpNilaiKurs = document.createElement('input');
+    inpNilaiKurs.type = 'text';
+    inpNilaiKurs.className = 'cell-input format-currency text-end';
+    td11.appendChild(inpNilaiKurs);
+    tr.appendChild(td11);
+
+    // AKSI
+    var td12 = document.createElement('td');
+    td12.className = 'text-center';
+    var btnSave = document.createElement('button');
+    btnSave.type = 'button';
+    btnSave.className = 'btn btn-outline-success btn-sm';
+    btnSave.title = 'Simpan baris';
+    var iconSave = document.createElement('i');
+    iconSave.className = 'bi bi-check-lg';
+    btnSave.appendChild(iconSave);
+    td12.appendChild(btnSave);
+
+    var btnHapus = document.createElement('button');
+    btnHapus.type = 'button';
+    btnHapus.className = 'btn btn-outline-danger btn-sm btn-remove-row';
+    btnHapus.title = 'Hapus baris';
+    var iconHapus = document.createElement('i');
+    iconHapus.className = 'bi bi-trash3';
+    btnHapus.appendChild(iconHapus);
+    td12.appendChild(btnHapus);
+    tr.appendChild(td12);
+
     tbody.appendChild(tr);
-    initKodeSelect(tr.querySelector('select[name="kode[]"]'));
+
+    selKode.addEventListener('change', function() {
+        var text = this.options[this.selectedIndex] ? this.options[this.selectedIndex].text : '';
+        var idx = text.indexOf(' - ');
+        inpDesk.value = idx > 0 ? text.substring(idx + 3) : '';
+    });
+
+    // Save only this new row via AJAX
+    btnSave.addEventListener('click', function() {
+        var csrf = document.querySelector('meta[name="csrf-token"]');
+        var form = document.getElementById('formLampiran');
+        var data = new URLSearchParams();
+        data.append('_token', csrf ? csrf.getAttribute('content') : '');
+        data.append('client_id', form.querySelector('input[name="client_id"]').value);
+        data.append('tahun', form.querySelector('input[name="tahun"]').value);
+        data.append('kode', selKode.value);
+        data.append('deskripsi', inpDesk.value);
+        data.append('nomor_akun', inpAkun.value);
+        data.append('atas_nama', inpNama.value);
+        data.append('nama_bank_institusi', inpBank.value);
+        data.append('lokasi_harta', inpLokasi.value);
+        data.append('kurs', inpKurs.value);
+        data.append('tahun_perolehan', selTahun.value);
+        data.append('saldo_saat_ini', inpSaldoIni.value.replace(/\./g, ''));
+        data.append('saldo_bentuk_awal', inpSaldoAwal.value.replace(/\./g, ''));
+        data.append('nilai_kurs', inpNilaiKurs.value.replace(/\./g, ''));
+
+        fetch('{{ route('cms.lampiran-spt.row.save') }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-TOKEN': csrf ? csrf.getAttribute('content') : '' },
+            body: data.toString(),
+        }).then(function(r) {
+            if (r.ok) location.reload();
+            else alert('Gagal menyimpan data.');
+        }).catch(function() { alert('Terjadi kesalahan.'); });
+    });
+});
+
+// Global Simpan via JSON
+document.getElementById('btnSimpan')?.addEventListener('click', function() {
+    var csrf = document.querySelector('meta[name="csrf-token"]');
+    var form = document.getElementById('formLampiran');
+    var clientId = form.querySelector('input[name="client_id"]').value;
+    var tahun = form.querySelector('input[name="tahun"]').value;
+
+    function cellVal(tr, idx) {
+        var td = tr.children[idx];
+        if (!td) return '';
+        var inp = td.querySelector('input, select');
+        return inp ? inp.value : '';
+    }
+    function cellNum(tr, idx) {
+        return cellVal(tr, idx).replace(/\./g, '').replace(',', '.');
+    }
+
+    var rows = [];
+    document.querySelectorAll('#tableLampiran tbody tr.row-edit, #tableLampiran tbody tr.row-new').forEach(function(tr) {
+        var kode = cellVal(tr, 0);
+        if (!kode) return;
+
+        rows.push({
+            row_id: tr.getAttribute('data-row-id') || null,
+            kode: kode,
+            deskripsi: cellVal(tr, 1),
+            nomor_akun: cellVal(tr, 2),
+            atas_nama: cellVal(tr, 3),
+            nama_bank_institusi: cellVal(tr, 4),
+            lokasi_harta: cellVal(tr, 5),
+            kurs: cellVal(tr, 6),
+            tahun_perolehan: cellVal(tr, 7),
+            saldo_saat_ini: cellNum(tr, 8),
+            saldo_bentuk_awal: cellNum(tr, 9),
+            nilai_kurs: cellNum(tr, 10),
+        });
+    });
+
+    if (!rows.length) { alert('Tidak ada data untuk disimpan.'); return; }
+
+    var body = { _token: csrf ? csrf.getAttribute('content') : '', client_id: clientId, tahun: tahun, rows: rows };
+
+    fetch(form.action, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf ? csrf.getAttribute('content') : '' },
+        body: JSON.stringify(body),
+    }).then(function(r) {
+        if (r.ok) location.reload();
+        else return r.text().then(function(t) { alert('Gagal menyimpan: ' + t); });
+    }).catch(function() { alert('Terjadi kesalahan.'); });
+
+    var body = { _token: csrf ? csrf.getAttribute('content') : '', client_id: clientId, tahun: tahun, rows: rows };
+
+    fetch(form.action, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf ? csrf.getAttribute('content') : '' },
+        body: JSON.stringify(body),
+    }).then(function(r) {
+        if (r.ok) location.reload();
+        else return r.text().then(function(t) { alert('Gagal menyimpan: ' + t); });
+    }).catch(function() { alert('Terjadi kesalahan.'); });
 });
 
 // Toggle edit row
@@ -523,7 +751,7 @@ document.addEventListener('click', function(e) {
 
     // Toggle kode text vs select
     var kodeText = tr.querySelector('.kode-text');
-    var kodeSelect = tr.querySelector('td select[name="kode[]"]');
+    var kodeSelect = tr.cells[0] ? tr.cells[0].querySelector('select') : null;
     if (kodeText && kodeSelect) {
         kodeText.classList.toggle('d-none', isEditing);
         kodeSelect.classList.toggle('d-none', !isEditing);
@@ -534,16 +762,19 @@ document.addEventListener('click', function(e) {
         if (kodeSelect) {
             initKodeSelect(kodeSelect);
         }
-        // Format currency on newly shown inputs
+        // Format inputs on newly shown fields
         tr.querySelectorAll('.format-currency').forEach(function(inp) {
             if (inp.value) inp.value = formatIdCurrency(inp.value);
+        });
+        tr.querySelectorAll('.format-number').forEach(function(inp) {
+            if (inp.value) inp.value = formatNumber(inp.value);
         });
         // Populate deskripsi from master based on current kode selection
         if (kodeSelect) {
             var text = kodeSelect.options[kodeSelect.selectedIndex] ? kodeSelect.options[kodeSelect.selectedIndex].text : '';
             var parts = text.split(' - ');
             var nama = parts.length > 1 ? parts.slice(1).join(' - ') : '';
-            var deskInput = tr.querySelector('input[name="deskripsi[]"]');
+            var deskInput = tr.cells[1] ? tr.cells[1].querySelector('input') : null;
             if (deskInput) deskInput.value = nama;
         }
     } else {
@@ -559,8 +790,11 @@ document.addEventListener('click', function(e) {
             if (!display) return;
             var val = inp.value.trim();
             var isCurrency = inp.classList.contains('format-currency');
+            var isNumber = inp.classList.contains('format-number');
             if (isCurrency) {
                 display.textContent = formatIdCurrency(val) || '-';
+            } else if (isNumber) {
+                display.textContent = formatNumber(val) || '-';
             } else if (inp.tagName === 'SELECT') {
                 display.textContent = val || '-';
             } else {
@@ -568,7 +802,7 @@ document.addEventListener('click', function(e) {
             }
         });
         // Sync kode
-        var kodeSelect = tr.querySelector('td select[name="kode[]"]');
+        var kodeSelect = tr.cells[0] ? tr.cells[0].querySelector('select') : null;
         var kodeText = tr.querySelector('.kode-text');
         if (kodeSelect && kodeText) {
             kodeText.textContent = kodeSelect.value || '';

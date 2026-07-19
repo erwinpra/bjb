@@ -34,6 +34,9 @@
                                     </tr>
                                 </table>
                             </div>
+                            <p style="margin: 0 0 12px; font-size: 14px; color: #333; line-height: 1.6; text-align: center;">
+                                <a href="{{ request()->getSchemeAndHttpHost() }}/login" style="background: #0d6efd; color: #ffffff; padding: 12px 32px; border-radius: 6px; text-decoration: none; display: inline-block; font-weight: bold;">Login ke {{ config('app.name') }}</a>
+                            </p>
                             <p style="margin: 0 0 12px; font-size: 13px; color: #888; line-height: 1.5;">
                                 Sebaiknya segera ganti password Anda setelah login pertama.
                             </p>

@@ -173,7 +173,26 @@ class DashboardController extends Controller
             $nama = ($master->sub_kode ?? $kode) . ' ' . ($master->nama ?? '');
             $nilai = (float) $detailItems->sum('saldo_saat_ini');
             $totalHarta += $nilai;
-            $hartaDetail[] = ['kategori' => $katLabel, 'nama' => $nama, 'nilai' => $nilai];
+            $hartaDetail[] = [
+                'kategori' => $katLabel,
+                'kategori_id' => $master->kategori_id,
+                'kode' => $kode,
+                'nama' => $nama,
+                'nilai' => $nilai,
+                'records' => $detailItems->map(fn($d) => [
+                    'id' => $d->id,
+                    'deskripsi' => $d->deskripsi,
+                    'nomor_akun' => $d->nomor_akun,
+                    'atas_nama' => $d->atas_nama,
+                    'nama_bank_institusi' => $d->nama_bank_institusi,
+                    'lokasi_harta' => $d->lokasi_harta,
+                    'kurs' => $d->kurs,
+                    'tahun_perolehan' => $d->tahun_perolehan,
+                    'saldo_saat_ini' => $d->saldo_saat_ini,
+                    'saldo_bentuk_awal' => $d->saldo_bentuk_awal,
+                    'nilai_kurs' => $d->nilai_kurs,
+                ])->toArray(),
+            ];
             $hartaByKategori[$katLabel] = ($hartaByKategori[$katLabel] ?? 0) + $nilai;
         }
 

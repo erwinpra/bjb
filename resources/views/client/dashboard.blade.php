@@ -137,6 +137,22 @@
             </div>
         </div>
 
+        {{-- Harta Item Detail Modal --}}
+        <div class="modal fade" id="hartaItemModal" tabindex="-1">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header bg-dark text-white">
+                        <h6 class="fw-semibold mb-0"><i class="bi bi-list-ul me-2"></i>Detail Harta</h6>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-0" id="hartaItemBody"></div>
+                    <div class="modal-footer border-top">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {{-- Change Password Modal --}}
         <div class="modal fade" id="changePasswordModal" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered">
@@ -345,21 +361,36 @@
             });
             var html = '<div class="p-0">';
             var collapseIdx = 0;
+            var grandTotalPerolehan = 0;
+            var hutangTotal = 0;
             Object.keys(groups).forEach(function(kat) {
                 var items = groups[kat];
                 var katTotal = items.reduce(function(s, h) { return s + h.nilai; }, 0);
+                if (items[0] && items[0].kategori_id === 7) {
+                    hutangTotal = katTotal;
+                } else {
+                    grandTotalPerolehan += katTotal;
+                }
                 var colId = 'hartaCollapse-' + collapseIdx;
                 html += '<div class="card border-0 border-bottom rounded-0">';
                 html += '<div class="card-header bg-light py-1 collapse-toggle" role="button" data-bs-toggle="collapse" data-bs-target="#' + colId + '" aria-expanded="false">';
                 html += '<h6 class="fw-semibold mb-0 small d-flex justify-content-between align-items-center text-primary">' + kat + '<span class="d-flex align-items-center gap-2"><span class="text-muted fw-normal small">Rp ' + formatNum(katTotal) + '</span><i class="bi bi-chevron-right collapse-icon"></i></span></h6></div>';
                 html += '<div class="collapse" id="' + colId + '"><div class="card-body p-0"><table class="table table-sm mb-0"><thead class="table-light"><tr><th class="ps-4">Item</th><th class="text-end pe-4">Nilai</th></tr></thead><tbody>';
                 items.forEach(function(h) {
-                    html += '<tr><td class="ps-4">' + h.nama + '</td><td class="text-end pe-4">Rp ' + formatNum(h.nilai) + '</td></tr>';
+                    var rec = JSON.stringify(h.records || []).replace(/'/g, '&#39;');
+                    html += '<tr class="harta-item-row" style="cursor:pointer" data-records=\'' + rec + '\'><td class="ps-4">' + h.nama + '</td><td class="text-end pe-4">Rp ' + formatNum(h.nilai) + ' <i class="bi bi-chevron-right small text-muted ms-1"></i></td></tr>';
                 });
                 html += '<tr class="table-secondary fw-bold"><td class="ps-4">Total</td><td class="text-end pe-4">Rp ' + formatNum(katTotal) + '</td></tr>';
                 html += '</tbody></table></div></div></div>';
                 collapseIdx++;
             });
+            var net = grandTotalPerolehan - hutangTotal;
+            html += '<div class="p-3 border-top bg-light">';
+            html += '<div class="d-flex justify-content-between small"><span class="fw-semibold">TOTAL PEROLEHAN</span><span>Rp ' + formatNum(grandTotalPerolehan) + '</span></div>';
+            html += '<div class="d-flex justify-content-between small mt-1"><span class="fw-semibold">TOTAL HUTANG</span><span class="text-danger">Rp ' + formatNum(hutangTotal) + '</span></div>';
+            html += '<hr class="my-1">';
+            html += '<div class="d-flex justify-content-between fw-bold"><span>NET</span><span class="' + (net < 0 ? 'text-danger' : 'text-success') + '">Rp ' + formatNum(net) + '</span></div>';
+            html += '</div>';
             html += '</div>';
             container.innerHTML = html;
             attachCollapseToggle();
@@ -413,52 +444,56 @@
             html += '<div class="p-3">';
             html += '<div class="mb-2"><small class="text-muted">' + escHtml(tab.label) + ' &middot; NPWP: ' + escHtml(tab.npwp || '-') + ' &middot; KPP: ' + escHtml(tab.kpp || '-') + '</small></div>';
             html += '<div class="table-responsive">';
-            html += '<table class="table table-sm table-bordered mb-0" style="white-space:nowrap"><thead class="table-light"><tr>';
-            html += '<th>Bulan</th><th class="text-end">Omset</th>';
-            if (bandingTab) { html += '<th class="text-end">Omset ' + vsTahun + '</th>'; }
-            html += '<th class="text-end">Total Peredaran Bruto</th>';
-            if (bandingTab) { html += '<th class="text-end">Total Bruto ' + vsTahun + '</th>'; }
-            if (isInduk) {
-                html += '<th class="text-end">Total Peredaran Bruto Akum' + (cabangCount > 0 ? ' (' + cabangCount + ' Cabang)' : '') + '</th>';
+            html += '<table class="table table-sm table-bordered mb-0" style="white-space:nowrap"><thead class="table-light">';
+            if (bandingTab) {
+                var tahunIni = document.getElementById('tahunFilter').value;
+                html += '<tr><th rowspan="2">Bulan</th><th colspan="2" class="text-center">Omset</th><th colspan="2" class="text-center">PPH Final</th></tr>';
+                html += '<tr><th class="text-end fw-normal"><strong>' + tahunIni + '</strong></th><th class="text-end fw-normal"><strong>' + vsTahun + '</strong></th><th class="text-end fw-normal"><strong>' + tahunIni + '</strong></th><th class="text-end fw-normal"><strong>' + vsTahun + '</strong></th></tr>';
+            } else {
+                html += '<tr><th>Bulan</th><th class="text-end">Omset</th><th class="text-end">Total Peredaran Bruto</th>';
+                if (isInduk) {
+                    html += '<th class="text-end">Total Peredaran Bruto Akum' + (cabangCount > 0 ? ' (' + cabangCount + ' Cabang)' : '') + '</th>';
+                }
+                html += '<th class="text-end">PPH Final</th><th class="text-end">PPh Final yg harus dibayar</th></tr>';
             }
-            html += '<th class="text-end">PPH Final</th>';
-            if (bandingTab) { html += '<th class="text-end">PPH Final ' + vsTahun + '</th>'; }
-            html += '<th class="text-end">PPh Final yg harus dibayar</th>';
-            if (bandingTab) { html += '<th class="text-end">PPh Bayar ' + vsTahun + '</th>'; }
-            html += '</tr></thead><tbody>';
+            html += '</thead><tbody>';
 
-            var tabOmset = 0, tabPotongan = 0;
-            var bandOmset = 0, bandPotongan = 0;
+            var tabOmset = 0, tabPphFinal = 0, tabPotongan = 0;
+            var bandOmset = 0, bandPphFinal = 0, bandPotongan = 0;
             (tab.detail_bulan || []).forEach(function(row, ri) {
                 var bRow = bandingTab ? (bandingTab.detail_bulan || [])[ri] : null;
                 tabOmset += parseNum(row.omset);
+                tabPphFinal += parseNum(row.pphFinal);
                 tabPotongan += parseNum(row.pphBayar);
-                if (bRow) { bandOmset += parseNum(bRow.omset); bandPotongan += parseNum(bRow.pphBayar); }
+                if (bRow) { bandOmset += parseNum(bRow.omset); bandPphFinal += parseNum(bRow.pphFinal); bandPotongan += parseNum(bRow.pphBayar); }
                 html += '<tr>';
                 html += '<td>' + row.bulan + '</td>';
                 html += '<td class="text-end">' + (row.omset || '-') + '</td>';
                 if (bandingTab) { html += '<td class="text-end">' + (bRow && bRow.omset ? bRow.omset : '-') + '</td>'; }
-                html += '<td class="text-end">' + (row.totalBruto || '-') + '</td>';
-                if (bandingTab) { html += '<td class="text-end">' + (bRow && bRow.totalBruto ? bRow.totalBruto : '-') + '</td>'; }
-                if (isInduk) {
-                    html += '<td class="text-end">' + (row.omset ? (row.totalBrutoAkum || '-') : '-') + '</td>';
+                if (!bandingTab) {
+                    html += '<td class="text-end">' + (row.totalBruto || '-') + '</td>';
+                    if (isInduk) {
+                        html += '<td class="text-end">' + (row.omset ? (row.totalBrutoAkum || '-') : '-') + '</td>';
+                    }
                 }
                 html += '<td class="text-end">' + (row.pphFinal || '-') + '</td>';
                 if (bandingTab) { html += '<td class="text-end">' + (bRow && bRow.pphFinal ? bRow.pphFinal : '-') + '</td>'; }
-                html += '<td class="text-end">' + (row.pphBayar || '-') + '</td>';
-                if (bandingTab) { html += '<td class="text-end">' + (bRow && bRow.pphBayar ? bRow.pphBayar : '-') + '</td>'; }
+                if (!bandingTab) {
+                    html += '<td class="text-end">' + (row.pphBayar || '-') + '</td>';
+                }
                 html += '</tr>';
             });
 
-            html += '<tr class="table-secondary fw-bold"><td>Total</td><td class="text-end">Rp ' + formatNum(tabOmset) + '</td>';
+            html += '<tr class="table-secondary fw-bold"><td>Total</td>';
+            html += '<td class="text-end">Rp ' + formatNum(tabOmset) + '</td>';
             if (bandingTab) { html += '<td class="text-end">Rp ' + formatNum(bandOmset) + '</td>'; }
-            html += '<td></td>';
-            if (bandingTab) { html += '<td></td>'; }
-            if (isInduk) { html += '<td></td>'; }
-            html += '<td></td>';
-            if (bandingTab) { html += '<td></td>'; }
-            html += '<td class="text-end">Rp ' + formatNum(tabPotongan) + '</td>';
-            if (bandingTab) { html += '<td class="text-end">Rp ' + formatNum(bandPotongan) + '</td>'; }
+            if (!bandingTab) {
+                html += '<td></td>';
+                if (isInduk) { html += '<td></td>'; }
+                html += '<td class="text-end">Rp ' + formatNum(tabPotongan) + '</td>';
+            }
+            html += '<td class="text-end">Rp ' + formatNum(tabPphFinal) + '</td>';
+            if (bandingTab) { html += '<td class="text-end">Rp ' + formatNum(bandPphFinal) + '</td>'; }
             html += '</tr>';
             html += '</tbody></table></div></div></div>';
             tabContent.innerHTML += html;
@@ -503,9 +538,16 @@
             });
             var html = '<div class="p-0">';
             var collapseIdx = 0;
+            var grandTotalPerolehan = 0;
+            var hutangTotal = 0;
             Object.keys(groups).forEach(function(kat) {
                 var items = groups[kat];
                 var katTotal = items.reduce(function(s, h) { return s + h.nilai; }, 0);
+                if (items[0] && items[0].kategori_id === 7) {
+                    hutangTotal = katTotal;
+                } else {
+                    grandTotalPerolehan += katTotal;
+                }
                 var colId = 'hartaDetailCollapse-' + collapseIdx;
                 html += '<div class="card border-0 border-bottom rounded-0">';
                 html += '<div class="card-header bg-light py-1 collapse-toggle" role="button" data-bs-toggle="collapse" data-bs-target="#' + colId + '" aria-expanded="false">';
@@ -518,6 +560,13 @@
                 html += '</tbody></table></div></div></div>';
                 collapseIdx++;
             });
+            var net = grandTotalPerolehan - hutangTotal;
+            html += '<div class="p-3 border-top bg-light">';
+            html += '<div class="d-flex justify-content-between small"><span class="fw-semibold">TOTAL PEROLEHAN</span><span>Rp ' + formatNum(grandTotalPerolehan) + '</span></div>';
+            html += '<div class="d-flex justify-content-between small mt-1"><span class="fw-semibold">TOTAL HUTANG</span><span class="text-danger">Rp ' + formatNum(hutangTotal) + '</span></div>';
+            html += '<hr class="my-1">';
+            html += '<div class="d-flex justify-content-between fw-bold"><span>NET</span><span class="' + (net < 0 ? 'text-danger' : 'text-success') + '">Rp ' + formatNum(net) + '</span></div>';
+            html += '</div>';
             html += '</div>';
             hartaDiv.innerHTML = html;
             attachCollapseToggle();
@@ -678,9 +727,34 @@
         });
     }
 
-    // Render harta modal with cabang tabs when opened
+    // Render harta modal when opened
     document.getElementById('hartaModal').addEventListener('shown.bs.modal', function() {
         renderHartaModal();
+    });
+
+    // Click on harta item row → show detail modal
+    document.getElementById('hartaDetailContent').addEventListener('click', function(e) {
+        var row = e.target.closest('.harta-item-row');
+        if (!row) return;
+        var raw = row.getAttribute('data-records');
+        if (!raw) return;
+        var records;
+        try { records = JSON.parse(raw); } catch(_) { return; }
+        if (!records || !records.length) return;
+
+        var body = document.getElementById('hartaItemBody');
+        var html = '<div class="table-responsive"><table class="table table-sm table-bordered mb-0"><thead class="table-light"><tr><th>#</th><th>Deskripsi</th><th>Nomor Akun</th><th>Atas Nama</th><th>Bank/Institusi</th><th>Lokasi</th><th>Kurs</th><th>Thn</th><th class="text-end">Saldo</th></tr></thead><tbody>';
+        records.forEach(function(r, i) {
+            html += '<tr><td>' + (i + 1) + '</td><td>' + (r.deskripsi || '-') + '</td><td>' + (r.nomor_akun || '-') + '</td><td>' + (r.atas_nama || '-') + '</td><td>' + (r.nama_bank_institusi || '-') + '</td><td>' + (r.lokasi_harta || '-') + '</td><td>' + (r.kurs || '-') + '</td><td>' + (r.tahun_perolehan || '-') + '</td><td class="text-end">Rp ' + formatNum(r.saldo_saat_ini) + '</td></tr>';
+        });
+        html += '</tbody></table></div>';
+        body.innerHTML = html;
+
+        var itemModal = new bootstrap.Modal(document.getElementById('hartaItemModal'));
+        itemModal.show();
+        // make item modal backdrop invisible so hartaModal behind stays visible
+        var backs = document.querySelectorAll('.modal-backdrop');
+        if (backs.length > 1) backs[backs.length - 1].style.opacity = '0';
     });
 
     document.getElementById('vsTahunFilter').addEventListener('change', function() {
