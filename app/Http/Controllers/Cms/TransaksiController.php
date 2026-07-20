@@ -645,7 +645,7 @@ class TransaksiController extends Controller
         $sheet->setTitle('Template');
 
         $months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-        $headers = ['No', 'NPWP Client', 'NPWP Cabang', 'Tahun'];
+        $headers = ['No', 'Nama', 'NPWP / Cabang', 'Tahun'];
         foreach ($months as $m) {
             $headers[] = 'Omset ' . $m;
         }
@@ -664,7 +664,7 @@ class TransaksiController extends Controller
 
         // Column widths
         $sheet->getColumnDimension('A')->setWidth(5);
-        $sheet->getColumnDimension('B')->setWidth(24);
+        $sheet->getColumnDimension('B')->setWidth(30);
         $sheet->getColumnDimension('C')->setWidth(24);
         $sheet->getColumnDimension('D')->setWidth(8);
         for ($i = 0; $i < 12; $i++) {
@@ -674,7 +674,7 @@ class TransaksiController extends Controller
         // --- Instructions ---
         $sheet->setCellValue('A3', 'INSTRUKSI:');
         $sheet->getStyle('A3')->getFont()->setBold(true)->setSize(11);
-        $sheet->setCellValue('A4', 'Isi data mulai dari baris 5. Kolom B = NPWP Client, C = NPWP Cabang (kosongkan jika induk), D = Tahun, E-P = Omset Jan-Des.');
+        $sheet->setCellValue('A4', 'Isi data mulai dari baris 5. Kolom B = Nama Client/Cabang, C = NPWP Client atau NPWP Cabang, D = Tahun, E-P = Omset Jan-Des.');
         $sheet->getStyle('A4')->getFont()->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF555555'))->setSize(9);
 
         $writer = new Xlsx($spreadsheet);
@@ -716,74 +716,102 @@ class TransaksiController extends Controller
         $dataRows = [];
         for ($r = 1; $r < count($rows); $r++) {
             $row = $rows[$r];
-            $npwpClient = isset($row[1]) ? ltrim(trim((string) $row[1]), "'") : '';
-            if ($npwpClient === '') continue;
+            $nama = isset($row[1]) ? trim((string) $row[1]) : '';
+            if ($nama === '') continue;
             $dataRows[] = $row;
         }
 
         if (empty($dataRows)) {
             @unlink($fullPath);
             return redirect()->route('cms.transaksi.import')
-                ->with('error', 'Tidak ada data valid. Pastikan kolom NPWP Client terisi.');
+                ->with('error', 'Tidak ada data valid. Pastikan kolom Nama terisi.');
         }
 
         $npwpList = [];
         foreach ($dataRows as $row) {
-            $npwpClient = isset($row[1]) ? ltrim(trim((string) $row[1]), "'") : '';
-            if ($npwpClient) $npwpList[] = $npwpClient;
+            $npwp = isset($row[2]) ? ltrim(trim((string) $row[2]), "'") : '';
+            if ($npwp) $npwpList[] = $npwp;
         }
         $npwpList = array_unique($npwpList);
         $existingNpwps = DataClient::whereNotNull('npwp')->pluck('npwp')->map(function ($v) { return strtolower(trim($v)); })->filter()->values()->toArray();
+        $cabangNpwps = NpwpCabang::pluck('npwp')->map(function ($v) { return strtolower(trim($v)); })->filter()->values()->toArray();
+        $allExisting = array_unique(array_merge($existingNpwps, $cabangNpwps));
         $missingNpwps = [];
         foreach ($npwpList as $np) {
             $cleanNp = strtolower(ltrim(trim($np), "'"));
-            if (!in_array($cleanNp, $existingNpwps)) {
+            if (!in_array($cleanNp, $allExisting)) {
                 $missingNpwps[] = $np;
             }
         }
         if (!empty($missingNpwps)) {
             @unlink($fullPath);
             return redirect()->route('cms.transaksi.import')
-                ->with('error', 'Import dibatalkan. Data NPWP tidak tersedia: ' . implode(', ', array_slice($missingNpwps, 0, 10)));
+                ->with('error', 'Import dibatalkan. NPWP tidak ditemukan: ' . implode(', ', array_slice($missingNpwps, 0, 10)));
         }
+
+        $masterEcommerce = MasterEcommerce::where('is_active', 1)->pluck('kode_ecommerce', 'id')->toArray();
 
         $preview = [];
 
         foreach ($dataRows as $row) {
-            $npwpClient = isset($row[1]) ? ltrim(trim((string) $row[1]), "'") : '';
-            $npwpCabang = isset($row[2]) ? ltrim(trim((string) $row[2]), "'") : '';
+            $namaExcel = isset($row[1]) ? trim((string) $row[1]) : '';
+            $npwp = isset($row[2]) ? ltrim(trim((string) $row[2]), "'") : '';
             $tahun = isset($row[3]) ? trim((string) $row[3]) : '';
 
-            $client = DataClient::where('npwp', $npwpClient)->first();
-
             $rowErrors = [];
-            if (!$npwpClient) $rowErrors[] = 'NPWP Client kosong';
             if (!$tahun || !is_numeric($tahun)) $rowErrors[] = 'Tahun tidak valid';
 
+            $client = DataClient::where('npwp', $npwp)->first();
             $cabangRecord = null;
-            if ($npwpCabang && $client) {
-                $cabangRecord = NpwpCabang::where('data_client_id', $client->id)
-                    ->where('npwp', $npwpCabang)->first();
-                if (!$cabangRecord) $rowErrors[] = 'Cabang NPWP ' . $npwpCabang . ' tidak ditemukan untuk client ini';
+
+            if ($client) {
+                // Main client NPWP
+            } else {
+                // Try cabang NPWP
+                $cabangRecord = NpwpCabang::where('npwp', $npwp)->first();
+                if ($cabangRecord) {
+                    $client = DataClient::find($cabangRecord->data_client_id);
+                    if (!$client) $rowErrors[] = 'Induk client untuk cabang ini tidak ditemukan';
+                } else {
+                    $rowErrors[] = 'NPWP tidak ditemukan sebagai Client atau Cabang';
+                }
+            }
+
+            $displayNama = $namaExcel;
+            $isCabang = $cabangRecord !== null;
+            $cabangNama = '';
+            $ecommerceId = null;
+
+            if ($cabangRecord) {
+                $cabangNama = $cabangRecord->nama_client ?: '';
+                $ecommerceId = $cabangRecord->master_ecommerce_id;
+                $kodeEcommerce = $ecommerceId && isset($masterEcommerce[$ecommerceId]) ? $masterEcommerce[$ecommerceId] : null;
+                if ($kodeEcommerce) {
+                    $displayNama = $kodeEcommerce;
+                } elseif ($cabangNama) {
+                    $displayNama = $cabangNama;
+                }
             }
 
             $preview[] = [
-                'npwp_client' => $npwpClient,
-                'npwp_cabang' => $npwpCabang,
+                'nama_excel' => $namaExcel,
+                'npwp' => $npwp,
                 'tahun' => $tahun,
                 'omset_bulanan' => array_slice($row, 4, 12),
                 'client_nama' => $client ? $client->nama_client : '-',
-                'cabang_nama' => $cabangRecord ? $cabangRecord->nama_client : ($npwpCabang ? 'Not Found' : ''),
+                'cabang_nama' => $cabangNama ?: ($isCabang ? 'Cabang' : ''),
+                'is_cabang' => $isCabang,
+                'ecommerce_id' => $ecommerceId,
+                'display_nama' => $displayNama,
                 'errors' => $rowErrors,
                 'valid' => empty($rowErrors),
-                'is_cabang' => $npwpCabang !== '',
             ];
         }
 
         $totalRows = count($preview);
 
         return view('cms::transaksi.import', compact(
-            'preview', 'totalRows', 'tempPath', 'months'
+            'preview', 'totalRows', 'tempPath', 'months', 'masterEcommerce'
         ));
     }
 
@@ -811,72 +839,50 @@ class TransaksiController extends Controller
         $dataRows = [];
         for ($r = 1; $r < count($rows); $r++) {
             $row = $rows[$r];
-            $npwpClient = isset($row[1]) ? ltrim(trim((string) $row[1]), "'") : '';
-            if ($npwpClient === '') continue;
+            $nama = isset($row[1]) ? trim((string) $row[1]) : '';
+            if ($nama === '') continue;
             $dataRows[] = $row;
         }
 
         if (empty($dataRows)) {
             @unlink($fullPath);
             return redirect()->route('cms.transaksi.import')
-                ->with('error', 'Tidak ada data valid. Pastikan kolom NPWP Client terisi.');
-        }
-
-        $npwpList = [];
-        foreach ($dataRows as $row) {
-            $npwpClient = isset($row[1]) ? ltrim(trim((string) $row[1]), "'") : '';
-            if ($npwpClient) $npwpList[] = $npwpClient;
-        }
-        $npwpList = array_unique($npwpList);
-        $existingNpwps = DataClient::whereNotNull('npwp')->pluck('npwp')->map(function ($v) { return strtolower(trim($v)); })->filter()->values()->toArray();
-        $missingNpwps = [];
-        foreach ($npwpList as $np) {
-            $cleanNp = strtolower(ltrim(trim($np), "'"));
-            if (!in_array($cleanNp, $existingNpwps)) {
-                $missingNpwps[] = $np;
-            }
-        }
-        if (!empty($missingNpwps)) {
-            @unlink($fullPath);
-            return redirect()->route('cms.transaksi.import')
-                ->with('error', 'Import dibatalkan. Data NPWP tidak tersedia: ' . implode(', ', array_slice($missingNpwps, 0, 10)));
+                ->with('error', 'Tidak ada data valid. Pastikan kolom Nama terisi.');
         }
 
         $imported = 0;
         $errors = [];
 
-        foreach ($dataRows as $row) {
-            $npwpClient = isset($row[1]) ? ltrim(trim((string) $row[1]), "'") : '';
-            $npwpCabang = isset($row[2]) ? ltrim(trim((string) $row[2]), "'") : '';
+        foreach ($dataRows as $r => $row) {
+            $npwp = isset($row[2]) ? ltrim(trim((string) $row[2]), "'") : '';
             $tahun = isset($row[3]) ? trim((string) $row[3]) : '';
 
-            $client = DataClient::where('npwp', $npwpClient)->first();
-            if (!$client) {
-                $errors[] = "Baris " . ($r + 1) . ": Client dengan NPWP {$npwpClient} tidak ditemukan";
-                continue;
+            $client = DataClient::where('npwp', $npwp)->first();
+            $cabangId = null;
+
+            if ($client) {
+                // Main client
+            } else {
+                $cabang = NpwpCabang::where('npwp', $npwp)->first();
+                if ($cabang) {
+                    $client = DataClient::find($cabang->data_client_id);
+                    $cabangId = $cabang->id;
+                }
             }
 
-            $cabangId = null;
-            if ($npwpCabang) {
-                $cabang = NpwpCabang::where('data_client_id', $client->id)
-                    ->where('npwp', $npwpCabang)->first();
-                if (!$cabang) {
-                    $errors[] = "Baris " . ($r + 1) . ": Cabang NPWP {$npwpCabang} tidak ditemukan untuk client {$client->nama_client}";
-                    continue;
-                }
-                $cabangId = $cabang->id;
+            if (!$client) {
+                $errors[] = "Baris " . ($r + 2) . ": NPWP {$npwp} tidak ditemukan sebagai Client atau Cabang";
+                continue;
             }
 
             $tipeBadanId = $client->tipe_badan;
 
-            // UpdateOrCreate transaksi record
             try {
                 $transaksi = Transaksi::updateOrCreate(
                     ['client_id' => $client->id, 'npwp_cabang_id' => $cabangId, 'tahun' => (int) $tahun],
                     ['tipe_badan_id' => $tipeBadanId, 'total_omset' => 0, 'total_harta' => 0, 'total_pph' => 0]
                 );
 
-                // Delete existing omset
                 TransaksiOmset::where('transaksi_id', $transaksi->id)->delete();
 
                 $tabOmset = 0;
@@ -897,7 +903,7 @@ class TransaksiController extends Controller
 
                 $imported++;
             } catch (\Exception $e) {
-                $errors[] = "Baris " . ($r + 1) . " ({$client->nama_client}): " . $e->getMessage();
+                $errors[] = "Baris " . ($r + 2) . " ({$npwp}): " . $e->getMessage();
             }
         }
 

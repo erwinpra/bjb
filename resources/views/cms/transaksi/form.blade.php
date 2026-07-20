@@ -108,7 +108,7 @@
                         <table class="table table-bordered table-sm mb-2" id="omsetTable">
                             <thead class="table-warning">
                                 <tr>
-                                    <th colspan="2" style="min-width:210px">Kategori / Nama</th>
+                                    <th colspan="2" style="min-width:210px">Kategori - NIK</th>
                                     @foreach($monthsList as $m)
                                         <th class="text-end" style="min-width:90px">{{ $m }}</th>
                                     @endforeach
@@ -563,16 +563,18 @@ function buildOmsetTable() {
     for (let mo = 1; mo <= 12; mo++) {
         sumRow.insertCell().innerHTML = '<span class="text-end d-block">' + (perMonthTotal[mo] > 0 ? formatNum(String(perMonthTotal[mo])) : '-') + '</span>';
     }
-    sumRow.insertCell().innerHTML = '<span class="text-end text-primary fw-bold d-block">' + formatNum(String(totalAll)) + '</span>';
+    sumRow.insertCell().innerHTML = '<span class="text-end text-primary fw-bold d-block"></span>';
 
     // PPh Final row
+    var pphTotalAll = 0;
+    for (let mo = 1; mo <= 12; mo++) pphTotalAll += perMonthPph[mo];
     var pphRow = tbody.insertRow();
     pphRow.className = 'table-light';
     pphRow.innerHTML = '<td colspan="2" class="text-end text-danger">PPh Final <span class="pph-persen">' + (persen > 0 ? persen.toString().replace('.', ',') : '0') + '</span>%</td>';
     for (let mo = 1; mo <= 12; mo++) {
         pphRow.insertCell().innerHTML = '<span class="text-end text-danger d-block">' + (perMonthPph[mo] > 0 ? formatNum(String(perMonthPph[mo])) : '-') + '</span>';
     }
-    pphRow.insertCell();
+    pphRow.insertCell().innerHTML = '<span class="text-end text-danger d-block"></span>';
 
     // Total Peredaran Bruto row
     var cumulativeForDisplay = 0;
@@ -582,7 +584,7 @@ function buildOmsetTable() {
         cumulativeForDisplay += perMonthTotal[mo];
         pbRow.insertCell().innerHTML = '<span class="text-end d-block">' + (perMonthTotal[mo] > 0 ? formatNum(String(cumulativeForDisplay)) : '-') + '</span>';
     }
-    pbRow.insertCell();
+    pbRow.insertCell().innerHTML = '<span class="text-end d-block"></span>';
 
     // Perhitungan Pengurangan row
     var cumulativeForPeng = 0;
@@ -590,8 +592,16 @@ function buildOmsetTable() {
     pengRow.innerHTML = '<td colspan="2" class="text-end">Perhitungan Pengurangan</td>';
     for (let mo = 1; mo <= 12; mo++) {
         cumulativeForPeng += perMonthTotal[mo];
-        var pengurangan = maxVal > 0 ? Math.max(0, maxVal - cumulativeForPeng + perMonthTotal[mo]) : 0;
-        pengRow.insertCell().innerHTML = '<span class="text-end d-block">' + (perMonthTotal[mo] > 0 && pengurangan > 0 ? formatNum(String(pengurangan)) : (perMonthTotal[mo] > 0 ? '0' : '-')) + '</span>';
+        var pengurangan = maxVal > 0 ? cumulativeForPeng - maxVal : 0;
+        var display = '-';
+        if (perMonthTotal[mo] > 0) {
+            if (cumulativeForPeng < maxVal) {
+                display = '(' + formatNum(String(Math.abs(pengurangan))) + ')';
+            } else {
+                display = formatNum(String(pengurangan));
+            }
+        }
+        pengRow.insertCell().innerHTML = '<span class="text-end d-block">' + display + '</span>';
     }
     pengRow.insertCell();
 
@@ -618,7 +628,7 @@ function buildOmsetTable() {
         bayarRow.insertCell().innerHTML = '<span class="text-end text-danger d-block">' + (bayar > 0 ? formatNum(String(bayar)) : '<span class="text-success">FREE</span>') + '</span>';
         cumulativeForBayar += omsetMo;
     }
-    bayarRow.insertCell().innerHTML = '<span class="text-end text-danger fw-bold d-block">' + formatNum(String(totalPphAll)) + '</span>';
+    bayarRow.insertCell().innerHTML = '<span class="text-end text-danger fw-bold d-block"></span>';
 
     // Store totals for hidden fields
     window._omsetTotalAll = totalAll;
@@ -892,7 +902,7 @@ document.getElementById('btnPreview').addEventListener('click', function() {
     var bulanList = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 
     var html = '<div class="table-responsive"><table class="table table-sm table-bordered mb-0">';
-    html += '<thead class="table-warning"><tr><th colspan="2" style="min-width:210px">Kategori / Nama</th>';
+    html += '<thead class="table-warning"><tr><th colspan="2" style="min-width:210px">Kategori - NIK</th>';
     for (let mo = 0; mo < 12; mo++) { html += '<th class="text-end" style="min-width:90px">' + bulanList[mo] + '</th>'; }
     html += '<th style="width:70px">Total</th></tr></thead><tbody>';
 
@@ -964,12 +974,13 @@ document.getElementById('btnPreview').addEventListener('click', function() {
     html += '<td class="text-end text-primary">' + formatNum(String(totalAll)) + '</td></tr>';
 
     // PPh Final row
+    var pphTotalAll = 0;
+    for (let mo = 1; mo <= 12; mo++) pphTotalAll += perMonthPph[mo];
     html += '<tr class="table-light"><td colspan="2" class="text-end text-danger">PPh Final ' + (persen > 0 ? persen.toString().replace('.', ',') : '0') + '%</td>';
     for (let mo = 1; mo <= 12; mo++) {
-        var pphNum = perMonthPph[mo] * persen / 100;
-        html += '<td class="text-end text-danger">' + (pphNum > 0 ? formatNum(String(Math.round(pphNum))) : '-') + '</td>';
+        html += '<td class="text-end text-danger">' + (perMonthPph[mo] > 0 ? formatNum(String(Math.round(perMonthPph[mo]))) : '-') + '</td>';
     }
-    html += '<td></td></tr>';
+    html += '<td class="text-end text-danger">' + (pphTotalAll > 0 ? formatNum(String(Math.round(pphTotalAll))) : '-') + '</td></tr>';
 
     // Total Peredaran Bruto row
     var cumulativeForDisplay = 0;
@@ -978,15 +989,23 @@ document.getElementById('btnPreview').addEventListener('click', function() {
         cumulativeForDisplay += perMonthTotal[mo];
         html += '<td class="text-end">' + (perMonthTotal[mo] > 0 ? formatNum(String(cumulativeForDisplay)) : '-') + '</td>';
     }
-    html += '<td></td></tr>';
+    html += '<td class="text-end">' + (totalAll > 0 ? formatNum(String(totalAll)) : '-') + '</td></tr>';
 
     // Perhitungan Pengurangan row
     var cumulativeForPeng = 0;
     html += '<tr><td colspan="2" class="text-end">Perhitungan Pengurangan</td>';
     for (let mo = 1; mo <= 12; mo++) {
         cumulativeForPeng += perMonthTotal[mo];
-        var pengurangan = maxVal > 0 ? Math.max(0, maxVal - cumulativeForPeng + perMonthTotal[mo]) : 0;
-        html += '<td class="text-end">' + (perMonthTotal[mo] > 0 && pengurangan > 0 ? formatNum(String(Math.round(pengurangan))) : (perMonthTotal[mo] > 0 ? '0' : '-')) + '</td>';
+        var pengurangan = maxVal > 0 ? cumulativeForPeng - maxVal : 0;
+        var display = '-';
+        if (perMonthTotal[mo] > 0) {
+            if (cumulativeForPeng < maxVal) {
+                display = '(' + formatNum(String(Math.round(Math.abs(pengurangan)))) + ')';
+            } else {
+                display = formatNum(String(Math.round(pengurangan)));
+            }
+        }
+        html += '<td class="text-end">' + display + '</td>';
     }
     html += '<td></td></tr>';
 

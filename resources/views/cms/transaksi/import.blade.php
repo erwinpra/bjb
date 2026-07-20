@@ -21,7 +21,7 @@
                         <label class="form-label fw-semibold small">File Excel <span class="text-danger">*</span></label>
                         <input type="file" name="file" class="form-control @error('file') is-invalid @enderror" accept=".xlsx,.xls" required>
                         @error('file') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        <div class="form-text small">Format: NPWP Client, NPWP Cabang (kosongkan untuk induk), Tahun, Omset Tahunan/Bulanan, Harta</div>
+                        <div class="form-text small">Format: Nama, NPWP / Cabang, Tahun, Omset Januari-Desember</div>
                     </div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
@@ -80,10 +80,8 @@
                     <thead class="table-light sticky-top">
                         <tr>
                             <th>#</th>
-                            <th>NPWP Client</th>
-                            <th>Nama Client</th>
-                            <th>NPWP Cabang</th>
-                            <th>Nama Cabang</th>
+                            <th>Nama</th>
+                            <th>NPWP / Cabang</th>
                             <th>Tahun</th>
                             @foreach($months as $m)
                             <th class="text-end">{{ $m }}</th>
@@ -95,20 +93,23 @@
                         @forelse($preview as $i => $item)
                         <tr class="{{ $item['valid'] ? ($item['is_cabang'] ? 'table-info' : '') : 'table-danger' }}">
                             <td>{{ $i + 1 }}</td>
-                            <td><code>{{ $item['npwp_client'] ?: '-' }}</code></td>
-                            <td>{{ $item['client_nama'] }}</td>
-                            <td><code>{{ $item['npwp_cabang'] ?: '-' }}</code></td>
-                            <td>{{ $item['cabang_nama'] ?: '-' }}</td>
+                            <td>
+                                <div>{{ $item['nama_excel'] }}</div>
+                                <small class="text-muted">{{ $item['client_nama'] }}</small>
+                            </td>
+                            <td><code>{{ $item['npwp'] ?: '-' }}</code></td>
                             <td>{{ $item['tahun'] }}</td>
                             @foreach($item['omset_bulanan'] as $om)
                             <td class="text-end">{{ $om ?: '-' }}</td>
                             @endforeach
                             <td>
                                 @if($item['valid'])
-                                    @if($item['is_cabang'])
-                                        <span class="badge bg-info text-white">Cabang</span>
+                                    @if($item['ecommerce_id'])
+                                        <span class="badge bg-info text-white">E-Commerce</span>
+                                    @elseif($item['is_cabang'])
+                                        <span class="badge bg-secondary">Cabang</span>
                                     @else
-                                        <span class="badge bg-success">Induk</span>
+                                        <span class="badge bg-success">Pusat</span>
                                     @endif
                                 @else
                                     <span class="badge bg-danger" title="{{ implode('; ', $item['errors']) }}">Error</span>
@@ -117,13 +118,13 @@
                         </tr>
                         @if(!$item['valid'])
                         <tr class="table-danger">
-                            <td colspan="{{ 8 + 12 }}">
+                            <td colspan="{{ 4 + 12 }}">
                                 <small class="text-danger"><i class="bi bi-x-circle me-1"></i>{{ implode('; ', $item['errors']) }}</small>
                             </td>
                         </tr>
                         @endif
                         @empty
-                        <tr><td colspan="{{ 8 + 12 }}" class="text-center text-muted py-4">Tidak ada data.</td></tr>
+                        <tr><td colspan="{{ 4 + 12 }}" class="text-center text-muted py-4">Tidak ada data.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -153,7 +154,7 @@
             <script>
             document.getElementById('confirmForm')?.addEventListener('submit', function(e) {
                 var count = {{ $validCount }};
-                if (!confirm('Import ' + count + ' data transaksi? Data dengan NPWP Client + Tahun + NPWP Cabang yang sama akan diperbarui.')) {
+                if (!confirm('Import ' + count + ' data transaksi? Data dengan NPWP + Tahun yang sama akan diperbarui.')) {
                     e.preventDefault();
                 } else {
                     document.getElementById('loadingBackdrop').classList.remove('d-none');
