@@ -55,19 +55,35 @@
             </div>
 
             <div class="row g-4 mb-4">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="card bg-primary bg-opacity-10 border-0 text-center py-3">
                         <div class="fs-2 fw-bold text-primary">{{ $totalRows }}</div>
                         <small class="text-muted">Total Baris Data</small>
                     </div>
                 </div>
-                <div class="col-md-4">
+                @if($cabangCount > 0)
+                <div class="col-md-3">
+                    <div class="card bg-info bg-opacity-10 border-0 text-center py-3">
+                        <div class="fs-2 fw-bold text-info">{{ $cabangCount }}</div>
+                        <small class="text-muted">Cabang</small>
+                    </div>
+                </div>
+                @endif
+                @if(($ecommerceCount ?? 0) > 0)
+                <div class="col-md-3">
+                    <div class="card bg-purple bg-opacity-10 border-0 text-center py-3" style="background-color:rgba(128,0,128,0.05)">
+                        <div class="fs-2 fw-bold text-purple" style="color:purple">{{ $ecommerceCount }}</div>
+                        <small class="text-muted">E-Commerce</small>
+                    </div>
+                </div>
+                @endif
+                <div class="col-md-3">
                     <div class="card bg-success bg-opacity-10 border-0 text-center py-3">
                         <div class="fs-2 fw-bold text-success">{{ $newCount }}</div>
                         <small class="text-muted">Data Baru</small>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="card bg-warning bg-opacity-10 border-0 text-center py-3">
                         <div class="fs-2 fw-bold text-warning">{{ $updateCount }}</div>
                         <small class="text-muted">Sudah Ada (NIK sama)</small>
@@ -109,6 +125,7 @@
                             <th>KPP</th>
                             <th>Nama</th>
                             <th>NIK</th>
+                            <th>Cabang</th>
                             <th>Email</th>
                             <th>HP</th>
                             <th>Alamat NIK</th>
@@ -120,11 +137,25 @@
                     </thead>
                     <tbody>
                         @forelse($preview as $i => $item)
-                        <tr class="{{ $item['exists'] ? 'table-warning' : '' }}">
+                        <tr class="{{ $item['is_cabang'] ?? false ? ($item['is_ecommerce'] ?? false ? 'table-active' : 'table-info') : ($item['exists'] ? 'table-warning' : '') }}">
                             <td>{{ $i + 1 }}</td>
                             <td>{{ $item['kpp'] ?: '-' }}</td>
                             <td>{{ $item['nama'] }}</td>
                             <td><code>{{ $item['npwp'] ?: '-' }}</code></td>
+                            <td>
+                                @if($item['is_cabang'] ?? false)
+                                    <code>{{ $item['cabang'] }}</code>
+                                    <small class="text-muted ms-1">#{{ $item['cabang_no'] }}</small>
+                                    @if($item['is_ecommerce'] ?? false)
+                                        <span class="badge text-white" style="background:purple">E-Commerce</span>
+                                    @endif
+                                    @if(!$item['parent_exists'])
+                                        <span class="badge bg-danger">Parent tidak ditemukan</span>
+                                    @endif
+                                @else
+                                    -
+                                @endif
+                            </td>
                             <td><small>{{ $item['email'] ?: '-' }}</small></td>
                             <td>{{ $item['hp'] ?: '-' }}</td>
                             <td><small class="text-muted">{{ Str::limit($item['alamat_npwp'], 40) ?: '-' }}</small></td>
@@ -132,7 +163,15 @@
                             <td>{{ $item['ar'] ?: '-' }}</td>
                             <td>{{ $item['ptkp'] ?: '-' }}</td>
                             <td>
-                                @if($item['exists'])
+                                @if($item['is_cabang'] ?? false)
+                                    @if($item['is_ecommerce'] ?? false)
+                                        <span class="badge text-white" style="background:purple">E-Commerce</span>
+                                    @elseif($item['parent_exists'])
+                                        <span class="badge bg-info text-white">Cabang</span>
+                                    @else
+                                        <span class="badge bg-danger">Error</span>
+                                    @endif
+                                @elseif($item['exists'])
                                     <span class="badge bg-warning text-dark">Akan Diupdate</span>
                                 @else
                                     <span class="badge bg-success">Baru</span>
@@ -140,7 +179,7 @@
                             </td>
                         </tr>
                         @empty
-                        <tr><td colspan="10" class="text-center text-muted py-4">Tidak ada data.</td></tr>
+                        <tr><td colspan="11" class="text-center text-muted py-4">Tidak ada data.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -156,7 +195,7 @@
                     <input type="hidden" name="temp_path" value="{{ $tempPath }}">
                     <input type="hidden" name="import_mode" id="importModeInput" value="skip">
                     <button type="submit" class="btn btn-primary px-4" id="confirmBtn">
-                        <i class="bi bi-check-lg me-1"></i> Import {{ $newCount }} Data Baru
+                        <i class="bi bi-check-lg me-1"></i> Import {{ $newCount + $cabangCount + ($ecommerceCount ?? 0) }} Data Baru
                     </button>
                 </form>
             </div>
@@ -184,15 +223,21 @@
                     if (this.value === 'update') {
                         btn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Import & Update {{ $updateCount }} Data';
                     } else {
-                        btn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Import {{ $newCount }} Data Baru';
+                        btn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Import {{ $newCount + $cabangCount + ($ecommerceCount ?? 0) }} Data Baru';
                     }
                 });
             });
+            @php
+                $skipParts = ['Import ' . $newCount . ' data baru'];
+                if ($cabangCount > 0) $skipParts[] = $cabangCount . ' cabang';
+                if (($ecommerceCount ?? 0) > 0) $skipParts[] = $ecommerceCount . ' e-commerce';
+                $skipMsg = implode(', ', $skipParts) . '? Data yang sudah ada akan dilewati.';
+            @endphp
             document.getElementById('confirmForm').addEventListener('submit', function(e) {
                 var mode = document.getElementById('importModeInput').value;
                 if (mode === 'update' && !confirm('Data dengan NIK yang sama akan diperbarui. Lanjutkan?')) {
                     e.preventDefault();
-                } else if (mode === 'skip' && !confirm('Import {{ $newCount }} data baru? Data yang sudah ada akan dilewati.')) {
+                } else if (mode === 'skip' && !confirm('{{ $skipMsg }}')) {
                     e.preventDefault();
                 } else {
                     document.getElementById('loadingBackdrop').classList.remove('d-none');

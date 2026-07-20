@@ -8,6 +8,7 @@ use App\Models\Cms\Badan;
 use App\Models\Cms\ClientRole;
 use App\Models\Cms\NpwpCabang;
 use App\Models\Cms\ActivityLog;
+use App\Models\Cms\MasterEcommerce;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
@@ -45,10 +46,12 @@ class DataClientController extends Controller
     {
         $badan = Badan::all();
         $generatedPassword = Str::random(12);
+        $masterEcommerce = MasterEcommerce::where('is_active', true)->get(['id', 'kode_ecommerce', 'deskripsi']);
         return view('cms::data-client.edit', [
             'dataClient' => null,
             'badan' => $badan,
             'generatedPassword' => $generatedPassword,
+            'masterEcommerce' => $masterEcommerce,
         ]);
     }
 
@@ -95,7 +98,7 @@ class DataClientController extends Controller
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        $headers = ['No', 'KPP', 'Nama', 'NIK', 'Email', 'HP', 'Alamat NIK', 'Alamat Tagihan', 'AR', 'PTKP'];
+        $headers = ['No', 'KPP', 'Nama', 'NIK', 'Cabang', 'Email', 'HP', 'Alamat NIK', 'Alamat Tagihan', 'AR', 'PTKP'];
         foreach ($headers as $i => $header) {
             $col = chr(65 + $i);
             $sheet->setCellValue($col . '1', $header);
@@ -106,12 +109,13 @@ class DataClientController extends Controller
         $sheet->getColumnDimension('B')->setWidth(15);
         $sheet->getColumnDimension('C')->setWidth(30);
         $sheet->getColumnDimension('D')->setWidth(20);
-        $sheet->getColumnDimension('E')->setWidth(30);
-        $sheet->getColumnDimension('F')->setWidth(20);
-        $sheet->getColumnDimension('G')->setWidth(40);
+        $sheet->getColumnDimension('E')->setWidth(20);
+        $sheet->getColumnDimension('F')->setWidth(30);
+        $sheet->getColumnDimension('G')->setWidth(20);
         $sheet->getColumnDimension('H')->setWidth(40);
-        $sheet->getColumnDimension('I')->setWidth(15);
+        $sheet->getColumnDimension('I')->setWidth(40);
         $sheet->getColumnDimension('J')->setWidth(15);
+        $sheet->getColumnDimension('K')->setWidth(15);
 
         $writer = new Xlsx($spreadsheet);
         $filename = 'Template_Import_Data_Client.xlsx';
@@ -163,15 +167,25 @@ class DataClientController extends Controller
             return strtolower(trim($v));
         })->filter()->values()->toArray();
 
+        $existingParents = DataClient::whereNotNull('npwp')->get()->keyBy(function ($d) {
+            return strtolower(trim($d->npwp));
+        });
+
+        $ecommerceLookup = MasterEcommerce::where('is_active', true)->pluck('kode_ecommerce', 'id')->toArray();
+
         $preview = [];
         $newCount = 0;
         $updateCount = 0;
+        $cabangCount = 0;
+        $ecommerceCount = 0;
         $invalidNpwp = [];
+        $invalidCabang = [];
         for ($r = 1; $r < count($rows); $r++) {
             $row = $rows[$r];
             $kpp = isset($row[1]) ? trim((string) $row[1]) : '';
             $nama = isset($row[2]) ? trim((string) $row[2]) : '';
             $npwp = isset($row[3]) ? ltrim(trim((string) $row[3]), "'") : '';
+            $cabang = isset($row[4]) ? ltrim(trim((string) $row[4]), "'") : '';
 
             if (!$nama && !$npwp) continue;
 
@@ -183,11 +197,52 @@ class DataClientController extends Controller
                 $invalidNpwp[] = $nama ?: $npwp;
             }
 
-            $exists = $npwp !== '' && in_array($npwpKey, $existingNPs);
+            $isCabang = $cabang !== '';
+            $cabangValid = true;
+            $parentNpwp = '';
+            $cabangNo = '';
+            $parentExists = false;
+            $parentId = null;
+            $masterEcommerceId = null;
+            $isEcommerce = false;
 
-            if ($exists) {
+            if ($isCabang) {
+                $parentNpwp = substr($cabang, 0, 16);
+                $suffix = substr($cabang, 16);
+                $parentKey = strtolower($parentNpwp);
+
+                if (!preg_match('/^\d{16}$/', $parentNpwp)) {
+                    $cabangValid = false;
+                    $invalidCabang[] = $nama ?: $cabang;
+                } else {
+                    $matchedEcommerceId = array_search($suffix, $ecommerceLookup);
+                    if ($matchedEcommerceId !== false) {
+                        $isEcommerce = true;
+                        $masterEcommerceId = $matchedEcommerceId;
+                        $cabangNo = $suffix;
+                    } elseif (preg_match('/^\d{2}$/', $suffix)) {
+                        $cabangNo = $suffix;
+                    } else {
+                        $cabangValid = false;
+                        $invalidCabang[] = $nama ?: $cabang;
+                    }
+
+                    if ($cabangValid && isset($existingParents[$parentKey])) {
+                        $parentExists = true;
+                        $parentId = $existingParents[$parentKey]->id;
+                    }
+                }
+            }
+
+            $exists = !$isCabang && $npwp !== '' && in_array($npwpKey, $existingNPs);
+
+            if ($isEcommerce) {
+                $ecommerceCount++;
+            } elseif ($isCabang && $cabangValid) {
+                $cabangCount++;
+            } elseif ($exists) {
                 $updateCount++;
-            } else {
+            } else if (!$isCabang) {
                 $newCount++;
             }
 
@@ -195,14 +250,23 @@ class DataClientController extends Controller
                 'kpp' => $kpp,
                 'nama' => $nama,
                 'npwp' => $npwp,
-                'email' => isset($row[4]) ? trim((string) $row[4]) : '',
-                'hp' => isset($row[5]) ? trim((string) $row[5]) : '',
-                'alamat_npwp' => isset($row[6]) ? trim((string) $row[6]) : '',
-                'alamat_tagihan' => isset($row[7]) ? trim((string) $row[7]) : '',
-                'ar' => isset($row[8]) ? trim((string) $row[8]) : '',
-                'ptkp' => isset($row[9]) ? trim((string) $row[9]) : '',
+                'cabang' => $cabang,
+                'is_cabang' => $isCabang,
+                'cabang_no' => $cabangNo,
+                'parent_npwp' => $parentNpwp,
+                'parent_exists' => $parentExists,
+                'parent_id' => $parentId,
+                'master_ecommerce_id' => $masterEcommerceId,
+                'is_ecommerce' => $isEcommerce,
+                'email' => isset($row[5]) ? trim((string) $row[5]) : '',
+                'hp' => isset($row[6]) ? trim((string) $row[6]) : '',
+                'alamat_npwp' => isset($row[7]) ? trim((string) $row[7]) : '',
+                'alamat_tagihan' => isset($row[8]) ? trim((string) $row[8]) : '',
+                'ar' => isset($row[9]) ? trim((string) $row[9]) : '',
+                'ptkp' => isset($row[10]) ? trim((string) $row[10]) : '',
                 'exists' => $exists,
                 'npwp_valid' => $npwpValid,
+                'cabang_valid' => $cabangValid,
             ];
         }
 
@@ -214,8 +278,14 @@ class DataClientController extends Controller
                 ->with('error', 'NIK harus 15-16 digit angka. Data berikut memiliki NIK tidak valid: ' . implode(', ', array_slice($invalidNpwp, 0, 10)));
         }
 
+        if (count($invalidCabang)) {
+            @unlink($fullPath);
+            return redirect()->route('cms.data-client.import')
+                ->with('error', 'Cabang harus diawali 16 digit NIK parent dan diikuti 2 digit nomor cabang atau kode ecommerce yang valid. Data berikut memiliki Cabang tidak valid: ' . implode(', ', array_slice($invalidCabang, 0, 10)));
+        }
+
         return view('cms::data-client.import', compact(
-            'badan', 'headers', 'totalRows', 'preview', 'newCount', 'updateCount', 'tipeBadan', 'tempPath'
+            'badan', 'headers', 'totalRows', 'preview', 'newCount', 'updateCount', 'cabangCount', 'ecommerceCount', 'tipeBadan', 'tempPath'
         ));
     }
 
@@ -258,17 +328,70 @@ class DataClientController extends Controller
         $defaultRole = \App\Models\Cms\ClientRole::where('slug', 'client')->first();
         $defaultRoleId = $defaultRole ? $defaultRole->id : null;
 
+        $existingParents = $existingClients;
+        $newParentsInBatch = [];
+        $ecommerceLookup = MasterEcommerce::where('is_active', true)->pluck('kode_ecommerce', 'id')->toArray();
+
         for ($r = 1; $r < count($rows); $r++) {
             $row = $rows[$r];
             $kpp = isset($row[1]) ? trim((string) $row[1]) : '';
             $nama = isset($row[2]) ? trim((string) $row[2]) : '';
             $npwp = isset($row[3]) ? ltrim(trim((string) $row[3]), "'") : '';
+            $cabang = isset($row[4]) ? ltrim(trim((string) $row[4]), "'") : '';
 
             if (!$nama && !$npwp) continue;
 
-            $npwpKey = $npwp ? strtolower(trim($npwp)) : '';
+            $isCabang = $cabang !== '';
 
-            $email = isset($row[4]) ? trim((string) $row[4]) : '';
+            if ($isCabang) {
+                $parentNpwp = substr($cabang, 0, 16);
+                $parentKey = strtolower($parentNpwp);
+
+                if (!isset($existingParents[$parentKey]) && !isset($newParentsInBatch[$parentKey])) {
+                    $errors[] = "Baris " . ($r + 1) . " ({$nama}): Parent dengan NIK {$parentNpwp} tidak ditemukan.";
+                    continue;
+                }
+
+                $parent = $existingParents[$parentKey] ?? $newParentsInBatch[$parentKey];
+
+                $suffix = substr($cabang, 16);
+                $matchedEcommerceId = array_search($suffix, $ecommerceLookup);
+
+                $cabangData = [
+                    'data_client_id' => $parent->id,
+                    'master_ecommerce_id' => $matchedEcommerceId ?: null,
+                    'nama_client' => $nama ?: '-',
+                    'tipe_badan' => $tipeBadan,
+                    'client_role_id' => $defaultRoleId,
+                    'npwp' => $cabang,
+                    'kpp' => $kpp ?: null,
+                    'email' => isset($row[5]) ? trim((string) $row[5]) : null,
+                    'no_telephone' => isset($row[6]) ? trim((string) $row[6]) : null,
+                    'alamat_npwp' => isset($row[7]) ? trim((string) $row[7]) : null,
+                    'alamat_tagihan' => isset($row[8]) ? trim((string) $row[8]) : null,
+                    'AR' => isset($row[9]) ? trim((string) $row[9]) : null,
+                    'ptkp' => isset($row[10]) ? trim((string) $row[10]) : null,
+                    'password' => Hash::make(Str::random(12)),
+                ];
+
+                try {
+                    $cabangRec = NpwpCabang::updateOrCreate(
+                        ['data_client_id' => $parent->id, 'npwp' => $cabang],
+                        $cabangData
+                    );
+                    $imported++;
+
+                    if ($parent->npwp_cabang_id === null) {
+                        $parent->update(['npwp_cabang_id' => $cabangRec->id]);
+                    }
+                } catch (\Exception $e) {
+                    $errors[] = "Baris " . ($r + 1) . " ({$nama}): " . $e->getMessage();
+                }
+                continue;
+            }
+
+            $npwpKey = $npwp ? strtolower(trim($npwp)) : '';
+            $email = isset($row[5]) ? trim((string) $row[5]) : '';
             if ($email === '') $email = null;
 
             $rowData = [
@@ -278,11 +401,11 @@ class DataClientController extends Controller
                 'npwp' => $npwp ?: null,
                 'kpp' => $kpp ?: null,
                 'email' => $email,
-                'no_telephone' => isset($row[5]) ? trim((string) $row[5]) : null,
-                'alamat_npwp' => isset($row[6]) ? trim((string) $row[6]) : null,
-                'alamat_tagihan' => isset($row[7]) ? trim((string) $row[7]) : null,
-                'AR' => isset($row[8]) ? trim((string) $row[8]) : null,
-                'ptkp' => isset($row[9]) ? trim((string) $row[9]) : null,
+                'no_telephone' => isset($row[6]) ? trim((string) $row[6]) : null,
+                'alamat_npwp' => isset($row[7]) ? trim((string) $row[7]) : null,
+                'alamat_tagihan' => isset($row[8]) ? trim((string) $row[8]) : null,
+                'AR' => isset($row[9]) ? trim((string) $row[9]) : null,
+                'ptkp' => isset($row[10]) ? trim((string) $row[10]) : null,
             ];
 
             if ($npwpKey && isset($existingClients[$npwpKey])) {
@@ -319,6 +442,7 @@ class DataClientController extends Controller
                 $client = DataClient::create($rowData);
                 $imported++;
                 $existingNpwps[] = $npwpKey;
+                $newParentsInBatch[$npwpKey] = $client;
                 if ($email) $existingEmails[] = strtolower($email);
             } catch (\Exception $e) {
                 if ($email && str_contains($e->getMessage(), 'email_unique')) {
@@ -326,6 +450,7 @@ class DataClientController extends Controller
                     try {
                         $client = DataClient::create($rowData);
                         $imported++;
+                        $newParentsInBatch[$npwpKey] = $client;
                     } catch (\Exception $e2) {
                         $errors[] = "Baris " . ($r + 1) . " ({$nama}): " . $e2->getMessage();
                     }
@@ -356,7 +481,8 @@ class DataClientController extends Controller
         $dataClient->loadCount('cabangs');
         $dataClient->load('cabangs');
         $badan = Badan::all();
-        return view('cms::data-client.edit', compact('dataClient', 'badan'));
+        $masterEcommerce = MasterEcommerce::where('is_active', true)->get(['id', 'kode_ecommerce', 'deskripsi']);
+        return view('cms::data-client.edit', compact('dataClient', 'badan', 'masterEcommerce'));
     }
 
     public function update(Request $request, DataClient $dataClient)
@@ -413,6 +539,9 @@ class DataClientController extends Controller
         $ptkps = $request->cabang_ptkp ?? [];
         $alamatNpwps = $request->cabang_alamat_npwp ?? [];
         $alamatTagihans = $request->cabang_alamat_tagihan ?? [];
+        $masterEcommerceIds = $request->cabang_master_ecommerce_id ?? [];
+
+        $ecommerceLookup = MasterEcommerce::where('is_active', true)->pluck('kode_ecommerce', 'id')->toArray();
 
         $existingIds = $client->cabangs()->pluck('id')->toArray();
         $submittedIds = [];
@@ -422,7 +551,25 @@ class DataClientController extends Controller
             if (!$name) continue;
 
             $cabangId = isset($ids[$i]) && $ids[$i] ? (int) $ids[$i] : null;
+
+            // Resolve master_ecommerce_id: prefer submitted value, else detect from NPWP suffix
+            $masterEcommerceId = isset($masterEcommerceIds[$i]) && $masterEcommerceIds[$i]
+                ? (int) $masterEcommerceIds[$i]
+                : null;
+
+            if (!$masterEcommerceId) {
+                $npwp = isset($npwps[$i]) ? ltrim(trim($npwps[$i]), "'") : '';
+                if (strlen($npwp) > 16) {
+                    $suffix = substr($npwp, 16);
+                    $matchedId = array_search($suffix, $ecommerceLookup);
+                    if ($matchedId !== false) {
+                        $masterEcommerceId = $matchedId;
+                    }
+                }
+            }
+
             $data = [
+                'master_ecommerce_id' => $masterEcommerceId,
                 'nama_client' => $name,
                 'npwp' => isset($npwps[$i]) ? ltrim(trim($npwps[$i]), "'") : null,
                 'kpp' => isset($kpps[$i]) ? trim($kpps[$i]) : null,

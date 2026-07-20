@@ -111,6 +111,7 @@
                                     <th style="min-width:160px">Alamat NPWP</th>
                                     <th style="min-width:160px">Alamat Tagihan</th>
                                     <th style="min-width:80px">PTKP</th>
+                                    <th style="min-width:100px">E-Commerce</th>
                                     <th style="width:50px"></th>
                                 </tr>
                             </thead>
@@ -121,15 +122,24 @@
                                     <tr>
                                         <td>
                                             <input type="hidden" name="cabang_id[]" value="{{ $cab->id }}">
+                                            <input type="hidden" name="cabang_master_ecommerce_id[]" value="{{ $cab->master_ecommerce_id }}">
                                             <input type="text" name="cabang_nama[]" value="{{ $cab->nama_client }}" class="form-control form-control-sm">
                                         </td>
-                                        <td><input type="text" name="cabang_npwp[]" value="{{ $cab->npwp }}" class="form-control form-control-sm"></td>
+                                        <td><input type="text" name="cabang_npwp[]" value="{{ $cab->npwp }}" class="form-control form-control-sm cabang-npwp"></td>
                                         <td><input type="text" name="cabang_kpp[]" value="{{ $cab->kpp }}" class="form-control form-control-sm"></td>
                                         <td><input type="email" name="cabang_email[]" value="{{ $cab->email }}" class="form-control form-control-sm"></td>
                                         <td><input type="text" name="cabang_no_telephone[]" value="{{ $cab->no_telephone }}" class="form-control form-control-sm"></td>
                                         <td><input type="text" name="cabang_alamat_npwp[]" value="{{ $cab->alamat_npwp }}" class="form-control form-control-sm"></td>
                                         <td><input type="text" name="cabang_alamat_tagihan[]" value="{{ $cab->alamat_tagihan }}" class="form-control form-control-sm"></td>
                                         <td><input type="text" name="cabang_ptkp[]" value="{{ $cab->ptkp }}" class="form-control form-control-sm"></td>
+                                        <td>
+                                            <select name="cabang_master_ecommerce_display[]" class="form-select form-select-sm cabang-ecommerce-select">
+                                                <option value="">-</option>
+                                                @foreach($masterEcommerce as $me)
+                                                    <option value="{{ $me->id }}" {{ $cab->master_ecommerce_id == $me->id ? 'selected' : '' }} data-kode="{{ $me->kode_ecommerce }}">{{ $me->kode_ecommerce }}</option>
+                                                @endforeach
+                                            </select>
+                                        </td>
                                         <td class="text-center">
                                             <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove()">
                                                 <i class="bi bi-trash"></i>
@@ -158,6 +168,51 @@
 @push('scripts')
 <script>
     const peroranganList = ['Perorangan', 'Perseorangan', 'Individual'];
+    const ecommerceList = @json($masterEcommerce ?? []);
+
+    function detectEcommerce(input) {
+        var tr = input.closest('tr');
+        var val = input.value;
+        var suffix = val.length > 16 ? val.substring(16) : '';
+        var hiddenInput = tr.querySelector('input[name="cabang_master_ecommerce_id[]"]');
+        var selectEl = tr.querySelector('.cabang-ecommerce-select');
+
+        // Find matching ecommerce
+        var matched = null;
+        if (suffix) {
+            for (var i = 0; i < ecommerceList.length; i++) {
+                if (ecommerceList[i].kode_ecommerce === suffix) {
+                    matched = ecommerceList[i];
+                    break;
+                }
+            }
+        }
+
+        // Update hidden input
+        if (hiddenInput) hiddenInput.value = matched ? matched.id : '';
+
+        // Update select dropdown
+        if (selectEl) {
+            selectEl.value = matched ? String(matched.id) : '';
+        }
+    }
+
+    // Attach event listeners to existing cabang NPWP inputs
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.cabang-npwp').forEach(function(inp) {
+            inp.addEventListener('input', function() { detectEcommerce(this); });
+            inp.addEventListener('blur', function() { detectEcommerce(this); });
+            // Run once on load
+            detectEcommerce(inp);
+        });
+    });
+
+    // Use event delegation for dynamically added rows
+    document.getElementById('cabangTableBody').addEventListener('input', function(e) {
+        if (e.target.classList.contains('cabang-npwp')) {
+            detectEcommerce(e.target);
+        }
+    });
 
     document.getElementById('tipeBadan').addEventListener('change', function() {
         const label = document.getElementById('npwpLabel');
@@ -213,21 +268,35 @@
         document.getElementById('passwordField').value = pwd;
     }
 
+    function buildEcommerceOptions(selectedId) {
+        var html = '<option value="">-</option>';
+        ecommerceList.forEach(function(me) {
+            html += '<option value="' + me.id + '" data-kode="' + me.kode_ecommerce + '"' + (selectedId && selectedId == me.id ? ' selected' : '') + '>' + me.kode_ecommerce + '</option>';
+        });
+        return html;
+    }
+
     function addCabangRow() {
         const tbody = document.getElementById('cabangTableBody');
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>
                 <input type="hidden" name="cabang_id[]" value="">
+                <input type="hidden" name="cabang_master_ecommerce_id[]" value="">
                 <input type="text" name="cabang_nama[]" class="form-control form-control-sm" placeholder="Nama cabang">
             </td>
-            <td><input type="text" name="cabang_npwp[]" class="form-control form-control-sm" placeholder="NIK"></td>
+            <td><input type="text" name="cabang_npwp[]" class="form-control form-control-sm cabang-npwp" placeholder="NIK"></td>
             <td><input type="text" name="cabang_kpp[]" class="form-control form-control-sm" placeholder="KPP"></td>
             <td><input type="email" name="cabang_email[]" class="form-control form-control-sm" placeholder="Email"></td>
             <td><input type="text" name="cabang_no_telephone[]" class="form-control form-control-sm" placeholder="No. Telp"></td>
             <td><input type="text" name="cabang_alamat_npwp[]" class="form-control form-control-sm" placeholder="Alamat NPWP"></td>
             <td><input type="text" name="cabang_alamat_tagihan[]" class="form-control form-control-sm" placeholder="Alamat Tagihan"></td>
             <td><input type="text" name="cabang_ptkp[]" class="form-control form-control-sm" placeholder="PTKP"></td>
+            <td>
+                <select name="cabang_master_ecommerce_display[]" class="form-select form-select-sm cabang-ecommerce-select">
+                    ${buildEcommerceOptions(null)}
+                </select>
+            </td>
             <td class="text-center">
                 <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove()">
                     <i class="bi bi-trash"></i>
@@ -235,6 +304,11 @@
             </td>
         `;
         tbody.appendChild(tr);
+        // Auto-detect if NPWP already has a value
+        var npwpInput = tr.querySelector('.cabang-npwp');
+        if (npwpInput && npwpInput.value) {
+            detectEcommerce(npwpInput);
+        }
     }
 </script>
 @endpush

@@ -12,6 +12,7 @@ use App\Http\Controllers\Cms\ClientRoleController;
 use App\Http\Controllers\Cms\LampiranSptController;
 use App\Http\Controllers\Cms\KategoriLampiranController;
 use App\Http\Controllers\Cms\MasterLampiranSptController;
+use App\Http\Controllers\Cms\MasterEcommerceController;
 use App\Http\Controllers\Cms\ActivityLogController;
 
 $prefix = config('cms.prefix', 'admin');
@@ -102,6 +103,10 @@ Route::prefix($prefix)
         if (config('cms.modules.master_lampiran_spt.enabled', true)) {
             Route::resource('master-lampiran-spt', MasterLampiranSptController::class)->names('master-lampiran-spt');
         }
+        if (config('cms.modules.master_ecommerce.enabled', true)) {
+            Route::resource('master-ecommerce', MasterEcommerceController::class)->names('master-ecommerce');
+        }
+
         if (config('cms.modules.activity_log.enabled', true)) {
             Route::get('activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
             Route::get('activity-logs/{activityLog}', [ActivityLogController::class, 'show'])->name('activity-logs.show');

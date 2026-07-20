@@ -179,7 +179,7 @@ class DashboardController extends Controller
                 'kode' => $kode,
                 'nama' => $nama,
                 'nilai' => $nilai,
-                'records' => $detailItems->map(fn($d) => [
+                'records' => $detailItems->map(function ($d) { return [
                     'id' => $d->id,
                     'deskripsi' => $d->deskripsi,
                     'nomor_akun' => $d->nomor_akun,
@@ -191,7 +191,7 @@ class DashboardController extends Controller
                     'saldo_saat_ini' => $d->saldo_saat_ini,
                     'saldo_bentuk_awal' => $d->saldo_bentuk_awal,
                     'nilai_kurs' => $d->nilai_kurs,
-                ])->toArray(),
+                ]; })->toArray(),
             ];
             $hartaByKategori[$katLabel] = ($hartaByKategori[$katLabel] ?? 0) + $nilai;
         }

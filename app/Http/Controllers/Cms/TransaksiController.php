@@ -13,6 +13,7 @@ use App\Models\Cms\NpwpCabang;
 use App\Models\Cms\LampiranSpt;
 use App\Models\Cms\KategoriLampiran;
 use App\Models\Cms\MasterLampiranSpt;
+use App\Models\Cms\MasterEcommerce;
 use Illuminate\Http\Request;
 use PDF;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -32,7 +33,7 @@ class TransaksiController extends Controller
     public function create()
     {
         $clients = DataClient::all();
-        $cabangs = NpwpCabang::select(['id', 'data_client_id', 'nama_client', 'npwp', 'kpp', 'email', 'no_telephone', 'alamat_npwp', 'alamat_tagihan', 'AR', 'ptkp'])
+        $cabangs = NpwpCabang::select(['id', 'data_client_id', 'nama_client', 'npwp', 'kpp', 'email', 'no_telephone', 'alamat_npwp', 'alamat_tagihan', 'AR', 'ptkp', 'master_ecommerce_id'])
             ->whereIn('data_client_id', $clients->pluck('id'))
             ->get()
             ->groupBy('data_client_id')
@@ -40,7 +41,8 @@ class TransaksiController extends Controller
         $rumus = MasterRumus::all();
         $badan = Badan::all();
         $kategoris = KategoriLampiran::with('masterLampiranSpts')->orderBy('id')->get();
-        return view('cms::transaksi.form', compact('clients', 'rumus', 'badan', 'cabangs', 'kategoris'));
+        $masterEcommerce = MasterEcommerce::where('is_active', true)->orderBy('kode_ecommerce')->get();
+        return view('cms::transaksi.form', compact('clients', 'rumus', 'badan', 'cabangs', 'kategoris', 'masterEcommerce'));
     }
 
     public function store(Request $request)
@@ -290,8 +292,10 @@ class TransaksiController extends Controller
 
         $cabangs = [];
         foreach ($cabangTransaksi as $ct) {
+            $npwpCabang = NpwpCabang::find($ct->npwp_cabang_id);
             $cabangs[] = [
                 'npwp_cabang_id' => $ct->npwp_cabang_id,
+                'master_ecommerce_id' => $npwpCabang ? $npwpCabang->master_ecommerce_id : null,
                 'omset' => $ct->omset,
             ];
         }
@@ -630,7 +634,7 @@ class TransaksiController extends Controller
 
     public function getCabangs(DataClient $client)
     {
-        $cabangs = NpwpCabang::where('data_client_id', $client->id)->get(['id', 'nama_client', 'npwp', 'kpp', 'email', 'no_telephone', 'alamat_npwp', 'alamat_tagihan', 'AR', 'ptkp']);
+        $cabangs = NpwpCabang::where('data_client_id', $client->id)->get(['id', 'nama_client', 'npwp', 'kpp', 'email', 'no_telephone', 'alamat_npwp', 'alamat_tagihan', 'AR', 'ptkp', 'master_ecommerce_id']);
         return response()->json($cabangs);
     }
 

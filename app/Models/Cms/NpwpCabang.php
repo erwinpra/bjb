@@ -10,6 +10,7 @@ class NpwpCabang extends Model
 
     protected $fillable = [
         'data_client_id',
+        'master_ecommerce_id',
         'nama_client',
         'tipe_badan',
         'client_role_id',
@@ -23,6 +24,11 @@ class NpwpCabang extends Model
         'email',
         'password',
     ];
+
+    public function masterEcommerce()
+    {
+        return $this->belongsTo(MasterEcommerce::class, 'master_ecommerce_id');
+    }
 
     protected $hidden = [
         'password',

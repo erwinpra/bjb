@@ -113,6 +113,13 @@ return [
             'label' => 'Master Lampiran SPT',
             'group' => 'master',
         ],
+        'master_ecommerce' => [
+            'enabled' => true,
+            'route' => 'master-ecommerce',
+            'icon' => 'cart',
+            'label' => 'Master Ecommerce',
+            'group' => 'master',
+        ],
         'activity_log' => [
             'enabled' => true,
             'route' => 'activity-logs',

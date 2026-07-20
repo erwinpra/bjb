@@ -43,7 +43,7 @@
             </div>
 
             @php
-                $validCount = count(array_filter($preview, fn($p) => $p['valid']));
+                $validCount = count(array_filter($preview, function ($p) { return $p['valid']; }));
                 $invalidCount = $totalRows - $validCount;
             @endphp
 

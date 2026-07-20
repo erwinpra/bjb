@@ -46,16 +46,6 @@
                 </div>
             </div>
 
-            {{-- Cabang Tabs --}}
-            <div id="cabangSection" class="d-none mb-4">
-                <div id="cabangTabsWrap" style="background:#fff;padding-top:4px">
-                    <ul class="nav nav-tabs" id="cabangTabs" role="tablist"></ul>
-                </div>
-                <div class="tab-content border border-top-0 rounded-bottom p-3 bg-light" id="cabangTabContent"></div>
-            </div>
-
-            <hr>
-
             {{-- Tahun --}}
             <div class="row g-4 mb-4">
                 <div class="col-12">
@@ -69,29 +59,6 @@
                             <option value="{{ $y }}" {{ $y == now()->year ? 'selected' : '' }}>{{ $y }}</option>
                         @endfor
                     </select>
-                </div>
-            </div>
-
-            {{-- Total Peredaran Bruto Summary --}}
-            <div id="summarySection" class="row g-4 mb-4 d-none">
-                <div class="col-12">
-                    <h6 class="fw-semibold text-info border-bottom pb-2"><i class="bi bi-calculator me-2"></i>Total Peredaran Bruto</h6>
-                    <div class="mb-2"><span class="text-muted small">Periode:</span> <span class="fw-medium" id="summaryPeriodeLabel">Tahun <span id="summaryTahunText">{{ date('Y') }}</span></span></div>
-                    <div class="table-responsive">
-                        <table class="table table-sm table-bordered mb-0" id="summaryTable">
-                            <thead class="table-info">
-                                <tr>
-                                    <th>Bulan</th>
-                                    <th class="text-end">Omset</th>
-                                    <th class="text-end">PPH Final</th>
-                                    <th class="text-end">Total Peredaran Bruto</th>
-                                    <th class="text-end">Perhitungan Pengurangan</th>
-                                    <th class="text-end">PPH Final Harus dibayar</th>
-                                </tr>
-                            </thead>
-                            <tbody id="summaryTableBody"></tbody>
-                        </table>
-                    </div>
                 </div>
             </div>
 
@@ -130,92 +97,38 @@
                 </div>
             </div>
 
-            {{-- Omset Per Bulan (untuk Perorangan) --}}
+            {{-- Omset Per Bulan — Table format (Reguler + E-Commerce) --}}
+            @php $monthsList = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']; @endphp
             <div id="omsetBulananSection" class="row g-4 mb-4">
                 <div class="col-12">
-                    <h6 class="fw-semibold text-warning border-bottom pb-2 position-relative">
-                        <span style="vertical-align:middle"><i class="bi bi-calendar-month me-2"></i>Omset Per Bulan</span>
-                        <button type="button" class="btn btn-sm btn-outline-warning position-absolute end-0 top-50 translate-middle-y" id="toggleOmsetInput">
-                            <i class="bi bi-eye-slash me-1"></i> <span id="toggleOmsetInputLabel">Sembunyikan</span>
-                        </button>
-                    </h6>
+                    <h6 class="fw-semibold text-warning border-bottom pb-2"><i class="bi bi-table me-2"></i>Data Omset</h6>
                 </div>
-                <div id="omsetInputContainer" class="col-12">
-                    <ul class="nav nav-tabs nav-fill" id="monthTabs" role="tablist">
-                        @php $months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']; @endphp
-                        @foreach($months as $i => $monthName)
-                            @php $mo = $i + 1; @endphp
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link {{ $mo === 1 ? 'active' : '' }}" id="tab-{{ $mo }}" data-bs-toggle="tab" data-bs-target="#month-{{ $mo }}" type="button" role="tab" aria-controls="month-{{ $mo }}" aria-selected="{{ $mo === 1 ? 'true' : 'false' }}">
-                                    {{ $monthName }}
-                                </button>
-                            </li>
-                        @endforeach
-                    </ul>
-                    <div class="tab-content border border-top-0 rounded-bottom p-4 bg-white" id="monthTabsContent">
-                        @foreach($months as $i => $monthName)
-                            @php $mo = $i + 1; @endphp
-                            <div class="tab-pane fade {{ $mo === 1 ? 'show active' : '' }}" id="month-{{ $mo }}" role="tabpanel" aria-labelledby="tab-{{ $mo }}">
-                                <div class="row g-4">
-                                    <div class="col-12">
-                                        <h6 class="fw-semibold text-warning border-bottom pb-2"><i class="bi bi-graph-up-arrow me-2"></i>Omset - {{ $monthName }}</h6>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-semibold small">Jumlah Omset</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text">Rp</span>
-                                            <input type="text" class="form-control format-currency omset-input" name="omset_bulanan[{{ $mo }}]" data-month="{{ $mo }}" placeholder="0">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-            </div>
-
-            {{-- Hasil Perhitungan Per Bulan --}}
-            <div id="hasilPerhitunganSection" class="row g-4 mb-4 d-none">
                 <div class="col-12">
-                    <h6 class="fw-semibold text-info border-bottom pb-2 position-relative">
-                        <span style="vertical-align:middle"><i class="bi bi-table me-2"></i>Hasil Perhitungan Per Bulan</span>
-                        <button type="button" class="btn btn-sm btn-outline-info position-absolute end-0 top-50 translate-middle-y" id="toggleHasilTable">
-                            <i class="bi bi-eye-slash me-1"></i> <span id="toggleHasilTableLabel">Sembunyikan</span>
-                        </button>
-                    </h6>
-                </div>
-                <div id="hasilTableContainer" class="col-12">
                     <div class="table-responsive">
-                        <table class="table table-sm table-bordered mb-0" id="hasilPerhitunganTable">
-                            <thead class="table-info">
+                        <table class="table table-bordered table-sm mb-2" id="omsetTable">
+                            <thead class="table-warning">
                                 <tr>
-                                    <th style="width:80px">Bulan</th>
-                                    <th class="text-end">Peredaran Bruto</th>
-                                    <th class="text-end">Total Peredaran Bruto Cabang</th>
-                                    <th class="text-end" id="akumColHeader">Total Peredaran Bruto Akum <small class="text-muted fw-normal" id="akumCabangLabel"></small></th>
-                                    <th class="text-end">PPH Final <span id="pphPersenLabel">0.5</span>%</th>
-                                    <th class="text-end">PPh Final yg harus dibayar</th>
-                                    <th style="width:40px" class="text-center">Status</th>
+                                    <th colspan="2" style="min-width:210px">Kategori / Nama</th>
+                                    @foreach($monthsList as $m)
+                                        <th class="text-end" style="min-width:90px">{{ $m }}</th>
+                                    @endforeach
+                                    <th style="width:110px">Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody id="hasilTableBody">
-                                @foreach(['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'] as $i => $bulan)
-                                <tr id="hasilRow-{{ $i + 1 }}" class="d-none">
-                                    <td class="text-muted">{{ $bulan }}</td>
-                                    <td class="text-end" id="hasilOmset-{{ $i + 1 }}">-</td>
-                                    <td class="text-end" id="hasilBruto-{{ $i + 1 }}">-</td>
-                                    <td class="text-end akum-col" id="hasilBrutoAkum-{{ $i + 1 }}">-</td>
-                                    <td class="text-end" id="hasilPph-{{ $i + 1 }}">-</td>
-                                    <td class="text-end" id="hasilFinal-{{ $i + 1 }}">-</td>
-                                    <td class="text-center" id="hasilStatus-{{ $i + 1 }}">-</td>
-                                </tr>
-                                @endforeach
-                                <tr class="fw-bold table-secondary" id="hasilTotalRow">
-                                    <td colspan="6" class="text-center">Total</td>
-                                    <td class="text-end text-danger" id="hasilTotalPph">0</td>
-                                </tr>
+                            <tbody id="omsetTableBody">
+                                {{-- Populated by JS --}}
                             </tbody>
                         </table>
+                    </div>
+                    {{-- E-Commerce add row --}}
+                    <div class="d-flex align-items-center gap-2" id="ecommerceAddRow">
+                        <select id="ecommerceSelect" class="form-select form-select-sm" style="width:auto;min-width:180px">
+                            <option value="">-- Tambah E-Commerce --</option>
+                            @foreach($masterEcommerce as $ec)
+                                <option value="{{ $ec->id }}" data-kode="{{ $ec->kode_ecommerce }}" data-deskripsi="{{ $ec->deskripsi }}">{{ $ec->kode_ecommerce }} - {{ $ec->deskripsi }}</option>
+                            @endforeach
+                        </select>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddEcommerce"><i class="bi bi-plus-lg"></i> Tambah</button>
                     </div>
                 </div>
             </div>
@@ -342,10 +255,14 @@ const badanList = @json($badan);
 const rumusList = @json($rumus);
 const bulanList = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 const cabangData = @json($cabangs ?? []);
-
-var activeTabPrefix = 'induk';
+const masterEcommerce = @json($masterEcommerce ?? []);
+const bulanListShort = @json($monthsList);
 var tabData = {};
 var hasCabang = false;
+
+// New table-based data
+var tableRows = { reguler: [], ecommerce: [] };
+var ecommerceRowCounter = 0;
 
 $(document).ready(function() {
     $('#clientSelect').select2({
@@ -356,26 +273,6 @@ $(document).ready(function() {
     $('#clientSelect').on('select2:select select2:clear change', function() {
         handleClientChange();
     });
-    $('body').on('shown.bs.tab', '#cabangTabs button[data-bs-toggle="tab"]', function() {
-        var prefix = $(this).data('prefix');
-        var ss = document.getElementById('summarySection');
-        if (prefix === 'summary') {
-            saveCurrentInputs();
-            activeTabPrefix = 'summary';
-            document.getElementById('hartaSection').classList.add('d-none');
-            document.getElementById('omsetTahunanSection').classList.add('d-none');
-            document.getElementById('omsetBulananSection').classList.add('d-none');
-            document.getElementById('hasilPerhitunganSection').classList.add('d-none');
-            if (ss) ss.classList.remove('d-none');
-            populateSummaryTable();
-        } else {
-            saveCurrentInputs();
-            activeTabPrefix = prefix;
-            document.getElementById('hartaSection').classList.remove('d-none');
-            if (ss) ss.classList.add('d-none');
-            restoreCurrentInputs();
-        }
-    });
 });
 
 function handleClientChange() {
@@ -384,26 +281,22 @@ function handleClientChange() {
     var btnImport = document.getElementById('btnImportTransaksi');
     if (!id) {
         if (btnImport) btnImport.classList.add('d-none');
-        document.getElementById('cabangSection').classList.add('d-none');
-        document.getElementById('summarySection').classList.add('d-none');
         document.getElementById('hartaSection').classList.add('d-none');
         document.getElementById('omsetTahunanSection').classList.add('d-none');
         document.getElementById('omsetBulananSection').classList.add('d-none');
-        document.getElementById('hasilPerhitunganSection').classList.add('d-none');
         toggleButtons();
         return;
     }
     if (btnImport) btnImport.classList.remove('d-none');
 
-    document.getElementById('summarySection').classList.add('d-none');
     tabData = {};
-    activeTabPrefix = 'induk';
+    tableRows = { reguler: [], ecommerce: [] };
+    ecommerceRowCounter = 0;
     hasCabang = false;
 
     const opt = el.options[el.selectedIndex];
     if (!opt) return;
     const tipeId = parseInt(opt.dataset.tipeId);
-    const tipeName = getTipeName(tipeId);
     const c = clients.find(x => x.id === id);
 
     clearInputs();
@@ -421,29 +314,27 @@ function handleClientChange() {
     };
     for (let mo = 1; mo <= 12; mo++) tabData['induk'].omsetBulanan[mo] = '';
 
-    const cabangSection = document.getElementById('cabangSection');
-    const tabsContainer = document.getElementById('cabangTabs');
-    const contentContainer = document.getElementById('cabangTabContent');
-    const clientCabangs = cabangData[id] || [];
+    document.getElementById('hartaSection').classList.remove('d-none');
 
-    // Always clear old tab DOM to prevent stale hidden inputs
-    tabsContainer.innerHTML = '';
-    contentContainer.innerHTML = '';
+    const clientCabangs = cabangData[id] || [];
 
     if (clientCabangs && clientCabangs.length > 0) {
         hasCabang = true;
-        buildTab('induk', c ? c.nama_client : 'Induk', c ? (c.npwp || '-') : '-', null, true, c ? (c.kpp || '-') : '-');
-
-        // Sort cabangs by last 3 digits of NPWP
         clientCabangs.sort(function(a, b) {
             return (a.npwp || '').slice(-3).localeCompare((b.npwp || '').slice(-3));
         });
+        var ecommerceLookup = {};
+        masterEcommerce.forEach(function(me) { ecommerceLookup[me.id] = me.kode_ecommerce; });
+
         clientCabangs.forEach(function(cabang, i) {
             var pfx = 'cabang_' + i;
+            var isEcommerce = cabang.master_ecommerce_id ? true : false;
             tabData[pfx] = {
                 nama: cabang.nama_client || 'Cabang ' + (i + 1),
                 npwp: cabang.npwp || '-',
                 npwp_cabang_id: cabang.id,
+                master_ecommerce_id: cabang.master_ecommerce_id || null,
+                kode_ecommerce: isEcommerce ? (ecommerceLookup[cabang.master_ecommerce_id] || '') : '',
                 tipeId: tipeId,
                 kpp: cabang.kpp || '-',
                 no_telephone: cabang.no_telephone || '-',
@@ -452,25 +343,8 @@ function handleClientChange() {
                 omsetBulanan: {}
             };
             for (let mo = 1; mo <= 12; mo++) tabData[pfx].omsetBulanan[mo] = '';
-            buildTab(pfx, tabData[pfx].nama, tabData[pfx].npwp, cabang.id, false, cabang.kpp || '-');
         });
-        cabangSection.classList.remove('d-none');
-        buildSummaryTab();
-    } else {
-        cabangSection.classList.add('d-none');
-        buildSummaryTab();
     }
-
-    // Update PPH percentage label from rumus
-    const rumus = rumusList.find(function(r) { return String(r.tipe_badan) === String(tipeId); });
-    document.getElementById('pphPersenLabel').textContent = rumus ? String(rumus.potongan_persentase) : '0';
-
-    // Update akum cabang label
-    var cabangCountLabel = 0;
-    Object.keys(tabData).forEach(function(k) { if (k !== 'induk') cabangCountLabel++; });
-    document.getElementById('akumCabangLabel').textContent = '(' + cabangCountLabel + ' Cabang)';
-    document.getElementById('akumColHeader').classList.remove('d-none');
-    document.querySelectorAll('.akum-col').forEach(function(el) { el.classList.remove('d-none'); });
 
     // Show omset section based on tipe
     if (tipeId === 1) {
@@ -487,100 +361,7 @@ function handleClientChange() {
     loadDataFromDb();
 }
 
-function buildTab(prefix, nama, npwp, npwpCabangId, isActive, kpp) {
-    var tabsContainer = document.getElementById('cabangTabs');
-    var contentContainer = document.getElementById('cabangTabContent');
-    var tabId = 'cabTab_' + prefix;
 
-    var li = document.createElement('li');
-    li.className = 'nav-item';
-    li.innerHTML = '<button class="nav-link ' + (isActive ? 'active' : '') + '" data-bs-toggle="tab" data-bs-target="#' + tabId + '" type="button" role="tab" data-prefix="' + prefix + '">' +
-        '<i class="bi ' + (prefix === 'induk' ? 'bi-building' : 'bi-diagram-2') + ' me-1"></i> ' + (npwp || 'Induk') + '</button>';
-    tabsContainer.appendChild(li);
-
-    var pane = document.createElement('div');
-    pane.className = 'tab-pane fade' + (isActive ? ' show active' : '');
-    pane.id = tabId;
-    pane.setAttribute('role', 'tabpanel');
-    pane.setAttribute('data-prefix', prefix);
-    pane.innerHTML = '<div class="row g-2 small">' +
-        '<div class="col-6"><span class="text-muted">Nama:</span> <span class="fw-medium">' + (nama || '-') + '</span></div>' +
-        '<div class="col-6"><span class="text-muted">NPWP:</span> <span>' + (npwp || '-') + '</span></div>' +
-        '<div class="col-6"><span class="text-muted">KPP:</span> <span>' + (kpp || '-') + '</span></div>' +
-        (npwpCabangId ? '<div class="col-12"><input type="hidden" name="' + prefix + '[npwp_cabang_id]" value="' + npwpCabangId + '"></div>' : '') +
-        '</div>';
-    contentContainer.appendChild(pane);
-}
-
-function buildSummaryTab() {
-    var tabsContainer = document.getElementById('cabangTabs');
-    if (!tabsContainer) return;
-    var li = document.createElement('li');
-    li.className = 'nav-item';
-    li.innerHTML = '<button class="nav-link" data-bs-toggle="tab" data-bs-target="#cabTab_summary" type="button" role="tab" data-prefix="summary">' +
-        '<i class="bi bi-calculator me-1"></i> Total Peredaran Bruto</button>';
-    tabsContainer.appendChild(li);
-}
-
-function populateSummaryTable() {
-    var tbody = document.getElementById('summaryTableBody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-
-    var tipeId = null;
-    Object.keys(tabData).forEach(function(k) { var td = tabData[k]; if (td && tipeId === null) tipeId = td.tipeId; });
-    var rumus = rumusList.find(function(r) { return String(r.tipe_badan) === String(tipeId); });
-    var maxVal = Number(rumus?.max_value || 0);
-    var persen = Number(rumus?.potongan_persentase || 0);
-    var bulanList = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-
-    function getOmset(prefix, mo) {
-        var td = tabData[prefix];
-        if (!td) return 0;
-        if (td.tipeId === 1) {
-            return Number((td.omsetTahunan || '').replace(/[^0-9]/g, '') || 0);
-        }
-        return Number((td.omsetBulanan[mo] || '').replace(/[^0-9]/g, '') || 0);
-    }
-
-    var cumulative = 0;
-    for (let mo = 1; mo <= 12; mo++) {
-        var totalOmset = 0;
-        var totalPph = 0;
-        Object.keys(tabData).forEach(function(p) {
-            var o = getOmset(p, mo);
-            totalOmset += o;
-            totalPph += o * persen / 100;
-        });
-
-        var showTotalPb = cumulative + totalOmset;
-        var pengurangan = maxVal > 0 ? Math.max(0, maxVal - cumulative) : 0;
-        var pphBayar;
-        if (maxVal > 0 && cumulative > maxVal) {
-            pphBayar = formatNum(String(cumulative * persen / 100));
-        } else {
-            pphBayar = 'FREE';
-        }
-
-        // Jika bulan kosong, timpa dengan Rp 0
-        if (totalOmset === 0) {
-            showTotalPb = 0;
-            pengurangan = 0;
-            pphBayar = 'FREE';
-        }
-
-        cumulative += totalOmset;
-
-        var tr = document.createElement('tr');
-        tr.innerHTML = '<td>' + bulanList[mo - 1] + '</td>' +
-            '<td class="text-end">' + formatNum(String(totalOmset)) + '</td>' +
-            '<td class="text-end">' + formatNum(String(totalPph)) + '</td>' +
-            '<td class="text-end">' + formatNum(String(showTotalPb)) + '</td>' +
-            '<td class="text-end">' + (maxVal > 0 ? formatNum(String(pengurangan)) : '-') + '</td>' +
-            '<td class="text-end fw-semibold ' + (pphBayar === 'FREE' ? 'text-success' : 'text-danger') + '">' + pphBayar + '</td>';
-        tbody.appendChild(tr);
-    }
-}
 
 function getTipeName(tipeId) {
     const b = badanList.find(x => x.id === tipeId);
@@ -588,63 +369,319 @@ function getTipeName(tipeId) {
 }
 
 function clearInputs() {
-    document.querySelectorAll('.omset-input').forEach(function(el) { el.value = ''; });
     document.getElementById('omsetTahunan').value = '';
-    for (let mo = 1; mo <= 12; mo++) {
-        document.getElementById('hasilRow-' + mo).classList.add('d-none');
-        document.getElementById('hasilOmset-' + mo).textContent = '-';
-        document.getElementById('hasilBruto-' + mo).textContent = '-';
-        document.getElementById('hasilBrutoAkum-' + mo).textContent = '-';
-        document.getElementById('hasilPph-' + mo).textContent = '-';
-        document.getElementById('hasilFinal-' + mo).textContent = '-';
-        document.getElementById('hasilStatus-' + mo).textContent = '-';
-    }
-    document.getElementById('hasilPerhitunganSection').classList.add('d-none');
-    document.getElementById('hasilTotalPph').textContent = '0';
-    var a = document.getElementById('alert4M');
-    if (a) a.remove();
+    document.getElementById('omsetTableBody').innerHTML = '';
+    tableRows = { reguler: [], ecommerce: [] };
     toggleButtons();
 }
 
-function saveCurrentInputs() {
-    var prefix = activeTabPrefix;
-    if (!tabData[prefix]) return;
-    var isTahunan = tabData[prefix].tipeId === 1;
-    if (isTahunan) {
-        tabData[prefix].omsetTahunan = document.getElementById('omsetTahunan').value;
-    } else {
-        document.querySelectorAll('.omset-input').forEach(function(inp) {
-            var mo = inp.getAttribute('data-month');
-            tabData[prefix].omsetBulanan[mo] = inp.value;
+// --- New Omset Table Management ---
+
+function syncTabDataToTableRows() {
+    tableRows.reguler = [];
+    tableRows.ecommerce = [];
+    Object.keys(tabData).forEach(function(p) {
+        var td = tabData[p];
+        if (!td) return;
+        if (td.master_ecommerce_id) {
+            var row = {
+                type: 'ecommerce',
+                idx: 0,
+                kode: td.kode_ecommerce || '',
+                label: td.nama || (p === 'induk' ? 'Pusat' : 'Cabang'),
+                npwp: td.npwp || '',
+                omset: {}
+            };
+            for (let mo = 1; mo <= 12; mo++) {
+                row.omset[mo] = (td.omsetBulanan && td.omsetBulanan[mo]) || '';
+            }
+            tableRows.ecommerce.push(row);
+        } else {
+            var row = {
+                type: 'reguler',
+                prefix: p,
+                label: td.nama || (p === 'induk' ? 'Pusat' : 'Cabang'),
+                npwp: td.npwp || '',
+                tipeId: td.tipeId,
+                omset: {}
+            };
+            for (let mo = 1; mo <= 12; mo++) {
+                row.omset[mo] = (td.omsetBulanan && td.omsetBulanan[mo]) || '';
+            }
+            tableRows.reguler.push(row);
+        }
+    });
+    // Update ecommerceRowCounter so new manual additions get unique indices
+    ecommerceRowCounter = tableRows.ecommerce.length;
+}
+
+function syncTableRowsToTabData() {
+    tableRows.reguler.forEach(function(row) {
+        if (!tabData[row.prefix]) return;
+        for (let mo = 1; mo <= 12; mo++) {
+            tabData[row.prefix].omsetBulanan[mo] = row.omset[mo] || '';
+        }
+    });
+    // Sync ecommerce rows back to tabData
+    tableRows.ecommerce.forEach(function(row) {
+        Object.keys(tabData).forEach(function(p) {
+            var td = tabData[p];
+            if (td && td.master_ecommerce_id && td.kode_ecommerce === row.kode) {
+                for (let mo = 1; mo <= 12; mo++) {
+                    td.omsetBulanan[mo] = row.omset[mo] || '';
+                }
+            }
         });
+    });
+}
+
+function rebuildTable() {
+    syncTableRowsToTabData();
+    buildOmsetTable();
+}
+
+function buildOmsetTable() {
+    var tbody = document.getElementById('omsetTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    // Gather rumus
+    var tipeId = null;
+    Object.keys(tabData).forEach(function(k) { if (tabData[k] && tipeId === null) tipeId = tabData[k].tipeId; });
+    var rumus = rumusList.find(function(r) { return String(r.tipe_badan) === String(tipeId); });
+    var maxVal = Number(rumus?.max_value || 0);
+    var persen = Number(rumus?.potongan_persentase || 0);
+
+    var perMonthTotal = {};
+    var perMonthPph = {};
+    for (let mo = 1; mo <= 12; mo++) { perMonthTotal[mo] = 0; perMonthPph[mo] = 0; }
+
+    // --- Reguler Section ---
+    if (tableRows.reguler.length > 0) {
+        var catRow = tbody.insertRow();
+        catRow.className = 'table-secondary';
+        catRow.innerHTML = '<td colspan="15"><strong>Reguler</strong></td>';
+
+        tableRows.reguler.forEach(function(row, idx) {
+            var tr = tbody.insertRow();
+            tr.setAttribute('data-type', 'reguler');
+            tr.setAttribute('data-prefix', row.prefix);
+            tr.setAttribute('data-row', 'reguler-' + idx);
+
+            var isInduk = row.prefix === 'induk';
+            var labelContent = isInduk ? '<span class="fw-medium">Pusat</span>' : '<small class="text-muted">Cabang</small>';
+            var npwpDisplay = row.npwp ? ' <code>' + row.npwp + '</code>' : '';
+
+            var tdLabel = tr.insertCell();
+            tdLabel.setAttribute('colspan', '2');
+            tdLabel.innerHTML = labelContent + npwpDisplay;
+
+            for (let mo = 1; mo <= 12; mo++) {
+                var td = tr.insertCell();
+                td.className = 'text-end';
+                var raw = row.omset[mo] || '';
+                var num = Number(raw.replace(/[^0-9]/g, '') || 0);
+                td.innerHTML = '<span class="omset-view">' + (num ? formatNum(raw) : '-') + '</span>' +
+                    '<input type="text" class="form-control form-control-sm text-end omset-input d-none format-currency" data-prefix="' + row.prefix + '" data-month="' + mo + '" data-row="reguler-' + idx + '" value="' + raw + '" placeholder="0" style="min-width:80px">';
+                perMonthTotal[mo] += num;
+                perMonthPph[mo] += num * persen / 100;
+            }
+
+            var tdAction = tr.insertCell();
+            tdAction.className = 'text-center';
+            tdAction.innerHTML = '<button type="button" class="btn btn-sm btn-outline-primary me-1 btn-edit-row" title="Edit"><i class="bi bi-pencil"></i></button>' +
+                '<button type="button" class="btn btn-sm btn-success d-none btn-save-row" title="Simpan"><i class="bi bi-check-lg"></i></button>';
+        });
+    }
+
+    // --- E-Commerce Section ---
+    if (tableRows.ecommerce.length > 0) {
+        var catRow2 = tbody.insertRow();
+        catRow2.className = 'table-secondary';
+        catRow2.innerHTML = '<td colspan="15"><strong>E-Commerce</strong></td>';
+
+        tableRows.ecommerce.forEach(function(row, idx) {
+            var tr = tbody.insertRow();
+            tr.setAttribute('data-type', 'ecommerce');
+            tr.setAttribute('data-ec-idx', idx);
+
+            var kodeDisplay = row.kode ? '<span class="fw-medium">' + row.kode + '</span>' : '';
+            var npwpDisplay = row.npwp ? ' <code>' + row.npwp + '</code>' : '';
+
+            var tdLabel = tr.insertCell();
+            tdLabel.setAttribute('colspan', '2');
+            tdLabel.innerHTML = '<i class="bi bi-cart me-1"></i>' + kodeDisplay + npwpDisplay;
+
+            for (let mo = 1; mo <= 12; mo++) {
+                var td = tr.insertCell();
+                td.className = 'text-end';
+                var raw = row.omset[mo] || '';
+                var num = Number(raw.replace(/[^0-9]/g, '') || 0);
+                td.innerHTML = '<span class="omset-view">' + (num ? formatNum(raw) : '-') + '</span>' +
+                    '<input type="text" class="form-control form-control-sm text-end omset-input d-none format-currency" data-ec-idx="' + idx + '" data-month="' + mo + '" value="' + raw + '" placeholder="0" style="min-width:80px">';
+                perMonthTotal[mo] += num;
+                perMonthPph[mo] += num * persen / 100;
+            }
+
+            var tdAction = tr.insertCell();
+            tdAction.className = 'text-center';
+            tdAction.innerHTML = '<button type="button" class="btn btn-sm btn-outline-primary me-1 btn-edit-row" title="Edit"><i class="bi bi-pencil"></i></button>' +
+                '<button type="button" class="btn btn-sm btn-success d-none btn-save-row" title="Simpan"><i class="bi bi-check-lg"></i></button>' +
+                '<button type="button" class="btn btn-sm btn-outline-danger ms-1 btn-remove-ec" title="Hapus"><i class="bi bi-trash"></i></button>';
+        });
+    }
+
+    // --- Computed Rows ---
+    var cumulative = 0;
+    var totalPphDue = 0;
+
+    for (let mo = 1; mo <= 12; mo++) {
+        var totalOmset = perMonthTotal[mo];
+        if (totalOmset === 0) continue;
+        var totalWithCurrent = cumulative + totalOmset;
+
+        var pphBayar = 0;
+        if (rumus) {
+            if (cumulative >= maxVal) {
+                pphBayar = totalOmset * persen / 100;
+            } else if (totalWithCurrent > maxVal) {
+                var kelebihan = totalWithCurrent - maxVal;
+                pphBayar = kelebihan * persen / 100;
+            }
+        }
+        totalPphDue += pphBayar;
+        cumulative += totalOmset;
+    }
+
+    // Summary row
+    var totalAll = 0;
+    for (let mo = 1; mo <= 12; mo++) totalAll += perMonthTotal[mo];
+
+    var sumRow = tbody.insertRow();
+    sumRow.className = 'fw-bold';
+    sumRow.innerHTML = '<td colspan="2" class="text-end">Total</td>';
+    for (let mo = 1; mo <= 12; mo++) {
+        sumRow.insertCell().innerHTML = '<span class="text-end d-block">' + (perMonthTotal[mo] > 0 ? formatNum(String(perMonthTotal[mo])) : '-') + '</span>';
+    }
+    sumRow.insertCell().innerHTML = '<span class="text-end text-primary fw-bold d-block">' + formatNum(String(totalAll)) + '</span>';
+
+    // PPh Final row
+    var pphRow = tbody.insertRow();
+    pphRow.className = 'table-light';
+    pphRow.innerHTML = '<td colspan="2" class="text-end text-danger">PPh Final <span class="pph-persen">' + (persen > 0 ? persen.toString().replace('.', ',') : '0') + '</span>%</td>';
+    for (let mo = 1; mo <= 12; mo++) {
+        pphRow.insertCell().innerHTML = '<span class="text-end text-danger d-block">' + (perMonthPph[mo] > 0 ? formatNum(String(perMonthPph[mo])) : '-') + '</span>';
+    }
+    pphRow.insertCell();
+
+    // Total Peredaran Bruto row
+    var cumulativeForDisplay = 0;
+    var pbRow = tbody.insertRow();
+    pbRow.innerHTML = '<td colspan="2" class="text-end">Total Peredaran Bruto</td>';
+    for (let mo = 1; mo <= 12; mo++) {
+        cumulativeForDisplay += perMonthTotal[mo];
+        pbRow.insertCell().innerHTML = '<span class="text-end d-block">' + (perMonthTotal[mo] > 0 ? formatNum(String(cumulativeForDisplay)) : '-') + '</span>';
+    }
+    pbRow.insertCell();
+
+    // Perhitungan Pengurangan row
+    var cumulativeForPeng = 0;
+    var pengRow = tbody.insertRow();
+    pengRow.innerHTML = '<td colspan="2" class="text-end">Perhitungan Pengurangan</td>';
+    for (let mo = 1; mo <= 12; mo++) {
+        cumulativeForPeng += perMonthTotal[mo];
+        var pengurangan = maxVal > 0 ? Math.max(0, maxVal - cumulativeForPeng + perMonthTotal[mo]) : 0;
+        pengRow.insertCell().innerHTML = '<span class="text-end d-block">' + (perMonthTotal[mo] > 0 && pengurangan > 0 ? formatNum(String(pengurangan)) : (perMonthTotal[mo] > 0 ? '0' : '-')) + '</span>';
+    }
+    pengRow.insertCell();
+
+    // PPh Final Harus Dibayar row
+    var cumulativeForBayar = 0;
+    var bayarRow = tbody.insertRow();
+    bayarRow.className = 'table-info fw-bold';
+    bayarRow.innerHTML = '<td colspan="2" class="text-end">PPh Final<br>Harus Dibayar</td>';
+    var totalPphAll = 0;
+    for (let mo = 1; mo <= 12; mo++) {
+        var omsetMo = perMonthTotal[mo];
+        if (omsetMo === 0) { bayarRow.insertCell().innerHTML = '-'; cumulativeForBayar += omsetMo; continue; }
+        var totWithCum = cumulativeForBayar + omsetMo;
+        var bayar = 0;
+        if (rumus) {
+            if (cumulativeForBayar >= maxVal) {
+                bayar = omsetMo * persen / 100;
+            } else if (totWithCum > maxVal) {
+                var kelebihan = totWithCum - maxVal;
+                bayar = kelebihan * persen / 100;
+            }
+        }
+        totalPphAll += bayar;
+        bayarRow.insertCell().innerHTML = '<span class="text-end text-danger d-block">' + (bayar > 0 ? formatNum(String(bayar)) : '<span class="text-success">FREE</span>') + '</span>';
+        cumulativeForBayar += omsetMo;
+    }
+    bayarRow.insertCell().innerHTML = '<span class="text-end text-danger fw-bold d-block">' + formatNum(String(totalPphAll)) + '</span>';
+
+    // Store totals for hidden fields
+    window._omsetTotalAll = totalAll;
+    window._omsetTotalPph = totalPphAll;
+
+    toggleButtons();
+    syncTableRowsToTabData();
+}
+
+function addEcommerceRow() {
+    var sel = document.getElementById('ecommerceSelect');
+    var opt = sel.options[sel.selectedIndex];
+    if (!opt || !opt.value) { alert('Pilih ecommerce terlebih dahulu.'); return; }
+    var kode = opt.getAttribute('data-kode');
+    var deskripsi = opt.getAttribute('data-deskripsi') || kode;
+    // Check if already added
+    var exists = tableRows.ecommerce.some(function(r) { return r.kode === kode; });
+    if (exists) { alert('E-Commerce "' + kode + '" sudah ditambahkan.'); return; }
+    var idx = ecommerceRowCounter++;
+    tableRows.ecommerce.push({
+        type: 'ecommerce',
+        idx: idx,
+        kode: kode,
+        label: deskripsi || kode,
+        omset: {}
+    });
+    for (let mo = 1; mo <= 12; mo++) tableRows.ecommerce[tableRows.ecommerce.length - 1].omset[mo] = '';
+    sel.value = '';
+    buildOmsetTable();
+}
+
+function removeEcommerceRow(idx) {
+    if (!confirm('Hapus baris e-commerce "' + tableRows.ecommerce[idx].label + '"?')) return;
+    tableRows.ecommerce.splice(idx, 1);
+    buildOmsetTable();
+}
+
+function saveCurrentInputs() {
+    // Persist table rows data back to tabData for preview/save
+    var data = tabData['induk'];
+    if (!data) return;
+    if (data.tipeId === 1) {
+        data.omsetTahunan = document.getElementById('omsetTahunan').value;
+    } else {
+        syncTableRowsToTabData();
     }
 }
 
 function restoreCurrentInputs() {
-    var prefix = activeTabPrefix;
-    var data = tabData[prefix];
+    var data = tabData['induk'];
     if (!data) { clearInputs(); return; }
 
-    // Restore name attributes on visible omset inputs
     document.getElementById('omsetTahunan').name = 'omset_tahunan';
-    document.querySelectorAll('.omset-input').forEach(function(inp) {
-        var mo = inp.getAttribute('data-month');
-        inp.name = 'omset_bulanan[' + mo + ']';
-    });
 
-    var isTahunan = data.tipeId === 1;
-    if (isTahunan) {
+    if (data.tipeId === 1) {
         document.getElementById('omsetTahunanSection').classList.remove('d-none');
         document.getElementById('omsetBulananSection').classList.add('d-none');
         document.getElementById('omsetTahunan').value = data.omsetTahunan || '';
     } else {
         document.getElementById('omsetTahunanSection').classList.add('d-none');
         document.getElementById('omsetBulananSection').classList.remove('d-none');
-        document.querySelectorAll('.omset-input').forEach(function(inp) {
-            var mo = inp.getAttribute('data-month');
-            inp.value = (data.omsetBulanan && data.omsetBulanan[mo]) || '';
-        });
-        hitungOmset();
+        syncTabDataToTableRows();
+        buildOmsetTable();
     }
     toggleButtons();
 }
@@ -654,15 +691,24 @@ function toggleButtons() {
     if (!clientId) { disableAllButtons(true); return; }
 
     var hasData = false;
+    // Check reguler rows
+    tableRows.reguler.forEach(function(row) {
+        for (let mo = 1; mo <= 12; mo++) {
+            if (Number((row.omset[mo] || '').replace(/[^0-9]/g, '') || 0) > 0) hasData = true;
+        }
+    });
+    // Check ecommerce rows
+    tableRows.ecommerce.forEach(function(row) {
+        for (let mo = 1; mo <= 12; mo++) {
+            if (Number((row.omset[mo] || '').replace(/[^0-9]/g, '') || 0) > 0) hasData = true;
+        }
+    });
+    // Check tahunan
     Object.keys(tabData).forEach(function(p) {
         var td = tabData[p];
         if (!td) return;
         if (td.tipeId === 1) {
             if (Number((td.omsetTahunan || '').replace(/[^0-9]/g, '') || 0) > 0) hasData = true;
-        } else {
-            for (let mo = 1; mo <= 12; mo++) {
-                if (Number((td.omsetBulanan[mo] || '').replace(/[^0-9]/g, '') || 0) > 0) hasData = true;
-            }
         }
     });
     disableAllButtons(!hasData);
@@ -676,123 +722,7 @@ function disableAllButtons(v) {
     if (bs) bs.disabled = v;
 }
 
-function hitungOmset() {
-    const tipeId = tabData[activeTabPrefix]?.tipeId;
-    if (!tipeId) return;
-    const rumus = rumusList.find(r => String(r.tipe_badan) === String(tipeId));
-    const maxVal = Number(rumus?.max_value || 0);
-    const persen = Number(rumus?.potongan_persentase || 0);
-    const LIMIT_400JT = 400000000;
-    const LIMIT_4M = 4000000000;
 
-    let cumulative = 0, totalPotongan = 0, cumulativeExceeds4M = false;
-
-    // Build ordered tab list (pusat first, then cabangs sorted by NPWP last 3 digits)
-    var cabangPrefixes = [];
-    Object.keys(tabData).forEach(function(k) { if (k !== 'induk') cabangPrefixes.push(k); });
-    cabangPrefixes.sort(function(a, b) {
-        return (tabData[a].npwp || '').slice(-3).localeCompare((tabData[b].npwp || '').slice(-3));
-    });
-    var cascCabangCount = cabangPrefixes.length;
-
-    // Compute cascading akum per month per tab
-    var akumCache = {};
-    function getPB(prefix, month) {
-        var td = tabData[prefix];
-        if (!td) return 0;
-        if (td.tipeId === 1) {
-            return Number((td.omsetTahunan || '').replace(/[^0-9]/g, '') || 0);
-        }
-        return Number((td.omsetBulanan[month] || '').replace(/[^0-9]/g, '') || 0);
-    }
-    for (let mo = 1; mo <= 12; mo++) {
-        if (cascCabangCount === 0) {
-            akumCache['induk'] = akumCache['induk'] || {};
-            akumCache['induk'][mo] = 0;
-        } else {
-            var pusatPB = getPB('induk', mo);
-            if (mo === 1) {
-                akumCache['induk'] = akumCache['induk'] || {};
-                akumCache['induk'][mo] = pusatPB;
-            } else {
-                var lastCp = cabangPrefixes[cabangPrefixes.length - 1];
-                var prevAkumLast = akumCache[lastCp] ? (akumCache[lastCp][mo - 1] || 0) : 0;
-                akumCache['induk'] = akumCache['induk'] || {};
-                akumCache['induk'][mo] = pusatPB + prevAkumLast;
-            }
-            var prevAkum = akumCache['induk'][mo];
-            for (let ci = 0; ci < cascCabangCount; ci++) {
-                var cp = cabangPrefixes[ci];
-                var cabangPB = getPB(cp, mo);
-                akumCache[cp] = akumCache[cp] || {};
-                akumCache[cp][mo] = cabangPB + prevAkum;
-                prevAkum = akumCache[cp][mo];
-            }
-        }
-    }
-
-    for (let mo = 1; mo <= 12; mo++) {
-        var inp = document.querySelector('.omset-input[data-month="' + mo + '"]');
-        var val = inp ? inp.value : '0';
-        const current = Number(val.replace(/[^0-9]/g, '') || 0);
-        const row = document.getElementById('hasilRow-' + mo);
-
-        if (current === 0) {
-            if (row) row.classList.add('d-none');
-            cumulative += current; continue;
-        }
-
-        const totalWithCurrent = cumulative + current;
-        const exceeds400 = current > LIMIT_400JT;
-        const omsetCell = document.getElementById('hasilOmset-' + mo);
-        if (omsetCell) {
-            omsetCell.innerHTML = exceeds400
-                    ? '<span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-1"></i>' + formatNum(String(current)) + ' <span class="badge bg-danger ms-1">>400JT</span></span>'
-                : formatNum(String(current));
-        }
-
-        if (totalWithCurrent >= LIMIT_4M) cumulativeExceeds4M = true;
-
-        let pphBayar = '', pphClass = '';
-        if (rumus) {
-            if (cumulative >= maxVal) {
-                const potongan = current * persen / 100;
-                totalPotongan += potongan;
-                pphBayar = formatNum(String(potongan)); pphClass = 'text-danger';
-            } else if (totalWithCurrent > maxVal) {
-                const kelebihan = totalWithCurrent - maxVal;
-                const potongan = kelebihan * persen / 100;
-                totalPotongan += potongan;
-                pphBayar = formatNum(String(potongan)); pphClass = 'text-warning';
-            } else { pphBayar = 'Free'; pphClass = 'text-success'; }
-        } else { pphBayar = '-'; pphClass = ''; }
-
-        const pphFinal = !rumus ? '-' : formatNum(String(current * persen / 100));
-
-        document.getElementById('hasilBruto-' + mo).textContent = formatNum(String(totalWithCurrent));
-        var akumEl = document.getElementById('hasilBrutoAkum-' + mo);
-        var akumVal = akumCache[activeTabPrefix] ? (akumCache[activeTabPrefix][mo] || 0) : 0;
-        akumEl.textContent = formatNum(String(akumVal));
-        document.getElementById('hasilPph-' + mo).innerHTML = '<span class="text-danger fw-semibold">' + pphFinal + '</span>';
-        document.getElementById('hasilFinal-' + mo).innerHTML = '<span class="fw-semibold ' + pphClass + '">' + pphBayar + '</span>';
-
-        var st = document.getElementById('hasilStatus-' + mo);
-        if (st) {
-            var ic = '';
-            if (exceeds400) ic += '<span class="text-danger" title="Omset > 400 Juta"><i class="bi bi-exclamation-triangle-fill"></i></span>';
-            if (totalWithCurrent >= LIMIT_4M) ic += ' <span class="text-danger" title="Akumulasi >= 4 Milyar"><i class="bi bi-arrow-up-circle-fill"></i></span>';
-            if (!ic) ic = '<span class="text-success"><i class="bi bi-check-circle"></i></span>';
-            st.innerHTML = ic;
-        }
-
-        row.classList.remove('d-none');
-        cumulative += current;
-    }
-
-    document.getElementById('hasilTotalPph').textContent = formatNum(String(totalPotongan));
-    var hasData = cumulative > 0;
-    document.getElementById('hasilPerhitunganSection').classList.toggle('d-none', !hasData);
-}
 
 function loadDataFromDb() {
     const clientId = parseInt(document.getElementById('clientSelect').value);
@@ -839,8 +769,6 @@ document.getElementById('tahunSelect').addEventListener('change', function() {
     if (clientId && this.value) {
         document.getElementById('btnLampiranSpt').href = document.getElementById('btnLampiranSpt').href.split('?')[0] + '?client_id=' + clientId + '&tahun=' + this.value;
     }
-    var tt = document.getElementById('summaryTahunText');
-    if (tt) tt.textContent = this.value || '{{ date("Y") }}';
     if (!clientId) return;
     // Clear current tabData omset values
     Object.keys(tabData).forEach(function(p) {
@@ -851,58 +779,92 @@ document.getElementById('tahunSelect').addEventListener('change', function() {
     });
     // Load data for the new year from DB
     loadDataFromDb();
-    // If summary tab is active, refresh after load completes
-    if (activeTabPrefix === 'summary') {
-        var checkLoaded = setInterval(function() {
-            var hasData = false;
-            Object.keys(tabData).forEach(function(p) {
-                var td = tabData[p]; if (!td) return;
-                if (td.tipeId === 1 && (td.omsetTahunan || '') !== '') hasData = true;
-                else if (td.tipeId !== 1) {
-                    for (let mo = 1; mo <= 12; mo++) {
-                        if ((td.omsetBulanan[mo] || '') !== '') hasData = true;
-                    }
-                }
-            });
-            populateSummaryTable();
-            if (hasData) clearInterval(checkLoaded);
-            // Also stop after 3 seconds max
-            setTimeout(function() { clearInterval(checkLoaded); }, 3000);
-        }, 200);
-    }
-});
-
-document.getElementById('toggleOmsetInput').addEventListener('click', function() {
-    var container = document.getElementById('omsetInputContainer');
-    var label = document.getElementById('toggleOmsetInputLabel');
-    if (container.classList.toggle('d-none')) {
-        label.textContent = 'Tampilkan';
-    } else {
-        label.textContent = 'Sembunyikan';
-    }
-});
-
-document.getElementById('toggleHasilTable').addEventListener('click', function() {
-    var container = document.getElementById('hasilTableContainer');
-    var label = document.getElementById('toggleHasilTableLabel');
-    if (container.classList.toggle('d-none')) {
-        label.textContent = 'Tampilkan';
-    } else {
-        label.textContent = 'Sembunyikan';
-    }
-});
-
-document.querySelectorAll('.omset-input').forEach(function(inp) {
-    inp.addEventListener('input', function() {
-        var mo = inp.getAttribute('data-month');
-        if (tabData[activeTabPrefix]) tabData[activeTabPrefix].omsetBulanan[mo] = this.value;
-        hitungOmset(); toggleButtons();
-    });
 });
 
 document.getElementById('omsetTahunan').addEventListener('input', function() {
-    if (tabData[activeTabPrefix]) tabData[activeTabPrefix].omsetTahunan = this.value;
+    if (tabData['induk']) tabData['induk'].omsetTahunan = this.value;
     toggleButtons();
+});
+
+// --- New Table Event Listeners (delegated) ---
+
+document.getElementById('omsetTableBody').addEventListener('click', function(e) {
+    var target = e.target.closest('button');
+    if (!target) return;
+
+    // Edit row
+    if (target.classList.contains('btn-edit-row')) {
+        var tr = target.closest('tr');
+        tr.querySelectorAll('.omset-view').forEach(function(el) { el.classList.add('d-none'); });
+        tr.querySelectorAll('.omset-input').forEach(function(el) { el.classList.remove('d-none'); });
+        target.classList.add('d-none');
+        tr.querySelector('.btn-save-row').classList.remove('d-none');
+    }
+
+    // Save row
+    if (target.classList.contains('btn-save-row')) {
+        var tr = target.closest('tr');
+        var type = tr.getAttribute('data-type');
+        var isReguler = type === 'reguler';
+
+        tr.querySelectorAll('.omset-input').forEach(function(inp) {
+            var mo = inp.getAttribute('data-month');
+            var raw = inp.value;
+            var num = Number(raw.replace(/[^0-9]/g, '') || 0);
+            var viewEl = tr.querySelector('.omset-view[data-month-view="' + mo + '"]');
+            // Update the omset-view span
+            var spans = tr.querySelectorAll('.omset-view');
+            var idx = Array.from(inp.parentNode.parentNode.querySelectorAll('.omset-view')).indexOf(
+                inp.parentNode.previousElementSibling ? inp.parentNode.previousElementSibling : null
+            );
+            // Simpler approach: find sibling span
+            var span = inp.parentNode.querySelector('.omset-view');
+            if (!span) span = inp.parentNode.previousElementSibling;
+            if (span && span.classList.contains('omset-view')) {
+                span.textContent = num ? formatNum(raw) : '-';
+            }
+
+            // Update data in tableRows
+            var rowPrefix = inp.getAttribute('data-prefix');
+            var ecIdx = inp.getAttribute('data-ec-idx');
+            if (rowPrefix) {
+                var row = tableRows.reguler.find(function(r) { return r.prefix === rowPrefix; });
+                if (row) row.omset[mo] = raw;
+            } else if (ecIdx !== null && ecIdx !== undefined) {
+                if (tableRows.ecommerce[ecIdx]) tableRows.ecommerce[ecIdx].omset[mo] = raw;
+            }
+
+            inp.classList.add('d-none');
+            if (span) span.classList.remove('d-none');
+        });
+
+        target.classList.add('d-none');
+        tr.querySelector('.btn-edit-row').classList.remove('d-none');
+
+        // Rebuild table to refresh computed rows
+        buildOmsetTable();
+    }
+
+    // Remove ecommerce row
+    if (target.classList.contains('btn-remove-ec')) {
+        var tr = target.closest('tr');
+        var idx = parseInt(tr.getAttribute('data-ec-idx'));
+        if (!isNaN(idx)) removeEcommerceRow(idx);
+    }
+});
+
+// Input events on the omset table inputs (delegated)
+document.getElementById('omsetTableBody').addEventListener('input', function(e) {
+    if (e.target.classList.contains('omset-input') || e.target.classList.contains('format-currency')) {
+        var v = e.target.value.replace(/[^0-9]/g, '');
+        e.target.value = v ? parseInt(v, 10).toLocaleString('id-ID') : '';
+    }
+});
+
+// Add ecommerce button
+document.getElementById('btnAddEcommerce').addEventListener('click', addEcommerceRow);
+document.getElementById('ecommerceSelect').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); addEcommerceRow(); }
 });
 
 document.getElementById('formTransaksi').addEventListener('input', function(e) {
@@ -921,143 +883,140 @@ document.getElementById('btnPreview').addEventListener('click', function() {
 
     saveCurrentInputs();
 
-    const client = clients.find(function(x) { return x.id === clientId; });
-    var tipeName = '';
-    if (client) {
-        var b = badanList.find(function(x) { return x.id === client.tipe_badan; });
-        if (b) tipeName = b.tipe;
+    // Rebuild tableRows from current inputs
+    syncTabDataToTableRows();
+
+    var tipeId = null;
+    Object.keys(tabData).forEach(function(k) { if (tabData[k] && tipeId === null) tipeId = tabData[k].tipeId; });
+
+    var bulanList = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+
+    var html = '<div class="table-responsive"><table class="table table-sm table-bordered mb-0">';
+    html += '<thead class="table-warning"><tr><th colspan="2" style="min-width:210px">Kategori / Nama</th>';
+    for (let mo = 0; mo < 12; mo++) { html += '<th class="text-end" style="min-width:90px">' + bulanList[mo] + '</th>'; }
+    html += '<th style="width:70px">Total</th></tr></thead><tbody>';
+
+    var perMonthTotal = {};
+    var perMonthPph = {};
+    for (let mo = 1; mo <= 12; mo++) { perMonthTotal[mo] = 0; perMonthPph[mo] = 0; }
+
+    // Reguler section
+    if (tableRows.reguler.length > 0) {
+        html += '<tr class="table-secondary"><td colspan="15"><strong>Reguler</strong></td></tr>';
+        tableRows.reguler.forEach(function(row) {
+            var isInduk = row.prefix === 'induk';
+            var labelCell = isInduk ? '<span class="fw-medium">Pusat</span>' : '<small class="text-muted">Cabang</small>';
+            if (row.npwp) labelCell += ' <code>' + row.npwp + '</code>';
+            html += '<tr><td colspan="2">' + labelCell + '</td>';
+
+            var rowTotal = 0;
+            for (let mo = 1; mo <= 12; mo++) {
+                var raw = row.omset[mo] || '';
+                var num = Number(raw.replace(/[^0-9]/g, '') || 0);
+                html += '<td class="text-end">' + (num ? formatNum(raw) : '-') + '</td>';
+                perMonthTotal[mo] += num;
+                perMonthPph[mo] += num;
+                rowTotal += num;
+            }
+            html += '<td class="text-end fw-bold">' + formatNum(String(rowTotal)) + '</td></tr>';
+        });
     }
 
-    var tabsHtml = '<ul class="nav nav-tabs" id="previewTabs" role="tablist">';
-    var contentHtml = '<div class="tab-content border border-top-0 p-3 bg-white" id="previewTabContent">';
-    var first = true;
+    // E-Commerce section
+    if (tableRows.ecommerce.length > 0) {
+        html += '<tr class="table-secondary"><td colspan="15"><strong>E-Commerce</strong></td></tr>';
+        tableRows.ecommerce.forEach(function(row) {
+            var labelCell = '<i class="bi bi-cart me-1"></i>';
+            if (row.kode) labelCell += '<span class="fw-medium">' + row.kode + '</span>';
+            if (row.npwp) labelCell += ' <code>' + row.npwp + '</code>';
+            html += '<tr><td colspan="2">' + labelCell + '</td>';
 
-    // Build ordered cabang list sorted by NPWP last 3 digits
-    var previewCabangPrefixes = [];
-    Object.keys(tabData).forEach(function(k) { if (k !== 'induk') previewCabangPrefixes.push(k); });
-    previewCabangPrefixes.sort(function(a, b) {
-        return (tabData[a].npwp || '').slice(-3).localeCompare((tabData[b].npwp || '').slice(-3));
-    });
-    var previewCabangCount = previewCabangPrefixes.length;
-
-    // Compute cascading akum per month per tab
-    var previewAkumCache = {};
-    function previewGetPB(prefix, month) {
-        var td = tabData[prefix];
-        if (!td) return 0;
-        if (td.tipeId === 1) {
-            return Number((td.omsetTahunan || '').replace(/[^0-9]/g, '') || 0);
-        }
-        return Number((td.omsetBulanan && td.omsetBulanan[month] || '0').replace(/[^0-9]/g, '') || 0);
+            var rowTotal = 0;
+            for (let mo = 1; mo <= 12; mo++) {
+                var raw = row.omset[mo] || '';
+                var num = Number(raw.replace(/[^0-9]/g, '') || 0);
+                html += '<td class="text-end">' + (num ? formatNum(raw) : '-') + '</td>';
+                perMonthTotal[mo] += num;
+                perMonthPph[mo] += num;
+                rowTotal += num;
+            }
+            html += '<td class="text-end fw-bold">' + formatNum(String(rowTotal)) + '</td></tr>';
+        });
     }
+
+    // Compute totals
+    var totalAll = 0;
+    for (let mo = 1; mo <= 12; mo++) totalAll += perMonthTotal[mo];
+
+    var rumus = rumusList.find(function(r) { return String(r.tipe_badan) === String(tipeId); });
+    var maxVal = Number(rumus?.max_value || 0);
+    var persen = Number(rumus?.potongan_persentase || 0);
+
+    // Computed rows
+    var cumulative = 0;
+    var totalPphDue = 0;
+
+    // Total row
+    html += '<tr class="fw-bold"><td colspan="2" class="text-end">Total</td>';
     for (let mo = 1; mo <= 12; mo++) {
-        if (previewCabangCount === 0) {
-            previewAkumCache['induk'] = previewAkumCache['induk'] || {};
-            previewAkumCache['induk'][mo] = 0;
-        } else {
-            var pusatPB = previewGetPB('induk', mo);
-            if (mo === 1) {
-                previewAkumCache['induk'] = previewAkumCache['induk'] || {};
-                previewAkumCache['induk'][mo] = pusatPB;
-            } else {
-                var lastCp = previewCabangPrefixes[previewCabangPrefixes.length - 1];
-                var prevLast = previewAkumCache[lastCp] ? (previewAkumCache[lastCp][mo - 1] || 0) : 0;
-                previewAkumCache['induk'] = previewAkumCache['induk'] || {};
-                previewAkumCache['induk'][mo] = pusatPB + prevLast;
-            }
-            var prevAkum = previewAkumCache['induk'][mo];
-            for (let ci = 0; ci < previewCabangCount; ci++) {
-                var cp = previewCabangPrefixes[ci];
-                var cabangPB = previewGetPB(cp, mo);
-                previewAkumCache[cp] = previewAkumCache[cp] || {};
-                previewAkumCache[cp][mo] = cabangPB + prevAkum;
-                prevAkum = previewAkumCache[cp][mo];
-            }
-        }
+        html += '<td class="text-end">' + (perMonthTotal[mo] > 0 ? formatNum(String(perMonthTotal[mo])) : '-') + '</td>';
     }
+    html += '<td class="text-end text-primary">' + formatNum(String(totalAll)) + '</td></tr>';
 
-    Object.keys(tabData).forEach(function(prefix) {
-        var td = tabData[prefix];
-        if (!td) return;
-        var tabId = 'prev_' + prefix;
-        var label = td.npwp || (prefix === 'induk' ? 'Induk' : 'Cabang');
-        var isActive = first ? 'active show' : '';
+    // PPh Final row
+    html += '<tr class="table-light"><td colspan="2" class="text-end text-danger">PPh Final ' + (persen > 0 ? persen.toString().replace('.', ',') : '0') + '%</td>';
+    for (let mo = 1; mo <= 12; mo++) {
+        var pphNum = perMonthPph[mo] * persen / 100;
+        html += '<td class="text-end text-danger">' + (pphNum > 0 ? formatNum(String(Math.round(pphNum))) : '-') + '</td>';
+    }
+    html += '<td></td></tr>';
 
-        tabsHtml += '<li class="nav-item"><button class="nav-link ' + (first ? 'active' : '') + '" data-bs-toggle="tab" data-bs-target="#' + tabId + '" type="button" role="tab"><i class="bi ' + (prefix === 'induk' ? 'bi-building' : 'bi-diagram-2') + ' me-1"></i> ' + label + '</button></li>';
+    // Total Peredaran Bruto row
+    var cumulativeForDisplay = 0;
+    html += '<tr><td colspan="2" class="text-end">Total Peredaran Bruto</td>';
+    for (let mo = 1; mo <= 12; mo++) {
+        cumulativeForDisplay += perMonthTotal[mo];
+        html += '<td class="text-end">' + (perMonthTotal[mo] > 0 ? formatNum(String(cumulativeForDisplay)) : '-') + '</td>';
+    }
+    html += '<td></td></tr>';
 
-        var isId1 = td.tipeId === 1;
-        var omsetDetails = '';
-        var totalOmset = 0;
+    // Perhitungan Pengurangan row
+    var cumulativeForPeng = 0;
+    html += '<tr><td colspan="2" class="text-end">Perhitungan Pengurangan</td>';
+    for (let mo = 1; mo <= 12; mo++) {
+        cumulativeForPeng += perMonthTotal[mo];
+        var pengurangan = maxVal > 0 ? Math.max(0, maxVal - cumulativeForPeng + perMonthTotal[mo]) : 0;
+        html += '<td class="text-end">' + (perMonthTotal[mo] > 0 && pengurangan > 0 ? formatNum(String(Math.round(pengurangan))) : (perMonthTotal[mo] > 0 ? '0' : '-')) + '</td>';
+    }
+    html += '<td></td></tr>';
 
-        if (isId1) {
-            totalOmset = Number((td.omsetTahunan || '').replace(/[^0-9]/g, '') || 0);
-            if (totalOmset > 0) omsetDetails = '<tr><td class="text-muted">Tahunan</td><td class="text-end">' + formatNum(String(totalOmset)) + '</td></tr>';
-        } else {
-            for (let mo = 1; mo <= 12; mo++) {
-                var omsetVal = (td.omsetBulanan && td.omsetBulanan[mo]) || '0';
-                var omsetNum = Number(omsetVal.replace(/[^0-9]/g, '') || 0);
-                totalOmset += omsetNum;
-                if (omsetNum > 0) omsetDetails += '<tr><td class="text-muted ps-4">' + bulanList[mo - 1] + '</td><td class="text-end">' + formatNum(String(omsetNum)) + '</td></tr>';
+    // PPh Final Harus Dibayar row
+    var cumulativeForBayar = 0;
+    var totalPphAll = 0;
+    html += '<tr class="table-info fw-bold"><td colspan="2" class="text-end">PPh Final<br>Harus Dibayar</td>';
+    for (let mo = 1; mo <= 12; mo++) {
+        var omsetMo = perMonthTotal[mo];
+        if (omsetMo === 0) { html += '<td class="text-end">-</td>'; cumulativeForBayar += omsetMo; continue; }
+        var totWithCum = cumulativeForBayar + omsetMo;
+        var bayar = 0;
+        if (rumus) {
+            if (cumulativeForBayar >= maxVal) {
+                bayar = omsetMo * persen / 100;
+            } else if (totWithCum > maxVal) {
+                var kelebihan = totWithCum - maxVal;
+                bayar = kelebihan * persen / 100;
             }
         }
+        totalPphAll += bayar;
+        var displayBayar = bayar > 0 ? formatNum(String(Math.round(bayar))) : '<span class="text-success">FREE</span>';
+        html += '<td class="text-end text-danger">' + displayBayar + '</td>';
+        cumulativeForBayar += omsetMo;
+    }
+    html += '<td class="text-end text-danger fw-bold">' + formatNum(String(Math.round(totalPphAll))) + '</td></tr>';
 
-        var paneHtml = '<div class="table-responsive mb-3"><table class="table table-sm small mb-0">' +
-            '<tr><td style="width:140px" class="text-muted">Nama</td><td class="fw-medium">' + (td.nama || '-') + '</td></tr>' +
-            '<tr><td class="text-muted">NPWP</td><td>' + (td.npwp || '-') + '</td></tr>' +
-            '<tr><td class="text-muted">Tipe</td><td>' + (tipeName || '-') + '</td></tr>' +
-            '<tr><td class="text-muted">KPP</td><td>' + (td.kpp || '-') + '</td></tr>' +
-            '<tr><td class="text-muted">No. Telp</td><td>' + (td.no_telephone || '-') + '</td></tr>' +
-            '<tr><td class="text-muted">Alamat NPWP</td><td>' + (td.alamat_npwp || '-') + '</td></tr>' +
-            '<tr><td class="text-muted">Periode</td><td class="fw-medium">Tahun ' + tahun + '</td></tr>' +
-            '</table></div>';
+    html += '</tbody></table></div>';
 
-        if (omsetDetails && isId1) {
-            paneHtml += '<div class="mb-3"><h6 class="fw-semibold text-warning border-bottom pb-2">Omset Tahunan</h6>' +
-                '<table class="table table-sm small mb-0"><thead><tr><th>Periode</th><th class="text-end">Omset</th></tr></thead><tbody>' +
-                omsetDetails +
-                '<tr class="fw-bold"><td>Total</td><td class="text-end">' + formatNum(String(totalOmset)) + '</td></tr>' +
-                '</tbody></table></div>';
-        }
-
-        if (!isId1) {
-            const rumus = rumusList.find(function(r) { return String(r.tipe_badan) === String(td.tipeId); });
-            const maxVal = Number(rumus?.max_value || 0);
-            const persen = Number(rumus?.potongan_persentase || 0);
-            let cumulative = 0, totalPotongan = 0, calcRows = '';
-
-            for (let mo = 1; mo <= 12; mo++) {
-                var omsetVal = (td.omsetBulanan && td.omsetBulanan[mo]) || '0';
-                var current = Number(omsetVal.replace(/[^0-9]/g, '') || 0);
-                if (current === 0) { cumulative += current; continue; }
-                const tot = cumulative + current;
-                let ppb, ppc, ppf;
-                if (cumulative >= maxVal) {
-                    const p = current * persen / 100; totalPotongan += p; ppb = formatNum(String(p)); ppc = 'text-danger';
-                } else if (tot > maxVal) {
-                    const kelebihan = tot - maxVal; const p = kelebihan * persen / 100; totalPotongan += p; ppb = formatNum(String(p)); ppc = 'text-warning';
-                } else { ppb = 'Free'; ppc = 'text-success'; }
-                ppf = formatNum(String(current * persen / 100));
-                var akumPreview = '<td class="text-end">' + formatNum(String(previewAkumCache[prefix] ? (previewAkumCache[prefix][mo] || 0) : 0)) + '</td>';
-                calcRows += '<tr><td class="text-muted ps-4">' + bulanList[mo - 1] + '</td><td class="text-end">' + formatNum(String(current)) + '</td><td class="text-end">' + formatNum(String(tot)) + '</td>' + akumPreview + '<td class="text-end text-danger fw-semibold">' + ppf + '</td><td class="text-end ' + ppc + ' fw-semibold">' + ppb + '</td></tr>';
-                cumulative += current;
-            }
-
-            var persenLabel = persen > 0 ? persen.toString().replace('.', ',') : '0';
-            var cabangLabelPreview = ' (' + previewCabangCount + ' Cabang)';
-            var akumHeader = '<th class="text-end">Total Peredaran Bruto Akum' + cabangLabelPreview + '</th>';
-            paneHtml += '<h6 class="fw-semibold text-secondary border-bottom pb-2">Hasil Perhitungan</h6>' +
-                '<div class="table-responsive"><table class="table table-sm small mb-0"><thead><tr><th>Bulan</th><th class="text-end">Peredaran Bruto</th><th class="text-end">Total Peredaran Bruto Cabang</th>' + akumHeader + '<th class="text-end">PPH Final ' + persenLabel + '%</th><th class="text-end">PPh Final yg harus dibayar</th></tr></thead><tbody>' +
-                calcRows +
-                '<tr class="fw-bold table-secondary"><td colspan="5" class="text-center">Total</td><td class="text-end text-danger">' + formatNum(String(totalPotongan)) + '</td></tr>' +
-                '</tbody></table></div>';
-        }
-
-        paneHtml += '<div class="mt-3 pt-2 border-top"><strong>Total Omset:</strong> <span class="text-warning fw-bold">' + formatNum(String(totalOmset)) + '</span></div>';
-        contentHtml += '<div class="tab-pane fade ' + isActive + '" id="' + tabId + '" role="tabpanel">' + paneHtml + '</div>';
-        first = false;
-    });
-
-    document.getElementById('previewContent').innerHTML = tabsHtml + contentHtml + '</div>';
+    document.getElementById('previewContent').innerHTML = html;
     var modal = new bootstrap.Modal(document.getElementById('previewModal'));
     modal.show();
 });
@@ -1065,8 +1024,8 @@ document.getElementById('btnPreview').addEventListener('click', function() {
 // --- Helper: prepare form data for submission ---
 function prepareFormData() {
     saveCurrentInputs();
-    // Remove name from visible omset inputs so they don't duplicate hidden per-tab fields
-    document.querySelectorAll('#omsetTahunan, #omsetInputContainer input.omset-input').forEach(function(el) { el.removeAttribute('name'); });
+    // Remove name from visible omset inputs
+    document.querySelectorAll('#omsetTahunan, #omsetTable input.omset-input').forEach(function(el) { el.removeAttribute('name'); });
     // Remove old per-tab hidden fields
     document.querySelectorAll('[data-tabhidden]').forEach(function(el) { el.remove(); });
     var form = document.getElementById('formTransaksi');
@@ -1105,7 +1064,25 @@ function prepareFormData() {
             }
         }
     });
-    const rumus = rumusList.find(function(r) { return String(r.tipe_badan) === String(tabData['induk'].tipeId); });
+    // E-Commerce rows
+    tableRows.ecommerce.forEach(function(row, idx) {
+        for (let mo = 1; mo <= 12; mo++) {
+            var raw = row.omset[mo] || '';
+            var num = Number(raw.replace(/[^0-9]/g, '') || 0);
+            totalOmset += num;
+            if (num > 0) {
+                var h = document.createElement('input');
+                h.type = 'hidden'; h.name = 'ecommerce[' + idx + '][kode]'; h.value = row.kode;
+                h.setAttribute('data-tabhidden', '1');
+                form.appendChild(h);
+                var h2 = document.createElement('input');
+                h2.type = 'hidden'; h2.name = 'ecommerce[' + idx + '][omset][' + mo + ']'; h2.value = raw;
+                h2.setAttribute('data-tabhidden', '1');
+                form.appendChild(h2);
+            }
+        }
+    });
+    const rumus = rumusList.find(function(r) { return String(r.tipe_badan) === String(tabData['induk']?.tipeId); });
     var persen = rumus ? Number(rumus.potongan_persentase) : 0;
     document.getElementById('totalOmsetHidden').value = totalOmset;
     document.getElementById('totalPphHidden').value = totalOmset * persen / 100;
@@ -1339,62 +1316,6 @@ document.querySelector('button[type="reset"]').addEventListener('click', functio
     restoreCurrentInputs();
 });
 
-// Floating NPWP tabs on scroll
-(function() {
-    var wrap = document.getElementById('cabangTabsWrap');
-    if (!wrap) return;
-    var floatState = { active: false, left: 0, width: 0, offsetTop: 0 };
-    var spacer = null;
 
-    function updateFloat() {
-        var section = document.getElementById('cabangSection');
-        if (!section || section.classList.contains('d-none')) {
-            if (spacer) { spacer.remove(); spacer = null; }
-            floatState.active = false;
-            wrap.style.position = '';
-            wrap.style.top = '';
-            wrap.style.left = '';
-            wrap.style.width = '';
-            wrap.style.zIndex = '';
-            wrap.style.boxShadow = '';
-            return;
-        }
-        if (!floatState.active) {
-            var rect = wrap.getBoundingClientRect();
-            if (rect.top <= 0) {
-                floatState.active = true;
-                floatState.left = rect.left;
-                floatState.width = rect.width;
-                floatState.offsetTop = window.pageYOffset + rect.top;
-                spacer = document.createElement('div');
-                spacer.style.height = rect.height + 'px';
-                wrap.parentNode.insertBefore(spacer, wrap.nextSibling);
-            }
-        }
-        if (floatState.active) {
-            if (window.pageYOffset < floatState.offsetTop) {
-                floatState.active = false;
-                if (spacer) { spacer.remove(); spacer = null; }
-                wrap.style.position = '';
-                wrap.style.top = '';
-                wrap.style.left = '';
-                wrap.style.width = '';
-                wrap.style.zIndex = '';
-                wrap.style.boxShadow = '';
-                return;
-            }
-            wrap.style.position = 'fixed';
-            wrap.style.top = '0';
-            wrap.style.left = floatState.left + 'px';
-            wrap.style.width = floatState.width + 'px';
-            wrap.style.zIndex = '1020';
-            wrap.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-        }
-    }
-
-    document.addEventListener('scroll', updateFloat, { passive: true });
-    new MutationObserver(function() { setTimeout(updateFloat, 50); })
-        .observe(document.getElementById('cabangSection'), { attributes: true, attributeFilter: ['class'] });
-})();
 </script>
 @endpush

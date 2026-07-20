@@ -45,6 +45,7 @@ class ModuleManager
             'lampiran_spt' => LampiranSptModule::class,
             'kategori_lampiran' => KategoriLampiranModule::class,
             'master_lampiran_spt' => MasterLampiranSptModule::class,
+            'master_ecommerce' => MasterEcommerceModule::class,
             'activity_log' => ActivityLogModule::class,
         ];
 
