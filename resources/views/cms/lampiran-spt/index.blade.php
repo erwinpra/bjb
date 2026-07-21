@@ -125,6 +125,7 @@
                             <table class="table table-bordered align-middle" id="tableLampiran">
                                 <thead class="table-dark" style="font-size:0.8rem">
                                     <tr>
+                                        <th style="width:40px"><input type="checkbox" id="checkAll"></th>
                                         <th style="width:120px">KODE</th>
                                         <th style="width:200px">DESKRIPSI</th>
                                         <th style="width:200px">NOMOR AKUN</th>
@@ -142,6 +143,7 @@
                                 <tbody>
                                     @forelse($details as $d)
                                     <tr class="row-edit" data-row-id="{{ $d->id }}">
+                                        <td class="text-center"><input type="checkbox" class="row-checkbox" value="{{ $d->id }}"></td>
                                         <td>
                                             <span class="kode-text">{{ $d->kode }}</span>
                                             <select class="cell-input cell-select d-none">
@@ -213,7 +215,7 @@
                                     </tr>
                                     @empty
                                     <tr class="empty-row">
-                                        <td colspan="12" class="text-center text-muted py-4">
+                                        <td colspan="13" class="text-center text-muted py-4">
                                             <i class="bi bi-plus-circle d-block mb-1 fs-4"></i>
                                             Klik "Tambah Baris" untuk menambah data
                                         </td>
@@ -224,14 +226,25 @@
                         </div>
 
                         <div class="d-flex justify-content-between mt-3">
-                            @cmsCan('lampiran_spt', 'create')
-                            <button type="button" class="btn btn-outline-primary" id="btnAddRow">
-                                <i class="bi bi-plus-lg me-1"></i> Tambah Baris
-                            </button>
-                            <button type="button" class="btn btn-primary px-4" id="btnSimpan">
-                                <i class="bi bi-save me-1"></i> Simpan
-                            </button>
-                            @endCmsCan
+                            <div>
+                                @cmsCan('lampiran_spt', 'create')
+                                <button type="button" class="btn btn-outline-primary" id="btnAddRow">
+                                    <i class="bi bi-plus-lg me-1"></i> Tambah Baris
+                                </button>
+                                @endCmsCan
+                            </div>
+                            <div class="d-flex gap-2">
+                                @cmsCan('lampiran_spt', 'delete')
+                                <button type="button" class="btn btn-outline-danger" id="btnDeleteSelected" disabled>
+                                    <i class="bi bi-check-square me-1"></i> Hapus Dipilih
+                                </button>
+                                @endCmsCan
+                                @cmsCan('lampiran_spt', 'create')
+                                <button type="button" class="btn btn-primary px-4" id="btnSimpan">
+                                    <i class="bi bi-save me-1"></i> Simpan
+                                </button>
+                                @endCmsCan
+                            </div>
                         </div>
                     </form>
 
@@ -446,7 +459,7 @@ function populateDeskripsi(sel) {
     var text = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : '';
     var parts = text.split(' - ');
     var nama = parts.length > 1 ? parts.slice(1).join(' - ') : '';
-    var deskTd = tr.cells[1];
+    var deskTd = tr.cells[2];
     if (deskTd) {
         var inp = deskTd.querySelector('input');
         if (inp) inp.value = nama;
@@ -480,7 +493,7 @@ function destroyKodeSelect(select) {
 // Auto-populate deskripsi from master when kode changes (native fallback)
 document.addEventListener('change', function(e) {
     var td = e.target.closest('td');
-    if (e.target.tagName === 'SELECT' && td && td.cellIndex === 0) {
+    if (e.target.tagName === 'SELECT' && td && td.cellIndex === 1) {
         populateDeskripsi(e.target);
     }
 });
@@ -497,6 +510,15 @@ document.getElementById('btnAddRow')?.addEventListener('click', function() {
     function makeTd() {
         return document.createElement('td');
     }
+
+    // CHECKBOX
+    var tdCek = makeTd();
+    tdCek.className = 'text-center';
+    var cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.className = 'row-checkbox';
+    tdCek.appendChild(cb);
+    tr.appendChild(tdCek);
 
     // KODE
     var td1 = makeTd();
@@ -689,22 +711,22 @@ document.getElementById('btnSimpan')?.addEventListener('click', function() {
 
     var rows = [];
     document.querySelectorAll('#tableLampiran tbody tr.row-edit, #tableLampiran tbody tr.row-new').forEach(function(tr) {
-        var kode = cellVal(tr, 0);
+        var kode = cellVal(tr, 1);
         if (!kode) return;
 
         rows.push({
             row_id: tr.getAttribute('data-row-id') || null,
             kode: kode,
-            deskripsi: cellVal(tr, 1),
-            nomor_akun: cellVal(tr, 2),
-            atas_nama: cellVal(tr, 3),
-            nama_bank_institusi: cellVal(tr, 4),
-            lokasi_harta: cellVal(tr, 5),
-            kurs: cellVal(tr, 6),
-            tahun_perolehan: cellVal(tr, 7),
-            saldo_saat_ini: cellNum(tr, 8),
-            saldo_bentuk_awal: cellNum(tr, 9),
-            nilai_kurs: cellNum(tr, 10),
+            deskripsi: cellVal(tr, 2),
+            nomor_akun: cellVal(tr, 3),
+            atas_nama: cellVal(tr, 4),
+            nama_bank_institusi: cellVal(tr, 5),
+            lokasi_harta: cellVal(tr, 6),
+            kurs: cellVal(tr, 7),
+            tahun_perolehan: cellVal(tr, 8),
+            saldo_saat_ini: cellNum(tr, 9),
+            saldo_bentuk_awal: cellNum(tr, 10),
+            nilai_kurs: cellNum(tr, 11),
         });
     });
 
@@ -751,7 +773,7 @@ document.addEventListener('click', function(e) {
 
     // Toggle kode text vs select
     var kodeText = tr.querySelector('.kode-text');
-    var kodeSelect = tr.cells[0] ? tr.cells[0].querySelector('select') : null;
+    var kodeSelect = tr.cells[1] ? tr.cells[1].querySelector('select') : null;
     if (kodeText && kodeSelect) {
         kodeText.classList.toggle('d-none', isEditing);
         kodeSelect.classList.toggle('d-none', !isEditing);
@@ -774,7 +796,7 @@ document.addEventListener('click', function(e) {
             var text = kodeSelect.options[kodeSelect.selectedIndex] ? kodeSelect.options[kodeSelect.selectedIndex].text : '';
             var parts = text.split(' - ');
             var nama = parts.length > 1 ? parts.slice(1).join(' - ') : '';
-            var deskInput = tr.cells[1] ? tr.cells[1].querySelector('input') : null;
+            var deskInput = tr.cells[2] ? tr.cells[2].querySelector('input') : null;
             if (deskInput) deskInput.value = nama;
         }
     } else {
@@ -802,7 +824,7 @@ document.addEventListener('click', function(e) {
             }
         });
         // Sync kode
-        var kodeSelect = tr.cells[0] ? tr.cells[0].querySelector('select') : null;
+        var kodeSelect = tr.cells[1] ? tr.cells[1].querySelector('select') : null;
         var kodeText = tr.querySelector('.kode-text');
         if (kodeSelect && kodeText) {
             kodeText.textContent = kodeSelect.value || '';
@@ -861,6 +883,48 @@ document.addEventListener('click', function(e) {
         var id = btn.getAttribute('data-id');
         if (id) deleteRow(id, tr);
     }
+});
+
+// Check all toggle
+document.getElementById('checkAll')?.addEventListener('change', function() {
+    document.querySelectorAll('.row-checkbox').forEach(function(cb) {
+        cb.checked = this.checked;
+    }, this);
+    document.getElementById('btnDeleteSelected').disabled = !this.checked;
+});
+
+// Enable/disable delete selected button
+document.addEventListener('change', function(e) {
+    var cb = e.target.closest('.row-checkbox');
+    if (cb) {
+        var anyChecked = document.querySelectorAll('.row-checkbox:checked').length > 0;
+        document.getElementById('btnDeleteSelected').disabled = !anyChecked;
+    }
+});
+
+// Delete selected rows
+document.getElementById('btnDeleteSelected')?.addEventListener('click', function() {
+    var checked = document.querySelectorAll('.row-checkbox:checked');
+    if (!checked.length) return;
+    if (!confirm('Hapus ' + checked.length + ' data yang dipilih?')) return;
+    var csrf = document.querySelector('meta[name="csrf-token"]');
+    var token = csrf ? csrf.getAttribute('content') : '';
+    var form = document.getElementById('formLampiran');
+    var clientId = form.querySelector('input[name="client_id"]').value;
+    var tahun = form.querySelector('input[name="tahun"]').value;
+    var ids = [];
+    checked.forEach(function(cb) { ids.push(cb.value); });
+    fetch('/admin/lampiran-spt/delete-all', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token },
+        body: JSON.stringify({ client_id: clientId, tahun: tahun, ids: ids }),
+    }).then(function(r) { return r.json(); }).then(function(res) {
+        if (res.success) {
+            location.reload();
+        } else {
+            alert('Gagal menghapus data.');
+        }
+    }).catch(function() { alert('Terjadi kesalahan.'); });
 });
 
 // Collapse toggle icons

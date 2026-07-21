@@ -46,11 +46,11 @@
                         <form method="POST" action="{{ route('client.login') }}" id="loginForm">
                             @csrf
                             <div class="mb-3">
-                                <label class="form-label small fw-semibold">NIK / NPWP</label>
+                                <label class="form-label small fw-semibold">NIK</label>
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text"><i class="bi bi-person-vcard"></i></span>
                                     <input type="text" name="nik_npwp" value="{{ old('nik_npwp') }}" required autofocus
-                                           class="form-control" placeholder="Masukkan NIK atau NPWP">
+                                           class="form-control" placeholder="Masukkan NIK">
                                 </div>
                             </div>
 
