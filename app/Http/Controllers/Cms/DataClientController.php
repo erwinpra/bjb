@@ -143,8 +143,14 @@ class DataClientController extends Controller
         $tipeBadan = $request->tipe_badan;
 
         $file = $request->file('file');
-        $tempPath = $file->store('imports', 'local');
-        $fullPath = storage_path('app/' . $tempPath);
+        $filename = $file->hashName();
+        $importDir = storage_path('app') . DIRECTORY_SEPARATOR . 'imports';
+        if (!is_dir($importDir)) {
+            mkdir($importDir, 0755, true);
+        }
+        $file->move($importDir, $filename);
+        $tempPath = 'imports/' . $filename;
+        $fullPath = $importDir . DIRECTORY_SEPARATOR . $filename;
 
         $xlsx = SimpleXLSX::parse($fullPath);
         if (!$xlsx) {
@@ -299,7 +305,7 @@ class DataClientController extends Controller
 
         $importMode = $request->import_mode;
         $tipeBadan = $request->tipe_badan;
-        $fullPath = storage_path('app/' . $request->temp_path);
+        $fullPath = storage_path('app') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $request->temp_path);
 
         if (!file_exists($fullPath)) {
             return redirect()->route('cms.data-client.import')

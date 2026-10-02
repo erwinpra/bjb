@@ -20,7 +20,7 @@ class LampiranSptController extends Controller
         $this->middleware('cms.permission:lampiran_spt,view')->only(['index', 'editMaster']);
         $this->middleware('cms.permission:lampiran_spt,create')->only(['store', 'saveRow', 'downloadTemplate', 'previewImport', 'confirmImport']);
         $this->middleware('cms.permission:lampiran_spt,edit')->only([]);
-        $this->middleware('cms.permission:lampiran_spt,delete')->only(['destroyRow']);
+        $this->middleware('cms.permission:lampiran_spt,delete')->only(['destroyRow', 'destroyAll']);
     }
 
     public function index(Request $request)
@@ -227,8 +227,14 @@ class LampiranSptController extends Controller
         $client = DataClient::find($clientId);
 
         $file = $request->file('file');
-        $tempPath = $file->store('imports', 'local');
-        $fullPath = storage_path('app/' . $tempPath);
+        $filename = $file->hashName();
+        $importDir = storage_path('app') . DIRECTORY_SEPARATOR . 'imports';
+        if (!is_dir($importDir)) {
+            mkdir($importDir, 0755, true);
+        }
+        $file->move($importDir, $filename);
+        $tempPath = 'imports/' . $filename;
+        $fullPath = $importDir . DIRECTORY_SEPARATOR . $filename;
 
         try {
             $parsed = LampiranCortexImporter::parseFile($fullPath);
@@ -299,7 +305,7 @@ class LampiranSptController extends Controller
         $clientId = $request->client_id;
         $tahun = $request->tahun;
         $client = DataClient::find($clientId);
-        $fullPath = storage_path('app/' . $request->temp_path);
+        $fullPath = storage_path('app') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $request->temp_path);
 
         if (!file_exists($fullPath)) {
             return redirect()->route('cms.lampiran-spt.index', ['client_id' => $clientId, 'tahun' => $tahun])
@@ -439,6 +445,33 @@ class LampiranSptController extends Controller
             return response()->json(['success' => true]);
         }
         return response()->json(['success' => false, 'message' => 'Data tidak ditemukan.'], 404);
+    }
+
+    public function destroyAll(Request $request)
+    {
+        $request->validate([
+            'client_id' => 'required|exists:cms_data_client,id',
+            'tahun' => 'required|integer|min:2000',
+            'ids' => 'nullable|array',
+            'ids.*' => 'integer|exists:cms_lampiran_spt_detail,id',
+        ]);
+
+        $clientId = $request->client_id;
+        $tahun = $request->tahun;
+
+        $query = LampiranSptDetail::where('client_id', $clientId)->where('tahun', $tahun);
+
+        if ($request->filled('ids')) {
+            $ids = $request->ids;
+            $query->whereIn('id', $ids);
+            ActivityLog::log('delete', 'lampiran_spt', 'Deleted ' . count($ids) . ' rows for client: ' . $clientId . ' tahun: ' . $tahun);
+        } else {
+            ActivityLog::log('delete', 'lampiran_spt', 'Deleted all records for client: ' . $clientId . ' tahun: ' . $tahun);
+        }
+
+        $deleted = $query->delete();
+
+        return response()->json(['success' => true, 'deleted' => $deleted]);
     }
 
     public function editMaster()

@@ -699,8 +699,14 @@ class TransaksiController extends Controller
         ]);
 
         $file = $request->file('file');
-        $tempPath = $file->store('imports', 'local');
-        $fullPath = storage_path('app/' . $tempPath);
+        $filename = $file->hashName();
+        $importDir = storage_path('app') . DIRECTORY_SEPARATOR . 'imports';
+        if (!is_dir($importDir)) {
+            mkdir($importDir, 0755, true);
+        }
+        $file->move($importDir, $filename);
+        $tempPath = 'imports/' . $filename;
+        $fullPath = $importDir . DIRECTORY_SEPARATOR . $filename;
 
         $xlsx = SimpleXLSX::parse($fullPath);
         if (!$xlsx) {
@@ -821,7 +827,7 @@ class TransaksiController extends Controller
             'temp_path' => 'required|string',
         ]);
 
-        $fullPath = storage_path('app/' . $request->temp_path);
+        $fullPath = storage_path('app') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $request->temp_path);
         if (!file_exists($fullPath)) {
             return redirect()->route('cms.transaksi.import')
                 ->with('error', 'File temporary tidak ditemukan. Silakan upload ulang.');

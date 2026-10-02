@@ -78,6 +78,7 @@ Route::prefix($prefix)
             Route::post('lampiran-spt/import/confirm', [LampiranSptController::class, 'confirmImport'])->name('lampiran-spt.import.confirm');
             Route::post('lampiran-spt/row', [LampiranSptController::class, 'saveRow'])->name('lampiran-spt.row.save');
             Route::delete('lampiran-spt/row/{id}', [LampiranSptController::class, 'destroyRow'])->name('lampiran-spt.row.destroy');
+            Route::delete('lampiran-spt/delete-all', [LampiranSptController::class, 'destroyAll'])->name('lampiran-spt.delete-all');
         }
 
         if (config('cms.modules.transaksi.enabled', true)) {
