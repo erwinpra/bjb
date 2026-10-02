@@ -49,9 +49,18 @@
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="tab-input" data-bs-toggle="tab"
                         data-bs-target="#tabContent-input" type="button" role="tab">
-                        <i class="bi bi-pencil-square me-1"></i> Lampiran SPT
+                        <i class="bi bi-pencil-square me-1"></i> Semua
                     </button>
                 </li>
+                @foreach($detailsByKategori ?? [] as $dbk)
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="tab-kat-{{ $dbk['kategori']->id }}" data-bs-toggle="tab"
+                        data-bs-target="#tabContent-kat-{{ $dbk['kategori']->id }}" type="button" role="tab">
+                        {{ $dbk['kategori']->label }}
+                        <span class="badge bg-secondary ms-1">{{ $dbk['count'] }}</span>
+                    </button>
+                </li>
+                @endforeach
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="tab-recap" data-bs-toggle="tab"
                         data-bs-target="#tabContent-recap" type="button" role="tab">
@@ -74,6 +83,8 @@
                                 <div class="col-md-6">
                                     <form method="POST" action="{{ route('cms.lampiran-spt.import.preview') }}" enctype="multipart/form-data" id="formImport">
                                         @csrf
+                                        <input type="hidden" name="client_id" value="{{ $clientId }}">
+                                        <input type="hidden" name="tahun" value="{{ $tahun }}">
                                         <div class="input-group">
                                             <input type="file" name="file" class="form-control" accept=".xlsx,.xls,.csv" required>
                                             <button type="submit" class="btn btn-success">
@@ -82,7 +93,7 @@
                                         </div>
                                         <small class="text-muted d-block mt-1">
                                             <i class="bi bi-info-circle me-1"></i>
-                                            Client dan tahun akan dibaca dari file Excel (baris NIK/NPWP dan tahun).
+                                            Data akan diimport ke client & tahun yang dipilih di atas. Urutan kolom bebas, asal nama header sesuai.
                                         </small>
                                     </form>
                                 </div>
@@ -122,7 +133,7 @@
 
                         @php $masterByKode = $masterItems->keyBy('sub_kode'); @endphp
                         <div class="table-responsive">
-                            <table class="table table-bordered align-middle" id="tableLampiran">
+                            <table class="table table-bordered align-middle table-lampiran" id="tableLampiran">
                                 <thead class="table-dark" style="font-size:0.8rem">
                                     <tr>
                                         <th style="width:120px">KODE</th>
@@ -144,7 +155,7 @@
                                     <tr class="row-edit" data-row-id="{{ $d->id }}">
                                         <td>
                                             <span class="kode-text">{{ $d->kode }}</span>
-                                            <select class="cell-input cell-select d-none">
+                                            <select class="cell-input cell-select d-none" data-field="kode">
                                                 <option value="">--</option>
                                                 @foreach($activeMasterItems as $m)
                                                     <option value="{{ $m->sub_kode }}" {{ $d->kode === $m->sub_kode ? 'selected' : '' }}>
@@ -155,31 +166,31 @@
                                         </td>
                                         <td>
                                             <span class="field-display">{{ isset($masterByKode[$d->kode]) ? $masterByKode[$d->kode]->nama : ($d->deskripsi ?: '-') }}</span>
-                                            <input type="text" class="cell-input cell-edit d-none" value="{{ $d->deskripsi }}" readonly>
+                                            <input type="text" class="cell-input cell-edit d-none" data-field="deskripsi" value="{{ $d->deskripsi }}" readonly>
                                         </td>
                                         <td>
                                             <span class="field-display">{{ $d->nomor_akun ?: '-' }}</span>
-                                            <input type="text" class="cell-input cell-edit d-none" value="{{ $d->nomor_akun }}">
+                                            <input type="text" class="cell-input cell-edit d-none" data-field="nomor_akun" value="{{ $d->nomor_akun }}">
                                         </td>
                                         <td>
                                             <span class="field-display">{{ $d->atas_nama ?: '-' }}</span>
-                                            <input type="text" class="cell-input cell-edit d-none" value="{{ $d->atas_nama }}">
+                                            <input type="text" class="cell-input cell-edit d-none" data-field="atas_nama" value="{{ $d->atas_nama }}">
                                         </td>
                                         <td>
                                             <span class="field-display">{{ $d->nama_bank_institusi ?: '-' }}</span>
-                                            <input type="text" class="cell-input cell-edit d-none" value="{{ $d->nama_bank_institusi }}">
+                                            <input type="text" class="cell-input cell-edit d-none" data-field="nama_bank_institusi" value="{{ $d->nama_bank_institusi }}">
                                         </td>
                                         <td>
                                             <span class="field-display">{{ $d->lokasi_harta ?: '-' }}</span>
-                                            <input type="text" class="cell-input cell-edit d-none" value="{{ $d->lokasi_harta }}">
+                                            <input type="text" class="cell-input cell-edit d-none" data-field="lokasi_harta" value="{{ $d->lokasi_harta }}">
                                         </td>
                                         <td>
                                             <span class="field-display">{{ $d->kurs ?: '-' }}</span>
-                                            <input type="text" class="cell-input cell-edit d-none" value="{{ $d->kurs }}">
+                                            <input type="text" class="cell-input cell-edit d-none" data-field="kurs" value="{{ $d->kurs }}">
                                         </td>
                                         <td>
                                             <span class="field-display">{{ $d->tahun_perolehan ?: '-' }}</span>
-                                            <select class="cell-input cell-select cell-edit d-none">
+                                            <select class="cell-input cell-select cell-edit d-none" data-field="tahun_perolehan">
                                                 <option value="">--</option>
                                                 @foreach($tahunPerolehanList as $t)
                                                     <option value="{{ $t }}" {{ $d->tahun_perolehan == $t ? 'selected' : '' }}>{{ $t }}</option>
@@ -188,15 +199,29 @@
                                         </td>
                                         <td>
                                             <span class="field-display text-end">{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '-' }}</span>
-                                            <input type="text" class="cell-input cell-edit format-number text-end d-none" value="{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '' }}">
+                                            <input type="text" class="cell-input cell-edit format-number text-end d-none" data-field="saldo_saat_ini" value="{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '' }}">
                                         </td>
                                         <td>
                                             <span class="field-display text-end">{{ $d->saldo_bentuk_awal > 0 ? number_format($d->saldo_bentuk_awal, 2, ',', '.') : '-' }}</span>
-                                            <input type="text" class="cell-input cell-edit format-currency text-end d-none" value="{{ $d->saldo_bentuk_awal > 0 ? number_format($d->saldo_bentuk_awal, 2, ',', '.') : '' }}">
+                                            <input type="text" class="cell-input cell-edit format-currency text-end d-none" data-field="saldo_bentuk_awal" value="{{ $d->saldo_bentuk_awal > 0 ? number_format($d->saldo_bentuk_awal, 2, ',', '.') : '' }}">
                                         </td>
                                         <td>
                                             <span class="field-display text-end">{{ $d->nilai_kurs > 0 ? number_format($d->nilai_kurs, 2, ',', '.') : '-' }}</span>
-                                            <input type="text" class="cell-input cell-edit format-currency text-end d-none" value="{{ $d->nilai_kurs > 0 ? number_format($d->nilai_kurs, 2, ',', '.') : '' }}">
+                                            <input type="text" class="cell-input cell-edit format-currency text-end d-none" data-field="nilai_kurs" value="{{ $d->nilai_kurs > 0 ? number_format($d->nilai_kurs, 2, ',', '.') : '' }}">
+                                        </td>
+                                        <td class="d-none">
+                                            <input type="hidden" data-field="harga_perolehan" value="{{ $d->harga_perolehan }}">
+                                            <input type="hidden" data-field="merk_tipe" value="{{ $d->merk_tipe }}">
+                                            <input type="hidden" data-field="nopol_sertifikat" value="{{ $d->nopol_sertifikat }}">
+                                            <input type="hidden" data-field="kepemilikan" value="{{ $d->kepemilikan }}">
+                                            <input type="hidden" data-field="nik_npwp_pihak" value="{{ $d->nik_npwp_pihak }}">
+                                            <input type="hidden" data-field="nama_pihak" value="{{ $d->nama_pihak }}">
+                                            <input type="hidden" data-field="negara_kreditur" value="{{ $d->negara_kreditur }}">
+                                            <input type="hidden" data-field="ukuran_tanah" value="{{ $d->ukuran_tanah }}">
+                                            <input type="hidden" data-field="ukuran_bangunan" value="{{ $d->ukuran_bangunan }}">
+                                            <input type="hidden" data-field="sumber_kepemilikan" value="{{ $d->sumber_kepemilikan }}">
+                                            <input type="hidden" data-field="detail_info" value="{{ $d->detail_info }}">
+                                            <input type="hidden" data-field="tahun_mulai" value="{{ $d->tahun_mulai }}">
                                         </td>
                                         <td class="text-center">
                                             @cmsCan('lampiran_spt', 'edit')
@@ -241,6 +266,288 @@
                     </div>
                     @endif
                 </div>
+
+                {{-- Tab per kategori: tabel disesuaikan field masing-masing sheet --}}
+                @foreach($detailsByKategori ?? [] as $dbk)
+                @php $katId = (int) $dbk['kategori']->id; $items = $dbk['items']; @endphp
+                <div class="tab-pane fade" id="tabContent-kat-{{ $katId }}" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-semibold mb-0">{{ $dbk['kategori']->label }}
+                            <small class="text-muted">({{ $dbk['count'] }} data)</small>
+                        </h6>
+                        <span class="badge bg-primary">Total: Rp {{ number_format($dbk['total'], 0, ',', '.') }}</span>
+                    </div>
+                    <div class="table-responsive">
+                        @if($katId === 1)
+                        {{-- KAS: NOMOR AKUN, ATAS NAMA, BANK, LOKASI, THN, SALDO --}}
+                        <table class="table table-bordered align-middle table-lampiran" id="tableKat-{{ $katId }}" style="font-size:0.8rem">
+                            <thead class="table-dark"><tr><th>KODE</th><th>DESKRIPSI</th><th>NOMOR AKUN</th><th>ATAS NAMA</th><th>BANK/INSTITUSI</th><th>LOKASI</th><th>THN</th><th class="text-end">SALDO SAAT INI</th><th>AKSI</th></tr></thead>
+                            <tbody>
+                                @forelse($items as $d)
+                                <tr class="row-edit" data-row-id="{{ $d->id }}">
+                                    <td>
+                                        <span class="kode-text">{{ $d->kode }}</span>
+                                        <select class="cell-input cell-select d-none" data-field="kode">
+                                            <option value="">--</option>
+                                            @foreach($activeMasterItems->where('kategori_id', $katId) as $m)
+                                                <option value="{{ $m->sub_kode }}" {{ $d->kode === $m->sub_kode ? 'selected' : '' }}>{{ $m->sub_kode }} - {{ $m->nama }}</option>
+                                            @endforeach
+                                        </select>
+                                    </td>
+                                    <td><span class="field-display">{{ $masterByKode[$d->kode]->nama ?? ($d->deskripsi ?: '-') }}</span><input type="text" class="cell-input cell-edit d-none" data-field="deskripsi" value="{{ $d->deskripsi }}" readonly></td>
+                                    <td><span class="field-display">{{ $d->nomor_akun ?: '-' }}</span><input type="text" class="cell-input cell-edit d-none" data-field="nomor_akun" value="{{ $d->nomor_akun }}"></td>
+                                    <td><span class="field-display">{{ $d->atas_nama ?: '-' }}</span><input type="text" class="cell-input cell-edit d-none" data-field="atas_nama" value="{{ $d->atas_nama }}"></td>
+                                    <td><span class="field-display">{{ $d->nama_bank_institusi ?: '-' }}</span><input type="text" class="cell-input cell-edit d-none" data-field="nama_bank_institusi" value="{{ $d->nama_bank_institusi }}"></td>
+                                    <td><span class="field-display">{{ $d->lokasi_harta ?: '-' }}</span><input type="text" class="cell-input cell-edit d-none" data-field="lokasi_harta" value="{{ $d->lokasi_harta }}"></td>
+                                    <td><span class="field-display">{{ $d->tahun_perolehan ?: '-' }}</span><select class="cell-input cell-select cell-edit d-none" data-field="tahun_perolehan"><option value="">--</option>@foreach($tahunPerolehanList as $t)<option value="{{ $t }}" {{ $d->tahun_perolehan == $t ? 'selected' : '' }}>{{ $t }}</option>@endforeach</select></td>
+                                    <td><span class="field-display text-end">{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '-' }}</span><input type="text" class="cell-input cell-edit format-number text-end d-none" data-field="saldo_saat_ini" value="{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '' }}"></td>
+                                    <td class="d-none">
+                                        <input type="hidden" data-field="kurs" value="{{ $d->kurs }}"><input type="hidden" data-field="saldo_bentuk_awal" value="{{ $d->saldo_bentuk_awal }}"><input type="hidden" data-field="nilai_kurs" value="{{ $d->nilai_kurs }}"><input type="hidden" data-field="harga_perolehan" value="{{ $d->harga_perolehan }}"><input type="hidden" data-field="merk_tipe" value="{{ $d->merk_tipe }}"><input type="hidden" data-field="nopol_sertifikat" value="{{ $d->nopol_sertifikat }}"><input type="hidden" data-field="kepemilikan" value="{{ $d->kepemilikan }}"><input type="hidden" data-field="nik_npwp_pihak" value="{{ $d->nik_npwp_pihak }}"><input type="hidden" data-field="nama_pihak" value="{{ $d->nama_pihak }}"><input type="hidden" data-field="negara_kreditur" value="{{ $d->negara_kreditur }}"><input type="hidden" data-field="ukuran_tanah" value="{{ $d->ukuran_tanah }}"><input type="hidden" data-field="ukuran_bangunan" value="{{ $d->ukuran_bangunan }}"><input type="hidden" data-field="sumber_kepemilikan" value="{{ $d->sumber_kepemilikan }}"><input type="hidden" data-field="detail_info" value="{{ $d->detail_info }}"><input type="hidden" data-field="tahun_mulai" value="{{ $d->tahun_mulai }}">
+                                    </td>
+                                    <td class="text-center text-nowrap">
+                                        @cmsCan('lampiran_spt', 'edit')<button type="button" class="btn btn-outline-primary btn-sm btn-edit-row" title="Edit baris"><i class="bi bi-pencil"></i></button>@endCmsCan
+                                        @cmsCan('lampiran_spt', 'delete')<button type="button" class="btn btn-outline-danger btn-sm btn-remove-row" title="Hapus baris" data-id="{{ $d->id }}"><i class="bi bi-trash3"></i></button>@endCmsCan
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr class="empty-row"><td colspan="9" class="text-center text-muted py-4">Belum ada data KAS. Import sheet 01 atau klik "Tambah Baris".</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                        @elseif($katId === 2)
+                        {{-- PIUTANG: LOKASI PENERIMA, NIK/NPWP, NAMA, THN MULAI, NILAI --}}
+                        <table class="table table-bordered align-middle table-lampiran" id="tableKat-{{ $katId }}" style="font-size:0.8rem">
+                            <thead class="table-dark"><tr><th>KODE</th><th>DESKRIPSI</th><th>LOKASI PENERIMA</th><th>NIK/NPWP</th><th>NAMA PENERIMA</th><th>THN MULAI</th><th class="text-end">NILAI SAAT INI</th><th>AKSI</th></tr></thead>
+                            <tbody>
+                                @forelse($items as $d)
+                                <tr class="row-edit" data-row-id="{{ $d->id }}">
+                                    <td>
+                                        <span class="kode-text">{{ $d->kode }}</span>
+                                        <select class="cell-input cell-select d-none" data-field="kode">
+                                            <option value="">--</option>
+                                            @foreach($activeMasterItems->where('kategori_id', $katId) as $m)
+                                                <option value="{{ $m->sub_kode }}" {{ $d->kode === $m->sub_kode ? 'selected' : '' }}>{{ $m->sub_kode }} - {{ $m->nama }}</option>
+                                            @endforeach
+                                        </select>
+                                    </td>
+                                    <td><span class="field-display">{{ $masterByKode[$d->kode]->nama ?? ($d->deskripsi ?: '-') }}</span><input type="text" class="cell-input cell-edit d-none" data-field="deskripsi" value="{{ $d->deskripsi }}" readonly></td>
+                                    <td><span class="field-display">{{ $d->lokasi_harta ?: '-' }}</span><input type="text" class="cell-input cell-edit d-none" data-field="lokasi_harta" value="{{ $d->lokasi_harta }}"></td>
+                                    <td><span class="field-display"><code>{{ $d->nik_npwp_pihak ?: '-' }}</code></span><input type="text" class="cell-input cell-edit d-none" data-field="nik_npwp_pihak" value="{{ $d->nik_npwp_pihak }}"></td>
+                                    <td><span class="field-display">{{ $d->nama_pihak ?: $d->atas_nama ?: '-' }}</span><input type="text" class="cell-input cell-edit d-none" data-field="nama_pihak" value="{{ $d->nama_pihak }}"></td>
+                                    <td><span class="field-display">{{ $d->tahun_mulai ?: $d->tahun_perolehan ?: '-' }}</span><select class="cell-input cell-select cell-edit d-none" data-field="tahun_mulai"><option value="">--</option>@foreach($tahunPerolehanList as $t)<option value="{{ $t }}" {{ ($d->tahun_mulai ?: $d->tahun_perolehan) == $t ? 'selected' : '' }}>{{ $t }}</option>@endforeach</select></td>
+                                    <td><span class="field-display text-end">{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '-' }}</span><input type="text" class="cell-input cell-edit format-number text-end d-none" data-field="saldo_saat_ini" value="{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '' }}"></td>
+                                    <td class="d-none">
+                                        <input type="hidden" data-field="nomor_akun" value="{{ $d->nomor_akun }}"><input type="hidden" data-field="atas_nama" value="{{ $d->atas_nama }}"><input type="hidden" data-field="nama_bank_institusi" value="{{ $d->nama_bank_institusi }}"><input type="hidden" data-field="kurs" value="{{ $d->kurs }}"><input type="hidden" data-field="tahun_perolehan" value="{{ $d->tahun_perolehan }}"><input type="hidden" data-field="saldo_bentuk_awal" value="{{ $d->saldo_bentuk_awal }}"><input type="hidden" data-field="nilai_kurs" value="{{ $d->nilai_kurs }}"><input type="hidden" data-field="harga_perolehan" value="{{ $d->harga_perolehan }}"><input type="hidden" data-field="merk_tipe" value="{{ $d->merk_tipe }}"><input type="hidden" data-field="nopol_sertifikat" value="{{ $d->nopol_sertifikat }}"><input type="hidden" data-field="kepemilikan" value="{{ $d->kepemilikan }}"><input type="hidden" data-field="negara_kreditur" value="{{ $d->negara_kreditur }}"><input type="hidden" data-field="ukuran_tanah" value="{{ $d->ukuran_tanah }}"><input type="hidden" data-field="ukuran_bangunan" value="{{ $d->ukuran_bangunan }}"><input type="hidden" data-field="sumber_kepemilikan" value="{{ $d->sumber_kepemilikan }}"><input type="hidden" data-field="detail_info" value="{{ $d->detail_info }}">
+                                    </td>
+                                    <td class="text-center text-nowrap">
+                                        @cmsCan('lampiran_spt', 'edit')<button type="button" class="btn btn-outline-primary btn-sm btn-edit-row" title="Edit baris"><i class="bi bi-pencil"></i></button>@endCmsCan
+                                        @cmsCan('lampiran_spt', 'delete')<button type="button" class="btn btn-outline-danger btn-sm btn-remove-row" title="Hapus baris" data-id="{{ $d->id }}"><i class="bi bi-trash3"></i></button>@endCmsCan
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr class="empty-row"><td colspan="8" class="text-center text-muted py-4">Belum ada data PIUTANG. Import sheet 02 atau klik "Tambah Baris".</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                        @elseif($katId === 3)
+                        {{-- INVESTASI: LOKASI, NPWP, NAMA, NOMOR AKUN, HARGA, THN, NILAI --}}
+                        <table class="table table-bordered align-middle table-lampiran" id="tableKat-{{ $katId }}" style="font-size:0.8rem">
+                            <thead class="table-dark"><tr><th>KODE</th><th>DESKRIPSI</th><th>LOKASI</th><th>NPWP</th><th>NAMA INSTITUSI</th><th>NOMOR AKUN</th><th>THN</th><th class="text-end">HARGA PEROLEHAN</th><th class="text-end">NILAI SAAT INI</th><th>AKSI</th></tr></thead>
+                            <tbody>
+                                @forelse($items as $d)
+                                <tr class="row-edit" data-row-id="{{ $d->id }}">
+                                    <td>
+                                        <span class="kode-text">{{ $d->kode }}</span>
+                                        <select class="cell-input cell-select d-none" data-field="kode">
+                                            <option value="">--</option>
+                                            @foreach($activeMasterItems->where('kategori_id', $katId) as $m)
+                                                <option value="{{ $m->sub_kode }}" {{ $d->kode === $m->sub_kode ? 'selected' : '' }}>{{ $m->sub_kode }} - {{ $m->nama }}</option>
+                                            @endforeach
+                                        </select>
+                                    </td>
+                                    <td><span class="field-display">{{ $masterByKode[$d->kode]->nama ?? ($d->deskripsi ?: '-') }}</span><input type="text" class="cell-input cell-edit d-none" data-field="deskripsi" value="{{ $d->deskripsi }}" readonly></td>
+                                    <td><span class="field-display">{{ $d->lokasi_harta ?: '-' }}</span><input type="text" class="cell-input cell-edit d-none" data-field="lokasi_harta" value="{{ $d->lokasi_harta }}"></td>
+                                    <td><span class="field-display"><code>{{ $d->nik_npwp_pihak ?: '-' }}</code></span><input type="text" class="cell-input cell-edit d-none" data-field="nik_npwp_pihak" value="{{ $d->nik_npwp_pihak }}"></td>
+                                    <td><span class="field-display">{{ $d->nama_pihak ?: $d->merk_tipe ?: '-' }}</span><input type="text" class="cell-input cell-edit d-none" data-field="nama_pihak" value="{{ $d->nama_pihak }}"></td>
+                                    <td><span class="field-display">{{ $d->nomor_akun ?: $d->nopol_sertifikat ?: '-' }}</span><input type="text" class="cell-input cell-edit d-none" data-field="nomor_akun" value="{{ $d->nomor_akun }}"></td>
+                                    <td><span class="field-display">{{ $d->tahun_perolehan ?: '-' }}</span><select class="cell-input cell-select cell-edit d-none" data-field="tahun_perolehan"><option value="">--</option>@foreach($tahunPerolehanList as $t)<option value="{{ $t }}" {{ $d->tahun_perolehan == $t ? 'selected' : '' }}>{{ $t }}</option>@endforeach</select></td>
+                                    <td><span class="field-display text-end">{{ ($d->harga_perolehan ?: $d->saldo_bentuk_awal) > 0 ? number_format($d->harga_perolehan ?: $d->saldo_bentuk_awal, 0, ',', '.') : '-' }}</span><input type="text" class="cell-input cell-edit format-number text-end d-none" data-field="harga_perolehan" value="{{ ($d->harga_perolehan ?: $d->saldo_bentuk_awal) > 0 ? number_format($d->harga_perolehan ?: $d->saldo_bentuk_awal, 0, ',', '.') : '' }}"></td>
+                                    <td><span class="field-display text-end">{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '-' }}</span><input type="text" class="cell-input cell-edit format-number text-end d-none" data-field="saldo_saat_ini" value="{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '' }}"></td>
+                                    <td class="d-none">
+                                        <input type="hidden" data-field="atas_nama" value="{{ $d->atas_nama }}"><input type="hidden" data-field="nama_bank_institusi" value="{{ $d->nama_bank_institusi }}"><input type="hidden" data-field="kurs" value="{{ $d->kurs }}"><input type="hidden" data-field="saldo_bentuk_awal" value="{{ $d->saldo_bentuk_awal }}"><input type="hidden" data-field="nilai_kurs" value="{{ $d->nilai_kurs }}"><input type="hidden" data-field="merk_tipe" value="{{ $d->merk_tipe }}"><input type="hidden" data-field="nopol_sertifikat" value="{{ $d->nopol_sertifikat }}"><input type="hidden" data-field="kepemilikan" value="{{ $d->kepemilikan }}"><input type="hidden" data-field="negara_kreditur" value="{{ $d->negara_kreditur }}"><input type="hidden" data-field="ukuran_tanah" value="{{ $d->ukuran_tanah }}"><input type="hidden" data-field="ukuran_bangunan" value="{{ $d->ukuran_bangunan }}"><input type="hidden" data-field="sumber_kepemilikan" value="{{ $d->sumber_kepemilikan }}"><input type="hidden" data-field="detail_info" value="{{ $d->detail_info }}"><input type="hidden" data-field="tahun_mulai" value="{{ $d->tahun_mulai }}">
+                                    </td>
+                                    <td class="text-center text-nowrap">
+                                        @cmsCan('lampiran_spt', 'edit')<button type="button" class="btn btn-outline-primary btn-sm btn-edit-row" title="Edit baris"><i class="bi bi-pencil"></i></button>@endCmsCan
+                                        @cmsCan('lampiran_spt', 'delete')<button type="button" class="btn btn-outline-danger btn-sm btn-remove-row" title="Hapus baris" data-id="{{ $d->id }}"><i class="bi bi-trash3"></i></button>@endCmsCan
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr class="empty-row"><td colspan="10" class="text-center text-muted py-4">Belum ada data INVESTASI. Import sheet 03 atau klik "Tambah Baris".</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                        @elseif($katId === 4)
+                        {{-- HARTA BERGERAK: MERK/TIPE, NOPOL, KEPEMILIKAN, NIK/NPWP, NAMA, TAHUN, HARGA, NILAI --}}
+                        <table class="table table-bordered align-middle table-lampiran" id="tableKat-{{ $katId }}" style="font-size:0.8rem">
+                            <thead class="table-dark"><tr><th>KODE</th><th>MERK/TIPE</th><th>NOPOL/REGISTRASI</th><th>KEPEMILIKAN</th><th>NIK/NPWP</th><th>NAMA</th><th>TAHUN</th><th class="text-end">HARGA</th><th class="text-end">NILAI</th><th>AKSI</th></tr></thead>
+                            <tbody>
+                                @forelse($items as $d)
+                                <tr class="row-edit" data-row-id="{{ $d->id }}">
+                                    <td>
+                                        <span class="kode-text">{{ $d->kode }}</span>
+                                        <select class="cell-input cell-select d-none" data-field="kode">
+                                            <option value="">--</option>
+                                            @foreach($activeMasterItems->where('kategori_id', $katId) as $m)
+                                                <option value="{{ $m->sub_kode }}" {{ $d->kode === $m->sub_kode ? 'selected' : '' }}>{{ $m->sub_kode }} - {{ $m->nama }}</option>
+                                            @endforeach
+                                        </select>
+                                        <input type="hidden" data-field="deskripsi" value="{{ $d->deskripsi }}">
+                                    </td>
+                                    <td><span class="field-display">{{ $d->merk_tipe ?: $d->deskripsi ?: '-' }}</span><input type="text" class="cell-input cell-edit d-none" data-field="merk_tipe" value="{{ $d->merk_tipe }}"></td>
+                                    <td><span class="field-display"><code>{{ $d->nopol_sertifikat ?: $d->nomor_akun ?: '-' }}</code></span><input type="text" class="cell-input cell-edit d-none" data-field="nopol_sertifikat" value="{{ $d->nopol_sertifikat }}"></td>
+                                    <td><span class="field-display">{{ $d->kepemilikan ?: '-' }}</span><input type="text" class="cell-input cell-edit d-none" data-field="kepemilikan" value="{{ $d->kepemilikan }}"></td>
+                                    <td><span class="field-display"><code>{{ $d->nik_npwp_pihak ?: '-' }}</code></span><input type="text" class="cell-input cell-edit d-none" data-field="nik_npwp_pihak" value="{{ $d->nik_npwp_pihak }}"></td>
+                                    <td><span class="field-display">{{ $d->nama_pihak ?: $d->atas_nama ?: '-' }}</span><input type="text" class="cell-input cell-edit d-none" data-field="nama_pihak" value="{{ $d->nama_pihak }}"></td>
+                                    <td><span class="field-display">{{ $d->tahun_perolehan ?: '-' }}</span><select class="cell-input cell-select cell-edit d-none" data-field="tahun_perolehan"><option value="">--</option>@foreach($tahunPerolehanList as $t)<option value="{{ $t }}" {{ $d->tahun_perolehan == $t ? 'selected' : '' }}>{{ $t }}</option>@endforeach</select></td>
+                                    <td><span class="field-display text-end">{{ ($d->harga_perolehan ?: $d->saldo_bentuk_awal) > 0 ? number_format($d->harga_perolehan ?: $d->saldo_bentuk_awal, 0, ',', '.') : '-' }}</span><input type="text" class="cell-input cell-edit format-number text-end d-none" data-field="harga_perolehan" value="{{ ($d->harga_perolehan ?: $d->saldo_bentuk_awal) > 0 ? number_format($d->harga_perolehan ?: $d->saldo_bentuk_awal, 0, ',', '.') : '' }}"></td>
+                                    <td><span class="field-display text-end">{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '-' }}</span><input type="text" class="cell-input cell-edit format-number text-end d-none" data-field="saldo_saat_ini" value="{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '' }}"></td>
+                                    <td class="d-none">
+                                        <input type="hidden" data-field="nomor_akun" value="{{ $d->nomor_akun }}"><input type="hidden" data-field="atas_nama" value="{{ $d->atas_nama }}"><input type="hidden" data-field="nama_bank_institusi" value="{{ $d->nama_bank_institusi }}"><input type="hidden" data-field="lokasi_harta" value="{{ $d->lokasi_harta }}"><input type="hidden" data-field="kurs" value="{{ $d->kurs }}"><input type="hidden" data-field="saldo_bentuk_awal" value="{{ $d->saldo_bentuk_awal }}"><input type="hidden" data-field="nilai_kurs" value="{{ $d->nilai_kurs }}"><input type="hidden" data-field="negara_kreditur" value="{{ $d->negara_kreditur }}"><input type="hidden" data-field="ukuran_tanah" value="{{ $d->ukuran_tanah }}"><input type="hidden" data-field="ukuran_bangunan" value="{{ $d->ukuran_bangunan }}"><input type="hidden" data-field="sumber_kepemilikan" value="{{ $d->sumber_kepemilikan }}"><input type="hidden" data-field="detail_info" value="{{ $d->detail_info }}"><input type="hidden" data-field="tahun_mulai" value="{{ $d->tahun_mulai }}">
+                                    </td>
+                                    <td class="text-center text-nowrap">
+                                        @cmsCan('lampiran_spt', 'edit')<button type="button" class="btn btn-outline-primary btn-sm btn-edit-row" title="Edit baris"><i class="bi bi-pencil"></i></button>@endCmsCan
+                                        @cmsCan('lampiran_spt', 'delete')<button type="button" class="btn btn-outline-danger btn-sm btn-remove-row" title="Hapus baris" data-id="{{ $d->id }}"><i class="bi bi-trash3"></i></button>@endCmsCan
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr class="empty-row"><td colspan="10" class="text-center text-muted py-4">Belum ada data HARTA BERGERAK. Import sheet 04 atau klik "Tambah Baris".</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                        @elseif($katId === 5)
+                        {{-- HARTA TIDAK BERGERAK: LOKASI, DETAIL, TANAH, BANGUNAN, SUMBER, SERTIFIKAT, TAHUN, HARGA, NILAI --}}
+                        <table class="table table-bordered align-middle table-lampiran" id="tableKat-{{ $katId }}" style="font-size:0.8rem">
+                            <thead class="table-dark"><tr><th>KODE</th><th>DESKRIPSI</th><th>LOKASI</th><th>DETAIL</th><th>TANAH</th><th>BANGUNAN</th><th>SUMBER</th><th>SERTIFIKAT</th><th>THN</th><th class="text-end">HARGA</th><th class="text-end">NILAI</th><th>AKSI</th></tr></thead>
+                            <tbody>
+                                @forelse($items as $d)
+                                <tr class="row-edit" data-row-id="{{ $d->id }}">
+                                    <td>
+                                        <span class="kode-text">{{ $d->kode }}</span>
+                                        <select class="cell-input cell-select d-none" data-field="kode">
+                                            <option value="">--</option>
+                                            @foreach($activeMasterItems->where('kategori_id', $katId) as $m)
+                                                <option value="{{ $m->sub_kode }}" {{ $d->kode === $m->sub_kode ? 'selected' : '' }}>{{ $m->sub_kode }} - {{ $m->nama }}</option>
+                                            @endforeach
+                                        </select>
+                                    </td>
+                                    <td><span class="field-display">{{ $masterByKode[$d->kode]->nama ?? ($d->deskripsi ?: '-') }}</span><input type="text" class="cell-input cell-edit d-none" data-field="deskripsi" value="{{ $d->deskripsi }}" readonly></td>
+                                    <td><span class="field-display">{{ $d->lokasi_harta ?: '-' }}</span><input type="text" class="cell-input cell-edit d-none" data-field="lokasi_harta" value="{{ $d->lokasi_harta }}"></td>
+                                    <td><span class="field-display small">{{ $d->detail_info ?: '-' }}</span><input type="text" class="cell-input cell-edit d-none" data-field="detail_info" value="{{ $d->detail_info }}"></td>
+                                    <td><span class="field-display">{{ $d->ukuran_tanah ?: '-' }}</span><input type="text" class="cell-input cell-edit d-none" data-field="ukuran_tanah" value="{{ $d->ukuran_tanah }}"></td>
+                                    <td><span class="field-display">{{ $d->ukuran_bangunan ?: '-' }}</span><input type="text" class="cell-input cell-edit d-none" data-field="ukuran_bangunan" value="{{ $d->ukuran_bangunan }}"></td>
+                                    <td><span class="field-display">{{ $d->sumber_kepemilikan ?: '-' }}</span><input type="text" class="cell-input cell-edit d-none" data-field="sumber_kepemilikan" value="{{ $d->sumber_kepemilikan }}"></td>
+                                    <td><span class="field-display"><code>{{ $d->nopol_sertifikat ?: $d->nomor_akun ?: '-' }}</code></span><input type="text" class="cell-input cell-edit d-none" data-field="nopol_sertifikat" value="{{ $d->nopol_sertifikat }}"></td>
+                                    <td><span class="field-display">{{ $d->tahun_perolehan ?: '-' }}</span><select class="cell-input cell-select cell-edit d-none" data-field="tahun_perolehan"><option value="">--</option>@foreach($tahunPerolehanList as $t)<option value="{{ $t }}" {{ $d->tahun_perolehan == $t ? 'selected' : '' }}>{{ $t }}</option>@endforeach</select></td>
+                                    <td><span class="field-display text-end">{{ ($d->harga_perolehan ?: $d->saldo_bentuk_awal) > 0 ? number_format($d->harga_perolehan ?: $d->saldo_bentuk_awal, 0, ',', '.') : '-' }}</span><input type="text" class="cell-input cell-edit format-number text-end d-none" data-field="harga_perolehan" value="{{ ($d->harga_perolehan ?: $d->saldo_bentuk_awal) > 0 ? number_format($d->harga_perolehan ?: $d->saldo_bentuk_awal, 0, ',', '.') : '' }}"></td>
+                                    <td><span class="field-display text-end">{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '-' }}</span><input type="text" class="cell-input cell-edit format-number text-end d-none" data-field="saldo_saat_ini" value="{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '' }}"></td>
+                                    <td class="d-none">
+                                        <input type="hidden" data-field="nomor_akun" value="{{ $d->nomor_akun }}"><input type="hidden" data-field="atas_nama" value="{{ $d->atas_nama }}"><input type="hidden" data-field="nama_bank_institusi" value="{{ $d->nama_bank_institusi }}"><input type="hidden" data-field="kurs" value="{{ $d->kurs }}"><input type="hidden" data-field="saldo_bentuk_awal" value="{{ $d->saldo_bentuk_awal }}"><input type="hidden" data-field="nilai_kurs" value="{{ $d->nilai_kurs }}"><input type="hidden" data-field="merk_tipe" value="{{ $d->merk_tipe }}"><input type="hidden" data-field="kepemilikan" value="{{ $d->kepemilikan }}"><input type="hidden" data-field="nik_npwp_pihak" value="{{ $d->nik_npwp_pihak }}"><input type="hidden" data-field="nama_pihak" value="{{ $d->nama_pihak }}"><input type="hidden" data-field="negara_kreditur" value="{{ $d->negara_kreditur }}"><input type="hidden" data-field="tahun_mulai" value="{{ $d->tahun_mulai }}">
+                                    </td>
+                                    <td class="text-center text-nowrap">
+                                        @cmsCan('lampiran_spt', 'edit')<button type="button" class="btn btn-outline-primary btn-sm btn-edit-row" title="Edit baris"><i class="bi bi-pencil"></i></button>@endCmsCan
+                                        @cmsCan('lampiran_spt', 'delete')<button type="button" class="btn btn-outline-danger btn-sm btn-remove-row" title="Hapus baris" data-id="{{ $d->id }}"><i class="bi bi-trash3"></i></button>@endCmsCan
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr class="empty-row"><td colspan="12" class="text-center text-muted py-4">Belum ada data HARTA TIDAK BERGERAK. Import sheet 05 atau klik "Tambah Baris".</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                        @elseif($katId === 7)
+                        {{-- HUTANG: NIK/NPWP, NAMA, NEGARA, TAHUN, NILAI, KETERANGAN --}}
+                        <table class="table table-bordered align-middle table-lampiran" id="tableKat-{{ $katId }}" style="font-size:0.8rem">
+                            <thead class="table-dark"><tr><th>KODE</th><th>DESKRIPSI</th><th>NIK/NPWP</th><th>NAMA PEMBERI</th><th>NEGARA</th><th>THN PINJAM</th><th class="text-end">NILAI</th><th>KETERANGAN</th><th>AKSI</th></tr></thead>
+                            <tbody>
+                                @forelse($items as $d)
+                                <tr class="row-edit" data-row-id="{{ $d->id }}">
+                                    <td>
+                                        <span class="kode-text">{{ $d->kode }}</span>
+                                        <select class="cell-input cell-select d-none" data-field="kode">
+                                            <option value="">--</option>
+                                            @foreach($activeMasterItems->where('kategori_id', $katId) as $m)
+                                                <option value="{{ $m->sub_kode }}" {{ $d->kode === $m->sub_kode ? 'selected' : '' }}>{{ $m->sub_kode }} - {{ $m->nama }}</option>
+                                            @endforeach
+                                        </select>
+                                    </td>
+                                    <td><span class="field-display">{{ $masterByKode[$d->kode]->nama ?? ($d->deskripsi ?: '-') }}</span><input type="text" class="cell-input cell-edit d-none" data-field="deskripsi" value="{{ $d->deskripsi }}" readonly></td>
+                                    <td><span class="field-display"><code>{{ $d->nik_npwp_pihak ?: '-' }}</code></span><input type="text" class="cell-input cell-edit d-none" data-field="nik_npwp_pihak" value="{{ $d->nik_npwp_pihak }}"></td>
+                                    <td><span class="field-display">{{ $d->nama_pihak ?: $d->atas_nama ?: '-' }}</span><input type="text" class="cell-input cell-edit d-none" data-field="nama_pihak" value="{{ $d->nama_pihak }}"></td>
+                                    <td><span class="field-display">{{ $d->negara_kreditur ?: $d->lokasi_harta ?: '-' }}</span><input type="text" class="cell-input cell-edit d-none" data-field="negara_kreditur" value="{{ $d->negara_kreditur }}"></td>
+                                    <td><span class="field-display">{{ $d->tahun_mulai ?: $d->tahun_perolehan ?: '-' }}</span><select class="cell-input cell-select cell-edit d-none" data-field="tahun_mulai"><option value="">--</option>@foreach($tahunPerolehanList as $t)<option value="{{ $t }}" {{ ($d->tahun_mulai ?: $d->tahun_perolehan) == $t ? 'selected' : '' }}>{{ $t }}</option>@endforeach</select></td>
+                                    <td><span class="field-display text-end">{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '-' }}</span><input type="text" class="cell-input cell-edit format-number text-end d-none" data-field="saldo_saat_ini" value="{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '' }}"></td>
+                                    <td><span class="field-display small">{{ $d->detail_info ?: '-' }}</span><input type="text" class="cell-input cell-edit d-none" data-field="detail_info" value="{{ $d->detail_info }}"></td>
+                                    <td class="d-none">
+                                        <input type="hidden" data-field="nomor_akun" value="{{ $d->nomor_akun }}"><input type="hidden" data-field="atas_nama" value="{{ $d->atas_nama }}"><input type="hidden" data-field="nama_bank_institusi" value="{{ $d->nama_bank_institusi }}"><input type="hidden" data-field="lokasi_harta" value="{{ $d->lokasi_harta }}"><input type="hidden" data-field="kurs" value="{{ $d->kurs }}"><input type="hidden" data-field="tahun_perolehan" value="{{ $d->tahun_perolehan }}"><input type="hidden" data-field="saldo_bentuk_awal" value="{{ $d->saldo_bentuk_awal }}"><input type="hidden" data-field="nilai_kurs" value="{{ $d->nilai_kurs }}"><input type="hidden" data-field="harga_perolehan" value="{{ $d->harga_perolehan }}"><input type="hidden" data-field="merk_tipe" value="{{ $d->merk_tipe }}"><input type="hidden" data-field="nopol_sertifikat" value="{{ $d->nopol_sertifikat }}"><input type="hidden" data-field="kepemilikan" value="{{ $d->kepemilikan }}"><input type="hidden" data-field="ukuran_tanah" value="{{ $d->ukuran_tanah }}"><input type="hidden" data-field="ukuran_bangunan" value="{{ $d->ukuran_bangunan }}"><input type="hidden" data-field="sumber_kepemilikan" value="{{ $d->sumber_kepemilikan }}">
+                                    </td>
+                                    <td class="text-center text-nowrap">
+                                        @cmsCan('lampiran_spt', 'edit')<button type="button" class="btn btn-outline-primary btn-sm btn-edit-row" title="Edit baris"><i class="bi bi-pencil"></i></button>@endCmsCan
+                                        @cmsCan('lampiran_spt', 'delete')<button type="button" class="btn btn-outline-danger btn-sm btn-remove-row" title="Hapus baris" data-id="{{ $d->id }}"><i class="bi bi-trash3"></i></button>@endCmsCan
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr class="empty-row"><td colspan="9" class="text-center text-muted py-4">Belum ada data HUTANG. Import sheet 1 atau klik "Tambah Baris".</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                        @else
+                        {{-- HARTA LAINNYA (06-99): TAHUN, BUKTI, INFO, HARGA, NILAI --}}
+                        <table class="table table-bordered align-middle table-lampiran" id="tableKat-{{ $katId }}" style="font-size:0.8rem">
+                            <thead class="table-dark"><tr><th>KODE</th><th>DESKRIPSI</th><th>TAHUN</th><th>BUKTI/NO AKUN</th><th>INFO TAMBAHAN</th><th class="text-end">HARGA</th><th class="text-end">NILAI SAAT INI</th><th>AKSI</th></tr></thead>
+                            <tbody>
+                                @forelse($items as $d)
+                                <tr class="row-edit" data-row-id="{{ $d->id }}">
+                                    <td>
+                                        <span class="kode-text">{{ $d->kode }}</span>
+                                        <select class="cell-input cell-select d-none" data-field="kode">
+                                            <option value="">--</option>
+                                            @foreach($activeMasterItems->where('kategori_id', $katId) as $m)
+                                                <option value="{{ $m->sub_kode }}" {{ $d->kode === $m->sub_kode ? 'selected' : '' }}>{{ $m->sub_kode }} - {{ $m->nama }}</option>
+                                            @endforeach
+                                        </select>
+                                    </td>
+                                    <td><span class="field-display">{{ $masterByKode[$d->kode]->nama ?? ($d->deskripsi ?: '-') }}</span><input type="text" class="cell-input cell-edit d-none" data-field="deskripsi" value="{{ $d->deskripsi }}" readonly></td>
+                                    <td><span class="field-display">{{ $d->tahun_perolehan ?: '-' }}</span><select class="cell-input cell-select cell-edit d-none" data-field="tahun_perolehan"><option value="">--</option>@foreach($tahunPerolehanList as $t)<option value="{{ $t }}" {{ $d->tahun_perolehan == $t ? 'selected' : '' }}>{{ $t }}</option>@endforeach</select></td>
+                                    <td><span class="field-display"><code>{{ $d->nopol_sertifikat ?: $d->nomor_akun ?: '-' }}</code></span><input type="text" class="cell-input cell-edit d-none" data-field="nopol_sertifikat" value="{{ $d->nopol_sertifikat }}"></td>
+                                    <td><span class="field-display small">{{ $d->detail_info ?: '-' }}</span><input type="text" class="cell-input cell-edit d-none" data-field="detail_info" value="{{ $d->detail_info }}"></td>
+                                    <td><span class="field-display text-end">{{ ($d->harga_perolehan ?: $d->saldo_bentuk_awal) > 0 ? number_format($d->harga_perolehan ?: $d->saldo_bentuk_awal, 0, ',', '.') : '-' }}</span><input type="text" class="cell-input cell-edit format-number text-end d-none" data-field="harga_perolehan" value="{{ ($d->harga_perolehan ?: $d->saldo_bentuk_awal) > 0 ? number_format($d->harga_perolehan ?: $d->saldo_bentuk_awal, 0, ',', '.') : '' }}"></td>
+                                    <td><span class="field-display text-end">{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '-' }}</span><input type="text" class="cell-input cell-edit format-number text-end d-none" data-field="saldo_saat_ini" value="{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '' }}"></td>
+                                    <td class="d-none">
+                                        <input type="hidden" data-field="nomor_akun" value="{{ $d->nomor_akun }}"><input type="hidden" data-field="atas_nama" value="{{ $d->atas_nama }}"><input type="hidden" data-field="nama_bank_institusi" value="{{ $d->nama_bank_institusi }}"><input type="hidden" data-field="lokasi_harta" value="{{ $d->lokasi_harta }}"><input type="hidden" data-field="kurs" value="{{ $d->kurs }}"><input type="hidden" data-field="saldo_bentuk_awal" value="{{ $d->saldo_bentuk_awal }}"><input type="hidden" data-field="nilai_kurs" value="{{ $d->nilai_kurs }}"><input type="hidden" data-field="merk_tipe" value="{{ $d->merk_tipe }}"><input type="hidden" data-field="kepemilikan" value="{{ $d->kepemilikan }}"><input type="hidden" data-field="nik_npwp_pihak" value="{{ $d->nik_npwp_pihak }}"><input type="hidden" data-field="nama_pihak" value="{{ $d->nama_pihak }}"><input type="hidden" data-field="negara_kreditur" value="{{ $d->negara_kreditur }}"><input type="hidden" data-field="ukuran_tanah" value="{{ $d->ukuran_tanah }}"><input type="hidden" data-field="ukuran_bangunan" value="{{ $d->ukuran_bangunan }}"><input type="hidden" data-field="sumber_kepemilikan" value="{{ $d->sumber_kepemilikan }}"><input type="hidden" data-field="tahun_mulai" value="{{ $d->tahun_mulai }}">
+                                    </td>
+                                    <td class="text-center text-nowrap">
+                                        @cmsCan('lampiran_spt', 'edit')<button type="button" class="btn btn-outline-primary btn-sm btn-edit-row" title="Edit baris"><i class="bi bi-pencil"></i></button>@endCmsCan
+                                        @cmsCan('lampiran_spt', 'delete')<button type="button" class="btn btn-outline-danger btn-sm btn-remove-row" title="Hapus baris" data-id="{{ $d->id }}"><i class="bi bi-trash3"></i></button>@endCmsCan
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr class="empty-row"><td colspan="8" class="text-center text-muted py-4">Belum ada data HARTA LAINNYA. Import sheet 06-99 atau klik "Tambah Baris".</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                        @endif
+                    </div>
+                    <div class="d-flex justify-content-between mt-3 kat-toolbar" data-table="tableKat-{{ $katId }}" data-kat="{{ $katId }}">
+                        @cmsCan('lampiran_spt', 'create')
+                        <button type="button" class="btn btn-outline-primary btn-kat-add" data-kode-opts='@json($activeMasterItems->where("kategori_id", $katId)->map(function($m){ return ["kode" => $m->sub_kode, "nama" => $m->nama]; })->values())'>
+                            <i class="bi bi-plus-lg me-1"></i> Tambah Baris
+                        </button>
+                        <button type="button" class="btn btn-primary px-4 btn-kat-save">
+                            <i class="bi bi-save me-1"></i> Simpan
+                        </button>
+                        @endCmsCan
+                    </div>
+                </div>
+                @endforeach
 
                 {{-- Tab: Recap --}}
                 <div class="tab-pane fade" id="tabContent-recap" role="tabpanel">
@@ -347,10 +654,10 @@
 .select2-container--default .select2-selection--single .select2-selection__arrow {
     height: calc(2.25rem + 2px);
 }
-#tableLampiran .select2-container {
+#tableLampiran .select2-container, .table-lampiran .select2-container {
     width: 100% !important;
 }
-#tableLampiran .select2-container--default .select2-selection--single {
+#tableLampiran .select2-container--default .select2-selection--single, .table-lampiran .select2-container--default .select2-selection--single {
     height: auto;
     min-height: 28px;
     padding: 1px 4px;
@@ -374,13 +681,15 @@
 .cell-input:focus, .cell-select:focus {
     outline: none;
 }
-#tableLampiran td, #tableLampiran th {
+#tableLampiran td, #tableLampiran th, .table-lampiran td, .table-lampiran th {
     padding: 2px 4px;
     vertical-align: middle;
     white-space: nowrap;
 }
 #tableLampiran tr .cell-input,
-#tableLampiran tr .cell-select {
+#tableLampiran tr .cell-select,
+.table-lampiran tr .cell-input,
+.table-lampiran tr .cell-select {
     border: 1px solid #ced4da !important;
     background: #fff !important;
     padding: 2px 4px !important;
@@ -401,6 +710,122 @@
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
+var masterByKat = @json($activeMasterItems->groupBy('kategori_id')->map(function($items){ return $items->map(function($m){ return ['kode' => $m->sub_kode, 'nama' => $m->nama]; })->values(); }));
+var allMasters = @json($activeMasterItems->map(function($m){ return ['kode' => $m->sub_kode, 'nama' => $m->nama]; })->values());
+var tahunOpts = @json(array_values($tahunPerolehanList ?? []));
+var ALL_FIELDS = ['deskripsi','nomor_akun','atas_nama','nama_bank_institusi','lokasi_harta','kurs','tahun_perolehan','saldo_saat_ini','saldo_bentuk_awal','nilai_kurs','harga_perolehan','merk_tipe','nopol_sertifikat','kepemilikan','nik_npwp_pihak','nama_pihak','negara_kreditur','ukuran_tanah','ukuran_bangunan','sumber_kepemilikan','detail_info','tahun_mulai'];
+var NUM_FIELDS = ['saldo_saat_ini','saldo_bentuk_awal','nilai_kurs','harga_perolehan'];
+// Kolom visible (selain KODE) untuk builder tambah-baris per tab
+var KAT_FIELDS = {
+    1: [{f:'deskripsi',ro:1},{f:'nomor_akun'},{f:'atas_nama'},{f:'nama_bank_institusi'},{f:'lokasi_harta'},{f:'tahun_perolehan',type:'tahun'},{f:'saldo_saat_ini',type:'number'}],
+    2: [{f:'deskripsi',ro:1},{f:'lokasi_harta'},{f:'nik_npwp_pihak'},{f:'nama_pihak'},{f:'tahun_mulai',type:'tahun'},{f:'saldo_saat_ini',type:'number'}],
+    3: [{f:'deskripsi',ro:1},{f:'lokasi_harta'},{f:'nik_npwp_pihak'},{f:'nama_pihak'},{f:'nomor_akun'},{f:'tahun_perolehan',type:'tahun'},{f:'harga_perolehan',type:'number'},{f:'saldo_saat_ini',type:'number'}],
+    4: [{f:'merk_tipe'},{f:'nopol_sertifikat'},{f:'kepemilikan'},{f:'nik_npwp_pihak'},{f:'nama_pihak'},{f:'tahun_perolehan',type:'tahun'},{f:'harga_perolehan',type:'number'},{f:'saldo_saat_ini',type:'number'}],
+    5: [{f:'deskripsi',ro:1},{f:'lokasi_harta'},{f:'detail_info'},{f:'ukuran_tanah'},{f:'ukuran_bangunan'},{f:'sumber_kepemilikan'},{f:'nopol_sertifikat'},{f:'tahun_perolehan',type:'tahun'},{f:'harga_perolehan',type:'number'},{f:'saldo_saat_ini',type:'number'}],
+    6: [{f:'deskripsi',ro:1},{f:'tahun_perolehan',type:'tahun'},{f:'nopol_sertifikat'},{f:'detail_info'},{f:'harga_perolehan',type:'number'},{f:'saldo_saat_ini',type:'number'}],
+    7: [{f:'deskripsi',ro:1},{f:'nik_npwp_pihak'},{f:'nama_pihak'},{f:'negara_kreditur'},{f:'tahun_mulai',type:'tahun'},{f:'saldo_saat_ini',type:'number'},{f:'detail_info'}]
+};
+var SEMUA_FIELDS = [{f:'deskripsi',ro:1},{f:'nomor_akun'},{f:'atas_nama'},{f:'nama_bank_institusi'},{f:'lokasi_harta'},{f:'kurs'},{f:'tahun_perolehan',type:'tahun'},{f:'saldo_saat_ini',type:'number'},{f:'saldo_bentuk_awal',type:'currency'},{f:'nilai_kurs',type:'currency'}];
+
+// Bangun <tr class="row-new"> editable generik (kode + field visible + hidden sisanya)
+function buildEditableRow(kodeOpts, fields) {
+    var tr = document.createElement('tr');
+    tr.className = 'row-new';
+    var tdKode = document.createElement('td');
+    var sel = document.createElement('select');
+    sel.className = 'cell-input cell-select';
+    sel.setAttribute('data-field', 'kode');
+    var opt0 = document.createElement('option');
+    opt0.value = ''; opt0.textContent = '--';
+    sel.appendChild(opt0);
+    (kodeOpts || []).forEach(function(o) {
+        var op = document.createElement('option');
+        op.value = o.kode; op.textContent = o.kode + ' - ' + o.nama;
+        sel.appendChild(op);
+    });
+    tdKode.appendChild(sel);
+    tr.appendChild(tdKode);
+    sel.addEventListener('change', function() { populateDeskripsi(sel); });
+    var shown = ['kode'];
+    (fields || []).forEach(function(cfg) {
+        var td = document.createElement('td');
+        var inp;
+        if (cfg.type === 'tahun') {
+            inp = document.createElement('select');
+            inp.className = 'cell-input cell-select';
+            var o0 = document.createElement('option');
+            o0.value = ''; o0.textContent = '--';
+            inp.appendChild(o0);
+            tahunOpts.forEach(function(t) {
+                var o = document.createElement('option');
+                o.value = t; o.textContent = t;
+                inp.appendChild(o);
+            });
+        } else {
+            inp = document.createElement('input');
+            inp.type = 'text';
+            inp.className = 'cell-input' + (cfg.type === 'number' ? ' format-number text-end' : '') + (cfg.type === 'currency' ? ' format-currency text-end' : '');
+            if (cfg.ro) inp.readOnly = true;
+        }
+        inp.setAttribute('data-field', cfg.f);
+        shown.push(cfg.f);
+        td.appendChild(inp);
+        tr.appendChild(td);
+    });
+    var tdH = document.createElement('td');
+    tdH.className = 'd-none';
+    ALL_FIELDS.forEach(function(fl) {
+        if (shown.indexOf(fl) < 0) {
+            var h = document.createElement('input');
+            h.type = 'hidden';
+            h.setAttribute('data-field', fl);
+            tdH.appendChild(h);
+        }
+    });
+    tr.appendChild(tdH);
+    return tr;
+}
+
+function rowParams(tr) {
+    var params = new URLSearchParams();
+    tr.querySelectorAll('[data-field]').forEach(function(el) {
+        var v = el.value || '';
+        if (NUM_FIELDS.indexOf(el.getAttribute('data-field')) >= 0) v = v.replace(/\./g, '');
+        params.append(el.getAttribute('data-field'), v);
+    });
+    return params;
+}
+
+// Tambah baris di tab kategori (kode difilter per kategori)
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.btn-kat-add');
+    if (!btn) return;
+    var toolbar = btn.closest('.kat-toolbar');
+    if (!toolbar) return;
+    var katId = toolbar.getAttribute('data-kat');
+    var table = document.getElementById(toolbar.getAttribute('data-table'));
+    if (!table) return;
+    var tbody = table.querySelector('tbody');
+    var emptyRow = tbody.querySelector('.empty-row');
+    if (emptyRow) emptyRow.remove();
+    // Opsi kode diambil dari tombol (sudah difilter server per kategori), fallback ke masterByKat
+    var kodeOpts = [];
+    try { kodeOpts = JSON.parse(btn.getAttribute('data-kode-opts') || '[]'); } catch(_) { kodeOpts = []; }
+    if (!kodeOpts.length) kodeOpts = masterByKat[katId] || [];
+    var tr = buildEditableRow(kodeOpts, KAT_FIELDS[katId] || KAT_FIELDS[1]);
+    var tdAksi = document.createElement('td');
+    tdAksi.className = 'text-center text-nowrap';
+    var btnHapus = document.createElement('button');
+    btnHapus.type = 'button';
+    btnHapus.className = 'btn btn-outline-danger btn-sm btn-remove-row';
+    btnHapus.title = 'Hapus baris';
+    var iconHapus = document.createElement('i');
+    iconHapus.className = 'bi bi-trash3';
+    btnHapus.appendChild(iconHapus);
+    tdAksi.appendChild(btnHapus);
+    tr.appendChild(tdAksi);
+    tbody.appendChild(tr);
+});
 $(document).ready(function() {
     $('select[name="client_id"]').select2({
         placeholder: '-- Cari & Pilih Client --',
@@ -446,13 +871,11 @@ function populateDeskripsi(sel) {
     var text = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : '';
     var parts = text.split(' - ');
     var nama = parts.length > 1 ? parts.slice(1).join(' - ') : '';
-    var deskTd = tr.cells[1];
-    if (deskTd) {
-        var inp = deskTd.querySelector('input');
-        if (inp) inp.value = nama;
-        var display = deskTd.querySelector('.field-display');
-        if (display) display.textContent = nama || '-';
-    }
+    var inp = tr.querySelector('[data-field="deskripsi"]');
+    if (inp) inp.value = nama;
+    var td = inp ? inp.closest('td') : null;
+    var display = td ? td.querySelector('.field-display') : null;
+    if (display) display.textContent = nama || '-';
 }
 
 // Init Select2 on kode select with search
@@ -631,6 +1054,29 @@ document.getElementById('btnAddRow')?.addEventListener('click', function() {
     td12.appendChild(btnHapus);
     tr.appendChild(td12);
 
+    selKode.setAttribute('data-field', 'kode');
+    inpDesk.setAttribute('data-field', 'deskripsi');
+    inpAkun.setAttribute('data-field', 'nomor_akun');
+    inpNama.setAttribute('data-field', 'atas_nama');
+    inpBank.setAttribute('data-field', 'nama_bank_institusi');
+    inpLokasi.setAttribute('data-field', 'lokasi_harta');
+    inpKurs.setAttribute('data-field', 'kurs');
+    selTahun.setAttribute('data-field', 'tahun_perolehan');
+    inpSaldoIni.setAttribute('data-field', 'saldo_saat_ini');
+    inpSaldoAwal.setAttribute('data-field', 'saldo_bentuk_awal');
+    inpNilaiKurs.setAttribute('data-field', 'nilai_kurs');
+    (function() {
+        var tdH = document.createElement('td');
+        tdH.className = 'd-none';
+        ['harga_perolehan','merk_tipe','nopol_sertifikat','kepemilikan','nik_npwp_pihak','nama_pihak','negara_kreditur','ukuran_tanah','ukuran_bangunan','sumber_kepemilikan','detail_info','tahun_mulai'].forEach(function(fl) {
+            var h = document.createElement('input');
+            h.type = 'hidden';
+            h.setAttribute('data-field', fl);
+            tdH.appendChild(h);
+        });
+        tr.insertBefore(tdH, td12);
+    })();
+
     tbody.appendChild(tr);
 
     selKode.addEventListener('change', function() {
@@ -670,48 +1116,56 @@ document.getElementById('btnAddRow')?.addEventListener('click', function() {
     });
 });
 
-// Global Simpan via JSON
-document.getElementById('btnSimpan')?.addEventListener('click', function() {
+// Kumpulkan baris dari sebuah tabel berdasarkan data-field (kolom boleh beda per tab)
+function collectLampiranRows(table) {
+    var rows = [];
+    table.querySelectorAll('tbody tr.row-edit, tbody tr.row-new').forEach(function(tr) {
+        function f(name) {
+            var el = tr.querySelector('[data-field="' + name + '"]');
+            return el ? el.value : '';
+        }
+        function n(name) {
+            return f(name).replace(/\./g, '').replace(',', '.');
+        }
+        var kode = f('kode');
+        if (!kode) return;
+        rows.push({
+            row_id: tr.getAttribute('data-row-id') || null,
+            kode: kode,
+            deskripsi: f('deskripsi'),
+            nomor_akun: f('nomor_akun'),
+            atas_nama: f('atas_nama'),
+            nama_bank_institusi: f('nama_bank_institusi'),
+            lokasi_harta: f('lokasi_harta'),
+            kurs: f('kurs'),
+            tahun_perolehan: f('tahun_perolehan'),
+            saldo_saat_ini: n('saldo_saat_ini'),
+            saldo_bentuk_awal: n('saldo_bentuk_awal'),
+            nilai_kurs: n('nilai_kurs'),
+            harga_perolehan: n('harga_perolehan'),
+            merk_tipe: f('merk_tipe'),
+            nopol_sertifikat: f('nopol_sertifikat'),
+            kepemilikan: f('kepemilikan'),
+            nik_npwp_pihak: f('nik_npwp_pihak'),
+            nama_pihak: f('nama_pihak'),
+            negara_kreditur: f('negara_kreditur'),
+            ukuran_tanah: f('ukuran_tanah'),
+            ukuran_bangunan: f('ukuran_bangunan'),
+            sumber_kepemilikan: f('sumber_kepemilikan'),
+            detail_info: f('detail_info'),
+            tahun_mulai: f('tahun_mulai'),
+        });
+    });
+    return rows;
+}
+
+function postLampiranRows(rows) {
     var csrf = document.querySelector('meta[name="csrf-token"]');
     var form = document.getElementById('formLampiran');
     var clientId = form.querySelector('input[name="client_id"]').value;
     var tahun = form.querySelector('input[name="tahun"]').value;
-
-    function cellVal(tr, idx) {
-        var td = tr.children[idx];
-        if (!td) return '';
-        var inp = td.querySelector('input, select');
-        return inp ? inp.value : '';
-    }
-    function cellNum(tr, idx) {
-        return cellVal(tr, idx).replace(/\./g, '').replace(',', '.');
-    }
-
-    var rows = [];
-    document.querySelectorAll('#tableLampiran tbody tr.row-edit, #tableLampiran tbody tr.row-new').forEach(function(tr) {
-        var kode = cellVal(tr, 0);
-        if (!kode) return;
-
-        rows.push({
-            row_id: tr.getAttribute('data-row-id') || null,
-            kode: kode,
-            deskripsi: cellVal(tr, 1),
-            nomor_akun: cellVal(tr, 2),
-            atas_nama: cellVal(tr, 3),
-            nama_bank_institusi: cellVal(tr, 4),
-            lokasi_harta: cellVal(tr, 5),
-            kurs: cellVal(tr, 6),
-            tahun_perolehan: cellVal(tr, 7),
-            saldo_saat_ini: cellNum(tr, 8),
-            saldo_bentuk_awal: cellNum(tr, 9),
-            nilai_kurs: cellNum(tr, 10),
-        });
-    });
-
     if (!rows.length) { alert('Tidak ada data untuk disimpan.'); return; }
-
     var body = { _token: csrf ? csrf.getAttribute('content') : '', client_id: clientId, tahun: tahun, rows: rows };
-
     fetch(form.action, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf ? csrf.getAttribute('content') : '' },
@@ -720,17 +1174,23 @@ document.getElementById('btnSimpan')?.addEventListener('click', function() {
         if (r.ok) location.reload();
         else return r.text().then(function(t) { alert('Gagal menyimpan: ' + t); });
     }).catch(function() { alert('Terjadi kesalahan.'); });
+}
 
-    var body = { _token: csrf ? csrf.getAttribute('content') : '', client_id: clientId, tahun: tahun, rows: rows };
+// Global Simpan via JSON (tab Semua)
+document.getElementById('btnSimpan')?.addEventListener('click', function() {
+    var table = document.getElementById('tableLampiran');
+    if (!table) return;
+    postLampiranRows(collectLampiranRows(table));
+});
 
-    fetch(form.action, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf ? csrf.getAttribute('content') : '' },
-        body: JSON.stringify(body),
-    }).then(function(r) {
-        if (r.ok) location.reload();
-        else return r.text().then(function(t) { alert('Gagal menyimpan: ' + t); });
-    }).catch(function() { alert('Terjadi kesalahan.'); });
+// Simpan per tab kategori
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.btn-kat-save');
+    if (!btn) return;
+    var toolbar = btn.closest('.kat-toolbar');
+    var table = toolbar ? document.getElementById(toolbar.getAttribute('data-table')) : null;
+    if (!table) return;
+    postLampiranRows(collectLampiranRows(table));
 });
 
 // Toggle edit row
@@ -751,7 +1211,7 @@ document.addEventListener('click', function(e) {
 
     // Toggle kode text vs select
     var kodeText = tr.querySelector('.kode-text');
-    var kodeSelect = tr.cells[0] ? tr.cells[0].querySelector('select') : null;
+    var kodeSelect = tr.querySelector('[data-field="kode"]');
     if (kodeText && kodeSelect) {
         kodeText.classList.toggle('d-none', isEditing);
         kodeSelect.classList.toggle('d-none', !isEditing);
@@ -771,11 +1231,7 @@ document.addEventListener('click', function(e) {
         });
         // Populate deskripsi from master based on current kode selection
         if (kodeSelect) {
-            var text = kodeSelect.options[kodeSelect.selectedIndex] ? kodeSelect.options[kodeSelect.selectedIndex].text : '';
-            var parts = text.split(' - ');
-            var nama = parts.length > 1 ? parts.slice(1).join(' - ') : '';
-            var deskInput = tr.cells[1] ? tr.cells[1].querySelector('input') : null;
-            if (deskInput) deskInput.value = nama;
+            populateDeskripsi(kodeSelect);
         }
     } else {
         // Destroy Select2 on kode select

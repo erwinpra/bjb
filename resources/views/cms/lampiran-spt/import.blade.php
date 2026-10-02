@@ -10,10 +10,10 @@
 @section('content')
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white py-3 border-bottom">
-        <h6 class="fw-semibold mb-0"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Preview Import Lampiran SPT</h6>
+        <h6 class="fw-semibold mb-0"><i class="bi bi-file-earmark-spreadsheet me-2"></i>Preview Import Lampiran SPT (multi-sheet)</h6>
     </div>
     <div class="card-body p-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
             <div>
                 <span class="badge bg-info fs-6 me-2">
                     <i class="bi bi-person me-1"></i>{{ $client->nama_client ?? 'Unknown' }}
@@ -24,53 +24,88 @@
                 </span>
                 <span class="badge bg-success fs-6 me-2">{{ $validCount }} data valid</span>
                 <span class="badge bg-secondary fs-6">{{ $totalRows }} total baris</span>
+                @if(!empty($totalSkipped))
+                <span class="badge bg-warning text-dark fs-6">{{ $totalSkipped }} diabaikan (kode tidak sesuai sheet)</span>
+                @endif
             </div>
         </div>
 
+        @if(!empty($skippedSheets))
+        <div class="alert alert-warning py-2">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            {{ count($skippedSheets) }} sheet di-skip:
+            @foreach($skippedSheets as $s)
+                <span class="badge bg-secondary ms-1">{{ $s['title'] }} — {{ $s['reason'] }}</span>
+            @endforeach
+        </div>
+        @endif
+
         @if($totalRows > 0)
-        <div class="table-responsive">
-            <table class="table table-bordered table-hover align-middle" style="font-size:0.85rem">
-                <thead class="table-dark">
-                    <tr>
-                        <th>#</th>
-                        <th>KODE</th>
-                        <th>DESKRIPSI</th>
-                        <th>NOMOR AKUN</th>
-                        <th>ATAS NAMA</th>
-                        <th>BANK/INSTITUSI</th>
-                        <th>LOKASI HARTA</th>
-                        <th>KURS</th>
-                        <th>THN PEROLEHAN</th>
-                        <th class="text-end">SALDO SAAT INI</th>
-                        <th class="text-end">SALDO AWAL</th>
-                        <th>STATUS</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($preview as $idx => $item)
-                    <tr class="{{ $item['valid'] ? '' : 'table-danger' }}">
-                        <td>{{ $idx + 1 }}</td>
-                        <td><code>{{ $item['kode'] }}</code></td>
-                        <td>{{ $item['deskripsi'] }}</td>
-                        <td>{{ $item['nomor_akun'] }}</td>
-                        <td>{{ $item['atas_nama'] }}</td>
-                        <td>{{ $item['nama_bank_institusi'] }}</td>
-                        <td>{{ $item['lokasi_harta'] }}</td>
-                        <td>{{ $item['kurs'] }}</td>
-                        <td>{{ $item['tahun_perolehan'] }}</td>
-                        <td class="text-end">{{ $item['saldo_saat_ini'] !== '' ? (strpos($item['saldo_saat_ini'], '.') !== false ? $item['saldo_saat_ini'] : $item['saldo_saat_ini'] . '.00') : '-' }}</td>
-                        <td class="text-end">{{ $item['saldo_bentuk_awal'] !== '' ? (strpos($item['saldo_bentuk_awal'], '.') !== false ? $item['saldo_bentuk_awal'] : $item['saldo_bentuk_awal'] . '.00') : '-' }}</td>
-                        <td>
-                            @if($item['valid'])
-                                <span class="badge bg-success">Valid</span>
-                            @else
-                                <span class="badge bg-danger">{{ implode(', ', $item['errors']) }}</span>
-                            @endif
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
+        <ul class="nav nav-tabs mb-3" role="tablist">
+            @foreach($grouped as $sheetCode => $g)
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {{ $loop->first ? 'active' : '' }}" data-bs-toggle="tab"
+                    data-bs-target="#sheet-{{ $sheetCode }}" type="button" role="tab">
+                    {{ $kategoris[$g['kategori_id']]->label ?? ('Sheet ' . $sheetCode) }}
+                    <span class="badge bg-secondary ms-1">{{ count($g['rows']) }}</span>
+                    @if($g['skipped_mismatch'] > 0)
+                    <span class="badge bg-warning text-dark ms-1">-{{ $g['skipped_mismatch'] }}</span>
+                    @endif
+                    <small class="text-muted d-block" style="font-size:0.65rem">sheet: {{ $g['title'] }}</small>
+                </button>
+            </li>
+            @endforeach
+        </ul>
+
+        <div class="tab-content">
+            @foreach($grouped as $sheetCode => $g)
+            <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" id="sheet-{{ $sheetCode }}" role="tabpanel">
+                <div class="small text-muted mb-2">
+                    Kategori: <strong>{{ $kategoris[$g['kategori_id']]->label ?? $g['kategori_id'] }}</strong>
+                    | Sheet asli: <code>{{ $g['title'] }}</code>
+                    | Header terdeteksi otomatis, kode divalidasi prefix sheet (yang tidak cocok diabaikan).
+                    @if(!empty($g['error']))
+                    <span class="badge bg-danger ms-2">{{ $g['error'] }}</span>
+                    @endif
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle" style="font-size:0.82rem">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>#</th>
+                                <th>KODE</th>
+                                <th>DESKRIPSI</th>
+                                <th>AKUN / NOPOL / SERTIFIKAT</th>
+                                <th>ATAS NAMA / PIHAK</th>
+                                <th>BANK / MERK / INSTITUSI</th>
+                                <th>LOKASI</th>
+                                <th>THN</th>
+                                <th class="text-end">SALDO SAAT INI</th>
+                                <th class="text-end">HARGA PEROLEHAN</th>
+                                <th>INFO LAIN</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($g['rows'] as $idx => $item)
+                            <tr>
+                                <td>{{ $idx + 1 }}</td>
+                                <td><code>{{ $item['kode'] }}</code> <span class="badge bg-light text-dark">{{ $sheetCode }}</span></td>
+                                <td>{{ $item['deskripsi'] ?? '' }}</td>
+                                <td>{{ $item['nomor_akun'] ?? $item['nopol_sertifikat'] ?? '' }}</td>
+                                <td>{{ $item['atas_nama'] ?? $item['nama_pihak'] ?? '' }}</td>
+                                <td>{{ $item['nama_bank_institusi'] ?? $item['merk_tipe'] ?? '' }}</td>
+                                <td>{{ $item['lokasi_harta'] ?? '' }}</td>
+                                <td>{{ $item['tahun_perolehan'] ?? $item['tahun_mulai'] ?? '' }}</td>
+                                <td class="text-end">{{ number_format($item['saldo_saat_ini'] ?? 0, 0, ',', '.') }}</td>
+                                <td class="text-end">{{ number_format($item['harga_perolehan'] ?? ($item['saldo_bentuk_awal'] ?? 0), 0, ',', '.') }}</td>
+                                <td class="small text-muted">{{ $item['detail_info'] ?? '' }} {{ $item['ukuran_tanah'] ?? '' }} {{ $item['ukuran_bangunan'] ?? '' }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endforeach
         </div>
 
         <form method="POST" action="{{ route('cms.lampiran-spt.import.confirm') }}" class="d-flex justify-content-between mt-3">
@@ -83,7 +118,7 @@
             </a>
             @if($validCount > 0)
             <button type="submit" class="btn btn-success px-4">
-                <i class="bi bi-check-lg me-1"></i> Konfirmasi Import
+                <i class="bi bi-check-lg me-1"></i> Konfirmasi Import (replace total)
             </button>
             @endif
         </form>

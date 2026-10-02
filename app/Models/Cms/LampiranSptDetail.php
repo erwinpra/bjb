@@ -10,6 +10,8 @@ class LampiranSptDetail extends Model
 
     protected $fillable = [
         'client_id',
+        'kategori_id',
+        'sheet_code',
         'tahun',
         'kode',
         'deskripsi',
@@ -22,6 +24,18 @@ class LampiranSptDetail extends Model
         'saldo_saat_ini',
         'saldo_bentuk_awal',
         'nilai_kurs',
+        'harga_perolehan',
+        'merk_tipe',
+        'nopol_sertifikat',
+        'kepemilikan',
+        'nik_npwp_pihak',
+        'nama_pihak',
+        'negara_kreditur',
+        'ukuran_tanah',
+        'ukuran_bangunan',
+        'sumber_kepemilikan',
+        'detail_info',
+        'tahun_mulai',
     ];
 
     public function client()

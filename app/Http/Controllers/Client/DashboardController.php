@@ -191,6 +191,18 @@ class DashboardController extends Controller
                     'saldo_saat_ini' => $d->saldo_saat_ini,
                     'saldo_bentuk_awal' => $d->saldo_bentuk_awal,
                     'nilai_kurs' => $d->nilai_kurs,
+                    'harga_perolehan' => $d->harga_perolehan,
+                    'merk_tipe' => $d->merk_tipe,
+                    'nopol_sertifikat' => $d->nopol_sertifikat,
+                    'kepemilikan' => $d->kepemilikan,
+                    'nik_npwp_pihak' => $d->nik_npwp_pihak,
+                    'nama_pihak' => $d->nama_pihak,
+                    'negara_kreditur' => $d->negara_kreditur,
+                    'ukuran_tanah' => $d->ukuran_tanah,
+                    'ukuran_bangunan' => $d->ukuran_bangunan,
+                    'sumber_kepemilikan' => $d->sumber_kepemilikan,
+                    'detail_info' => $d->detail_info,
+                    'tahun_mulai' => $d->tahun_mulai,
                 ]; })->toArray(),
             ];
             $hartaByKategori[$katLabel] = ($hartaByKategori[$katLabel] ?? 0) + $nilai;

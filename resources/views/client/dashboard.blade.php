@@ -11,6 +11,9 @@
     <style>
     .collapse-toggle { cursor: pointer; user-select: none; }
     .collapse-toggle:hover { background-color: #e9ecef !important; }
+    .modal-85 { max-width: 85vw; }
+    @media (max-width: 576px) { .modal-85 { max-width: 95vw; } }
+    .harta-scroll { overflow-x: auto; }
     </style>
 </head>
 <body>
@@ -118,7 +121,7 @@
 
         {{-- Harta Detail Modal --}}
         <div class="modal fade" id="hartaModal" tabindex="-1">
-            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-dialog modal-85 modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header bg-primary text-white">
                         <h6 class="fw-semibold mb-0"><i class="bi bi-bar-chart-line me-2"></i>Recap</h6>
@@ -139,7 +142,7 @@
 
         {{-- Harta Item Detail Modal --}}
         <div class="modal fade" id="hartaItemModal" tabindex="-1">
-            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-dialog modal-85 modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header bg-dark text-white">
                         <h6 class="fw-semibold mb-0"><i class="bi bi-list-ul me-2"></i>Detail Harta</h6>
@@ -378,7 +381,7 @@
                 html += '<div class="collapse" id="' + colId + '"><div class="card-body p-0"><table class="table table-sm mb-0"><thead class="table-light"><tr><th class="ps-4">Item</th><th class="text-end pe-4">Nilai</th></tr></thead><tbody>';
                 items.forEach(function(h) {
                     var rec = JSON.stringify(h.records || []).replace(/'/g, '&#39;');
-                    html += '<tr class="harta-item-row" style="cursor:pointer" data-records=\'' + rec + '\'><td class="ps-4">' + h.nama + '</td><td class="text-end pe-4">Rp ' + formatNum(h.nilai) + ' <i class="bi bi-chevron-right small text-muted ms-1"></i></td></tr>';
+                    html += '<tr class="harta-item-row" style="cursor:pointer" data-kat="' + (h.kategori_id || '') + '" data-records=\'' + rec + '\'><td class="ps-4">' + h.nama + '</td><td class="text-end pe-4">Rp ' + formatNum(h.nilai) + ' <i class="bi bi-chevron-right small text-muted ms-1"></i></td></tr>';
                 });
                 html += '<tr class="table-secondary fw-bold"><td class="ps-4">Total</td><td class="text-end pe-4">Rp ' + formatNum(katTotal) + '</td></tr>';
                 html += '</tbody></table></div></div></div>';
@@ -732,6 +735,83 @@
         renderHartaModal();
     });
 
+    // Kolom popup detail harta per kategori (ikut header tabel admin per sheet).
+    // Saldo Bentuk Awal ditambahkan otomatis jika ada datanya.
+    function hartaColumns(katId) {
+        function T(v) { return (v === null || v === undefined || v === '') ? '-' : v; }
+        function R(v) { return 'Rp ' + formatNum(v); }
+        var cols;
+        switch (Number(katId)) {
+            case 2: cols = [ // PIUTANG
+                {h:'Deskripsi', f:function(r){ return T(r.deskripsi); }},
+                {h:'Lokasi Penerima', f:function(r){ return T(r.lokasi_harta); }},
+                {h:'NIK/NPWP', f:function(r){ return T(r.nik_npwp_pihak); }},
+                {h:'Nama Penerima', f:function(r){ return T(r.nama_pihak || r.atas_nama); }},
+                {h:'Thn Mulai', f:function(r){ return T(r.tahun_mulai || r.tahun_perolehan); }},
+                {h:'Nilai Saat Ini', f:function(r){ return R(r.saldo_saat_ini); }, main:1},
+            ]; break;
+            case 3: cols = [ // INVESTASI
+                {h:'Deskripsi', f:function(r){ return T(r.deskripsi); }},
+                {h:'Lokasi', f:function(r){ return T(r.lokasi_harta); }},
+                {h:'NPWP', f:function(r){ return T(r.nik_npwp_pihak); }},
+                {h:'Nama Institusi', f:function(r){ return T(r.nama_pihak || r.merk_tipe); }},
+                {h:'Nomor Akun', f:function(r){ return T(r.nomor_akun || r.nopol_sertifikat); }},
+                {h:'Thn Perolehan', f:function(r){ return T(r.tahun_perolehan); }},
+                {h:'Harga Perolehan', f:function(r){ return R(r.harga_perolehan || r.saldo_bentuk_awal); }},
+                {h:'Nilai Saat Ini', f:function(r){ return R(r.saldo_saat_ini); }, main:1},
+            ]; break;
+            case 4: cols = [ // HARTA BERGERAK
+                {h:'Merk/Tipe', f:function(r){ return T(r.merk_tipe || r.deskripsi); }},
+                {h:'Nopol/Registrasi', f:function(r){ return T(r.nopol_sertifikat || r.nomor_akun); }},
+                {h:'Kepemilikan', f:function(r){ return T(r.kepemilikan); }},
+                {h:'NIK/NPWP', f:function(r){ return T(r.nik_npwp_pihak); }},
+                {h:'Nama', f:function(r){ return T(r.nama_pihak || r.atas_nama); }},
+                {h:'Tahun', f:function(r){ return T(r.tahun_perolehan); }},
+                {h:'Harga', f:function(r){ return R(r.harga_perolehan || r.saldo_bentuk_awal); }},
+                {h:'Nilai Saat Ini', f:function(r){ return R(r.saldo_saat_ini); }, main:1},
+            ]; break;
+            case 5: cols = [ // HARTA TIDAK BERGERAK
+                {h:'Deskripsi', f:function(r){ return T(r.deskripsi); }},
+                {h:'Lokasi', f:function(r){ return T(r.lokasi_harta); }},
+                {h:'Detail', f:function(r){ return T(r.detail_info); }},
+                {h:'Tanah', f:function(r){ return T(r.ukuran_tanah); }},
+                {h:'Bangunan', f:function(r){ return T(r.ukuran_bangunan); }},
+                {h:'Sumber', f:function(r){ return T(r.sumber_kepemilikan); }},
+                {h:'Sertifikat', f:function(r){ return T(r.nopol_sertifikat || r.nomor_akun); }},
+                {h:'Tahun', f:function(r){ return T(r.tahun_perolehan); }},
+                {h:'Harga', f:function(r){ return R(r.harga_perolehan || r.saldo_bentuk_awal); }},
+                {h:'Nilai Saat Ini', f:function(r){ return R(r.saldo_saat_ini); }, main:1},
+            ]; break;
+            case 6: cols = [ // HARTA LAINNYA
+                {h:'Deskripsi', f:function(r){ return T(r.deskripsi); }},
+                {h:'Tahun', f:function(r){ return T(r.tahun_perolehan); }},
+                {h:'Bukti/No Akun', f:function(r){ return T(r.nopol_sertifikat || r.nomor_akun); }},
+                {h:'Info Tambahan', f:function(r){ return T(r.detail_info); }},
+                {h:'Harga', f:function(r){ return R(r.harga_perolehan || r.saldo_bentuk_awal); }},
+                {h:'Nilai Saat Ini', f:function(r){ return R(r.saldo_saat_ini); }, main:1},
+            ]; break;
+            case 7: cols = [ // HUTANG
+                {h:'Deskripsi', f:function(r){ return T(r.deskripsi); }},
+                {h:'NIK/NPWP', f:function(r){ return T(r.nik_npwp_pihak); }},
+                {h:'Nama', f:function(r){ return T(r.nama_pihak || r.atas_nama); }},
+                {h:'Negara', f:function(r){ return T(r.negara_kreditur || r.lokasi_harta); }},
+                {h:'Thn Pinjam', f:function(r){ return T(r.tahun_mulai || r.tahun_perolehan); }},
+                {h:'Nilai', f:function(r){ return R(r.saldo_saat_ini); }, main:1},
+                {h:'Keterangan', f:function(r){ return T(r.detail_info); }},
+            ]; break;
+            default: cols = [ // 1 KAS
+                {h:'Deskripsi', f:function(r){ return T(r.deskripsi); }},
+                {h:'Nomor Akun', f:function(r){ return T(r.nomor_akun); }},
+                {h:'Atas Nama', f:function(r){ return T(r.atas_nama); }},
+                {h:'Bank/Institusi', f:function(r){ return T(r.nama_bank_institusi); }},
+                {h:'Lokasi', f:function(r){ return T(r.lokasi_harta); }},
+                {h:'Thn', f:function(r){ return T(r.tahun_perolehan); }},
+                {h:'Nilai Saat Ini', f:function(r){ return R(r.saldo_saat_ini); }, main:1},
+            ];
+        }
+        return cols;
+    }
+
     // Click on harta item row → show detail modal
     document.getElementById('hartaDetailContent').addEventListener('click', function(e) {
         var row = e.target.closest('.harta-item-row');
@@ -742,10 +822,27 @@
         try { records = JSON.parse(raw); } catch(_) { return; }
         if (!records || !records.length) return;
 
+        var cols = hartaColumns(row.getAttribute('data-kat') || '');
+        var hasAwal = records.some(function(r){ return Number(r.saldo_bentuk_awal) > 0; });
+        if (hasAwal) {
+            var awalCol = {h:'Saldo Bentuk Awal', f:function(r){ return 'Rp ' + formatNum(r.saldo_bentuk_awal); }};
+            var idx = -1;
+            for (var k = 0; k < cols.length; k++) { if (cols[k].main) idx = k; }
+            cols.splice(idx < 0 ? cols.length : idx + 1, 0, awalCol);
+        }
+
         var body = document.getElementById('hartaItemBody');
-        var html = '<div class="table-responsive"><table class="table table-sm table-bordered mb-0"><thead class="table-light"><tr><th>#</th><th>Deskripsi</th><th>Nomor Akun</th><th>Atas Nama</th><th>Bank/Institusi</th><th>Lokasi</th><th>Kurs</th><th>Thn</th><th class="text-end">Saldo</th></tr></thead><tbody>';
+        var html = '<div class="table-responsive harta-scroll"><table class="table table-sm table-bordered mb-0 text-nowrap"><thead class="table-light"><tr><th>#</th>';
+        cols.forEach(function(c, i) {
+            html += '<th' + (i === cols.length - 1 ? ' class="text-end"' : '') + '>' + c.h + '</th>';
+        });
+        html += '</tr></thead><tbody>';
         records.forEach(function(r, i) {
-            html += '<tr><td>' + (i + 1) + '</td><td>' + (r.deskripsi || '-') + '</td><td>' + (r.nomor_akun || '-') + '</td><td>' + (r.atas_nama || '-') + '</td><td>' + (r.nama_bank_institusi || '-') + '</td><td>' + (r.lokasi_harta || '-') + '</td><td>' + (r.kurs || '-') + '</td><td>' + (r.tahun_perolehan || '-') + '</td><td class="text-end">Rp ' + formatNum(r.saldo_saat_ini) + '</td></tr>';
+            html += '<tr><td>' + (i + 1) + '</td>';
+            cols.forEach(function(c, j) {
+                html += '<td' + (j === cols.length - 1 ? ' class="text-end"' : '') + '>' + c.f(r) + '</td>';
+            });
+            html += '</tr>';
         });
         html += '</tbody></table></div>';
         body.innerHTML = html;
