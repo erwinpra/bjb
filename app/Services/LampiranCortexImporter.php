@@ -81,11 +81,23 @@ class LampiranCortexImporter
         if ($val === '' || $val === '.' || $val === ',') return 0;
         $dotCount = substr_count($val, '.');
         $commaCount = substr_count($val, ',');
-        if ($commaCount > 0) {
-            if ($commaCount > 1 && $dotCount <= 1) {
+        if ($commaCount > 0 && $dotCount > 0) {
+            // Kedua pemisah ada: yang paling kanan = desimal.
+            // "16,777.00" (US) => 16777 | "1.234,56" (ID) => 1234.56
+            if (strrpos($val, '.') > strrpos($val, ',')) {
                 $val = str_replace(',', '', $val);
             } else {
                 $val = str_replace('.', '', $val);
+                $val = str_replace(',', '.', $val);
+            }
+        } elseif ($commaCount > 1) {
+            $val = str_replace(',', '', $val);
+        } elseif ($commaCount === 1) {
+            // Satu koma: "16,777" (ribuan) vs "12,50" (desimal).
+            // Ekor 3 digit = pemisah ribuan.
+            if (preg_match('/,\d{3}$/', $val)) {
+                $val = str_replace(',', '', $val);
+            } else {
                 $val = str_replace(',', '.', $val);
             }
         } elseif ($dotCount > 1) {
@@ -140,6 +152,7 @@ class LampiranCortexImporter
                     'nama_bank_institusi' => ['namabankinstitusi', 'bankinstitusi', 'bank', 'institusi'],
                     'lokasi_harta' => ['lokasiharta', 'lokasi'],
                     'kurs' => ['kurs'],
+                    'nilai_kurs' => ['nilaikurs', 'rate', 'exchangerate'],
                     'tahun_perolehan' => ['tahunperolehan'],
                     'saldo_bentuk_awal' => ['saldodalambentukawal', 'saldobentukawal', 'saldoawal'],
                     'saldo_saat_ini' => ['nilaisaatini', 'saldosaatini', 'nilai', 'saldo'],
@@ -164,6 +177,7 @@ class LampiranCortexImporter
                     'nama_pihak' => ['nama'],
                     'nomor_akun' => ['nomorakun', 'noakun', 'akun'],
                     'kurs' => ['kurs'],
+                    'nilai_kurs' => ['nilaikurs', 'rate', 'exchangerate'],
                     'harga_perolehan' => ['hargaperolehan'],
                     'saldo_bentuk_awal' => ['saldodalambentukawal', 'saldobentukawal', 'saldoawal'],
                     'tahun_perolehan' => ['tahunperolehan'],
@@ -240,6 +254,10 @@ class LampiranCortexImporter
             if ($key === '' || $key === 'no') continue;
             if (!isset($map[$key])) {
                 $map[$key] = $i;
+            } elseif ($key === 'kurs' && !isset($map['nilaikurs'])) {
+                // File cortex/PRD sering punya dua kolom "KURS":
+                // pertama = kode mata uang (IDR/USD), kedua = nilai kurs (rate).
+                $map['nilaikurs'] = $i;
             }
         }
         return $map;
@@ -345,6 +363,7 @@ class LampiranCortexImporter
                     'harga_perolehan' => 0,
                 ];
                 $base['kurs'] = $get('kurs');
+                $base['nilai_kurs'] = $num('nilai_kurs');
                 break;
             case '02': // PIUTANG
                 $nama = $get('nama_pihak');
@@ -379,6 +398,7 @@ class LampiranCortexImporter
                     'saldo_saat_ini' => $num('saldo_saat_ini'),
                 ];
                 $base['kurs'] = $get('kurs');
+                $base['nilai_kurs'] = $num('nilai_kurs');
                 break;
             case '04': // HARTA BERGERAK
                 $desk = $get('deskripsi');

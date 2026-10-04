@@ -1,0 +1,49 @@
+REKOMENDASI SERVER UNTUK APLIKASI BJB/BJP
+=============================================
+
+PROFIL APLIKASI (hasil pengukuran)
+----------------------------------
+- Framework      : Laravel 8 (PHP ^7.3|^8.0)
+- Ukuran DB      : ~212 KB (bjp.sql)
+- Storage        : ~2,2 MB
+- Vendor         : ~81 MB
+- Beban terberat : import Excel (PhpSpreadsheet) dan export PDF (DomPDF)
+- Traffic        : ringan (admin kantor pajak + client, puluhan user, tanpa queue)
+- Jenis hosting  : NON-VM (shared / cloud hosting managed, tanpa kelola server)
+
+SPESIFIKASI YANG CUKUP
+----------------------
+- Paket  : Shared hosting kelas BISNIS atau Cloud Hosting entry-level
+           (contoh setara: Niagahoster Bisnis, Hostinger Business/Cloud Startup,
+            Rumahweb, Jagoan Hosting, IDCloudHost)
+- Harga  : Rp 50-150 rb/bln (shared bisnis) atau Rp 150-300 rb/bln (cloud hosting)
+- PHP    : 8.1 (Laravel 8 paling stabil di 8.0-8.1; di 8.2+ muncul deprecation)
+- DB     : MySQL 5.7+ / MariaDB 10.3+, jatah 1-2 GB (pemakaian saat ini 212 KB)
+- RAM    : 2 GB
+- Disk   : SSD 20-50 GB, bandwidth unmetered
+
+EKSTENSI PHP WAJIB AKTIF
+------------------------
+bcmath, ctype, fileinfo, json, mbstring, openssl, pdo_mysql,
+tokenizer, xml, zip, gd, curl
+
+LIMIT PHP (penting untuk import Excel)
+--------------------------------------
+- memory_limit       >= 512M
+- max_execution_time >= 300
+- upload_max_filesize  20-50M
+
+FITUR HOSTING YANG DIBUTUHKAN
+-----------------------------
+- SSH access (untuk composer install dan php artisan storage:link;
+  docroot Laravel wajib mengarah ke folder public/)
+- SSL gratis (Let's Encrypt)
+- Backup harian
+
+CATATAN
+-------
+1. Jangan ambil paket Personal/hatchling termurah: biasanya memory_limit
+   dikunci 256M dan tanpa SSH sehingga import Excel besar bisa gagal.
+2. Dedicated server tidak diperlukan (overkill dan mahal untuk skala ini).
+   Naik ke Cloud Hosting satu tingkat di atas sudah cukup jika suatu saat
+   client mencapai ratusan dan import rutin file puluhan ribu baris.

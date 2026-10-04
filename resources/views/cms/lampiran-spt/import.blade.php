@@ -83,6 +83,9 @@
                                 <th class="text-end">SALDO SAAT INI</th>
                                 <th class="text-end">HARGA PEROLEHAN</th>
                                 <th>INFO LAIN</th>
+                                <th>KURS</th>
+                                <th class="text-end">NILAI KURS</th>
+                                <th class="text-end">SALDO BENTUK AWAL</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -99,6 +102,9 @@
                                 <td class="text-end">{{ number_format($item['saldo_saat_ini'] ?? 0, 0, ',', '.') }}</td>
                                 <td class="text-end">{{ number_format($item['harga_perolehan'] ?? ($item['saldo_bentuk_awal'] ?? 0), 0, ',', '.') }}</td>
                                 <td class="small text-muted">{{ $item['detail_info'] ?? '' }} {{ $item['ukuran_tanah'] ?? '' }} {{ $item['ukuran_bangunan'] ?? '' }}</td>
+                                <td>{{ !empty($item['kurs']) ? $item['kurs'] : '-' }}</td>
+                                <td class="text-end">{{ ($item['nilai_kurs'] ?? 0) > 0 ? number_format($item['nilai_kurs'], 2, ',', '.') : '-' }}</td>
+                                <td class="text-end">{{ number_format($item['saldo_bentuk_awal'] ?? 0, 2, ',', '.') }}</td>
                             </tr>
                             @endforeach
                         </tbody>
