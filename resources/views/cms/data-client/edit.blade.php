@@ -170,23 +170,41 @@
     const peroranganList = ['Perorangan', 'Perseorangan', 'Individual'];
     const ecommerceList = @json($masterEcommerce ?? []);
 
+    // Kode ecommerce dikenali sebagai SUFFIX di akhir NIK (NIK dasar 15-16 digit,
+    // jadi posisi suffix tidak tetap). Cocokkan kode terpanjang dulu.
+    function sortedEcommerce() {
+        return ecommerceList.slice().sort(function(a, b) {
+            return (b.kode_ecommerce || '').length - (a.kode_ecommerce || '').length;
+        });
+    }
+
+    function findEcommerceBySuffix(val) {
+        val = val || '';
+        var list = sortedEcommerce();
+        for (var i = 0; i < list.length; i++) {
+            var k = list[i].kode_ecommerce || '';
+            if (k && val.length > k.length && val.slice(-k.length) === k) {
+                return list[i];
+            }
+        }
+        return null;
+    }
+
+    function stripEcommerceSuffix(val) {
+        var m = findEcommerceBySuffix(val || '');
+        if (m) {
+            return val.substring(0, val.length - m.kode_ecommerce.length);
+        }
+        return val || '';
+    }
+
     function detectEcommerce(input) {
         var tr = input.closest('tr');
-        var val = input.value;
-        var suffix = val.length > 16 ? val.substring(16) : '';
         var hiddenInput = tr.querySelector('input[name="cabang_master_ecommerce_id[]"]');
         var selectEl = tr.querySelector('.cabang-ecommerce-select');
 
-        // Find matching ecommerce
-        var matched = null;
-        if (suffix) {
-            for (var i = 0; i < ecommerceList.length; i++) {
-                if (ecommerceList[i].kode_ecommerce === suffix) {
-                    matched = ecommerceList[i];
-                    break;
-                }
-            }
-        }
+        // Find matching ecommerce by suffix
+        var matched = findEcommerceBySuffix(input.value);
 
         // Update hidden input
         if (hiddenInput) hiddenInput.value = matched ? matched.id : '';
@@ -211,6 +229,37 @@
     document.getElementById('cabangTableBody').addEventListener('input', function(e) {
         if (e.target.classList.contains('cabang-npwp')) {
             detectEcommerce(e.target);
+        }
+    });
+
+    // E-commerce dipilih -> sesuaikan NIK: tambah kode jika belum ada,
+    // abaikan jika suffix sudah sama, ganti jika suffix tidak sesuai.
+    function onEcommerceSelectChange(selectEl) {
+        var tr = selectEl.closest('tr');
+        var nikInput = tr ? tr.querySelector('.cabang-npwp') : null;
+        if (!nikInput) return;
+        var opt = selectEl.options[selectEl.selectedIndex];
+        var kode = (opt && opt.dataset && opt.dataset.kode) ? opt.dataset.kode : '';
+        var val = nikInput.value || '';
+        var base = stripEcommerceSuffix(val);
+
+        if (kode) {
+            if (val === base + kode) return; // sudah sesuai -> abaikan
+            nikInput.value = base + kode; // tambah / sesuaikan
+        } else {
+            // pilihan dikosongkan -> lepas suffix yang dikenal, pertahankan NIK dasar
+            if (base !== val) {
+                nikInput.value = base;
+            } else {
+                return;
+            }
+        }
+        detectEcommerce(nikInput);
+    }
+
+    document.getElementById('cabangTableBody').addEventListener('change', function(e) {
+        if (e.target.classList.contains('cabang-ecommerce-select')) {
+            onEcommerceSelectChange(e.target);
         }
     });
 

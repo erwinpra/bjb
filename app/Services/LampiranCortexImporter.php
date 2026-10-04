@@ -139,7 +139,9 @@ class LampiranCortexImporter
                     'atas_nama' => ['atasnama'],
                     'nama_bank_institusi' => ['namabankinstitusi', 'bankinstitusi', 'bank', 'institusi'],
                     'lokasi_harta' => ['lokasiharta', 'lokasi'],
+                    'kurs' => ['kurs'],
                     'tahun_perolehan' => ['tahunperolehan'],
+                    'saldo_bentuk_awal' => ['saldodalambentukawal', 'saldobentukawal', 'saldoawal'],
                     'saldo_saat_ini' => ['nilaisaatini', 'saldosaatini', 'nilai', 'saldo'],
                 ];
             case '02': // PIUTANG
@@ -161,7 +163,9 @@ class LampiranCortexImporter
                     'nik_npwp_pihak' => ['npwp', 'niknpwp', 'nik'],
                     'nama_pihak' => ['nama'],
                     'nomor_akun' => ['nomorakun', 'noakun', 'akun'],
+                    'kurs' => ['kurs'],
                     'harga_perolehan' => ['hargaperolehan'],
+                    'saldo_bentuk_awal' => ['saldodalambentukawal', 'saldobentukawal', 'saldoawal'],
                     'tahun_perolehan' => ['tahunperolehan'],
                     'saldo_saat_ini' => ['nilaisaatini', 'nilai', 'saldo'],
                 ];
@@ -337,9 +341,10 @@ class LampiranCortexImporter
                     'lokasi_harta' => $get('lokasi_harta'),
                     'tahun_perolehan' => $int('tahun_perolehan'),
                     'saldo_saat_ini' => $num('saldo_saat_ini'),
-                    'saldo_bentuk_awal' => 0,
+                    'saldo_bentuk_awal' => $num('saldo_bentuk_awal'),
                     'harga_perolehan' => 0,
                 ];
+                $base['kurs'] = $get('kurs');
                 break;
             case '02': // PIUTANG
                 $nama = $get('nama_pihak');
@@ -358,6 +363,9 @@ class LampiranCortexImporter
                 break;
             case '03': // INVEST
                 $nama = $get('nama_pihak');
+                $harga = $num('harga_perolehan');
+                $awal = $num('saldo_bentuk_awal');
+                if (!$awal) $awal = $harga;
                 $base += [
                     'deskripsi' => $get('deskripsi'),
                     'lokasi_harta' => $get('lokasi_harta'),
@@ -365,11 +373,12 @@ class LampiranCortexImporter
                     'nama_pihak' => $nama,
                     'merk_tipe' => $nama,
                     'nomor_akun' => $get('nomor_akun'),
-                    'harga_perolehan' => $num('harga_perolehan'),
-                    'saldo_bentuk_awal' => $num('harga_perolehan'),
+                    'harga_perolehan' => $harga,
+                    'saldo_bentuk_awal' => $awal,
                     'tahun_perolehan' => $int('tahun_perolehan'),
                     'saldo_saat_ini' => $num('saldo_saat_ini'),
                 ];
+                $base['kurs'] = $get('kurs');
                 break;
             case '04': // HARTA BERGERAK
                 $desk = $get('deskripsi');

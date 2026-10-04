@@ -20,9 +20,15 @@ class LampiranSptSeeder extends Seeder
             'TOTAL HUTANG',
         ];
 
+        // Sumber: master.md (replace total, is_active=1).
+        // Catatan master.md:
+        // - KAS: 0101 duplikat (UANG TUNAI -> ditimpa UANG TUNAI/BANK NOTE/KOIN),
+        //   0109 duplikat (SETARA KAS -> ditimpa SETARA KAS LAINNYA).
+        // - INVEST di master.md dipetakan ke kategori INVESTASI.
+        // - HUTANG di master.md dipetakan ke kategori TOTAL HUTANG.
         $data = [
             'KAS' => [
-                ['0101', 'UANG TUNAI'],
+                ['0101', 'UANG TUNAI/BANK NOTE/KOIN'],
                 ['0102', 'TABUNGAN'],
                 ['0103', 'GIRO'],
                 ['0104', 'DEPOSITO'],
@@ -30,9 +36,7 @@ class LampiranSptSeeder extends Seeder
                 ['0106', 'CEK'],
                 ['0107', 'WESSEL'],
                 ['0108', 'KERTAS KOMERSIAL'],
-                ['0109', 'SETARA KAS'],
-                ['0110', 'UANG TUNAI/BANK NOTE/KOIN'],
-                ['0111', 'SETARA KAS LAINNYA'],
+                ['0109', 'SETARA KAS LAINNYA'],
             ],
             'PIUTANG' => [
                 ['0201', 'PIUTANG USAHA'],
@@ -40,21 +44,17 @@ class LampiranSptSeeder extends Seeder
                 ['0209', 'PIUTANG LAINNYA'],
             ],
             'INVESTASI' => [
+                ['0301', 'SAHAM YANG DIBELI UNTUK DIJUAL KEMBALI'],
+                ['0302', 'SAHAM NON BURSA'],
+                ['0303', 'SAHAM BURSA'],
+                ['0304', 'OBLIGASI PERUSAHAAN'],
+                ['0305', 'OBLIGASI PEMERINTAH'],
+                ['0306', 'SURAT UTANG LAINNYA'],
+                ['0307', 'REKSADANA'],
+                ['0309', 'PENYERTAAN MODAL DALAM PERUSAHAAN LAIN YANG BUKAN ATAS SAHAM'],
                 ['0310', 'ASURANSI'],
-                ['0311', 'REKSA DANA'],
-                ['0312', 'OBLIGASI PEMERINTAH/PENGURUSAN PEMERINTAH'],
-                ['0313', 'OBLIGASI SW'],
-                ['0314', 'SAHAM'],
-                ['0315', 'OBLIGASI'],
-                ['0316', 'REKSA SAHAM'],
-                ['0317', 'REKSA CAMPURAN'],
-                ['0318', 'REKSA OBLIGASI'],
-                ['0319', 'REKSA PENDAPATAN TETAP'],
-                ['0320', 'REKSA TERPROTEKSI'],
-                ['0321', 'PENYERTAAN MODAL PADA BADAN USAHA YANG DIVIDENDENDENDENYA DIKENAKAN PEMOTONGAN PAJAK'],
-                ['0322', 'KAS PENJUALAN/PEMBELIAN REKSA DANA'],
-                ['0323', 'PERSEKUTUAN/FIRMA/CV'],
-                ['0324', 'INVESTASI LAINNYA'],
+                ['0311', 'UNIT LINK DI ASURANSI'],
+                ['0399', 'INVESTASI LAINNYA'],
             ],
             'HARTA BERGERAK' => [
                 ['0401', 'SEPEDA'],
@@ -108,15 +108,24 @@ class LampiranSptSeeder extends Seeder
         ];
 
         foreach ($kategoris as $label) {
-            $kategori = KategoriLampiran::firstOrCreate(['label' => $label]);
+            KategoriLampiran::firstOrCreate(['label' => $label]);
+        }
 
-            if (isset($data[$label])) {
-                foreach ($data[$label] as [$subKode, $nama]) {
-                    MasterLampiranSpt::firstOrCreate(
-                        ['kategori_id' => $kategori->id, 'sub_kode' => $subKode],
-                        ['nama' => $nama, 'is_active' => true],
-                    );
-                }
+        // Replace total: hapus semua master lama (cascade ke cms_lampiran_spt),
+        // lalu insert ulang dari master.md dengan is_active=1.
+        \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        MasterLampiranSpt::truncate();
+        \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
+        foreach ($data as $label => $rows) {
+            $kategori = KategoriLampiran::where('label', $label)->firstOrFail();
+            foreach ($rows as [$subKode, $nama]) {
+                MasterLampiranSpt::create([
+                    'kategori_id' => $kategori->id,
+                    'sub_kode' => $subKode,
+                    'nama' => $nama,
+                    'is_active' => true,
+                ]);
             }
         }
 

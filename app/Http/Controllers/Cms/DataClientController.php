@@ -221,11 +221,11 @@ class DataClientController extends Controller
                     $cabangValid = false;
                     $invalidCabang[] = $nama ?: $cabang;
                 } else {
-                    $matchedEcommerceId = array_search($suffix, $ecommerceLookup);
-                    if ($matchedEcommerceId !== false) {
+                    $matchedEcommerceId = $this->detectEcommerceId($cabang, $ecommerceLookup);
+                    if ($matchedEcommerceId !== null) {
                         $isEcommerce = true;
                         $masterEcommerceId = $matchedEcommerceId;
-                        $cabangNo = $suffix;
+                        $cabangNo = $ecommerceLookup[$matchedEcommerceId];
                     } elseif (preg_match('/^\d{2}$/', $suffix)) {
                         $cabangNo = $suffix;
                     } else {
@@ -360,8 +360,7 @@ class DataClientController extends Controller
 
                 $parent = $existingParents[$parentKey] ?? $newParentsInBatch[$parentKey];
 
-                $suffix = substr($cabang, 16);
-                $matchedEcommerceId = array_search($suffix, $ecommerceLookup);
+                $matchedEcommerceId = $this->detectEcommerceId($cabang, $ecommerceLookup);
 
                 $cabangData = [
                     'data_client_id' => $parent->id,
@@ -565,19 +564,25 @@ class DataClientController extends Controller
 
             if (!$masterEcommerceId) {
                 $npwp = isset($npwps[$i]) ? ltrim(trim($npwps[$i]), "'") : '';
-                if (strlen($npwp) > 16) {
-                    $suffix = substr($npwp, 16);
-                    $matchedId = array_search($suffix, $ecommerceLookup);
-                    if ($matchedId !== false) {
-                        $masterEcommerceId = $matchedId;
-                    }
+                $masterEcommerceId = $this->detectEcommerceId($npwp, $ecommerceLookup);
+            }
+
+            $npwpRaw = isset($npwps[$i]) ? ltrim(trim($npwps[$i]), "'") : '';
+
+            // Samakan suffix NIK dengan kode ecommerce yang dipilih:
+            // sudah sama -> biarkan, beda/belum ada -> tambah/sesuaikan.
+            if ($npwpRaw !== '' && $masterEcommerceId && isset($ecommerceLookup[$masterEcommerceId])) {
+                $kode = $ecommerceLookup[$masterEcommerceId];
+                $base = $this->stripEcommerceSuffix($npwpRaw, $ecommerceLookup);
+                if ($npwpRaw !== $base . $kode) {
+                    $npwpRaw = $base . $kode;
                 }
             }
 
             $data = [
                 'master_ecommerce_id' => $masterEcommerceId,
                 'nama_client' => $name,
-                'npwp' => isset($npwps[$i]) ? ltrim(trim($npwps[$i]), "'") : null,
+                'npwp' => $npwpRaw !== '' ? $npwpRaw : null,
                 'kpp' => isset($kpps[$i]) ? trim($kpps[$i]) : null,
                 'email' => isset($emails[$i]) ? trim($emails[$i]) : null,
                 'no_telephone' => isset($phones[$i]) ? trim($phones[$i]) : null,
@@ -615,5 +620,35 @@ class DataClientController extends Controller
 
         $badan = Badan::find($value);
         return $badan ? $badan->id : $value;
+    }
+
+    // Kode ecommerce dikenali sebagai SUFFIX di akhir NIK (NIK dasar 15-16 digit,
+    // jadi posisi suffix tidak tetap). Cocokkan kode terpanjang dulu.
+    protected function sortedEcommerceKodes(array $lookup)
+    {
+        $kodes = array_values(array_filter($lookup, function ($k) { return $k !== '' && $k !== null; }));
+        usort($kodes, function ($a, $b) { return strlen($b) - strlen($a); });
+        return $kodes;
+    }
+
+    protected function detectEcommerceId($npwp, array $lookup)
+    {
+        foreach ($this->sortedEcommerceKodes($lookup) as $kode) {
+            if (strlen($npwp) > strlen($kode) && substr($npwp, -strlen($kode)) === $kode) {
+                $id = array_search($kode, $lookup);
+                return $id !== false ? (int) $id : null;
+            }
+        }
+        return null;
+    }
+
+    protected function stripEcommerceSuffix($npwp, array $lookup)
+    {
+        foreach ($this->sortedEcommerceKodes($lookup) as $kode) {
+            if (strlen($npwp) > strlen($kode) && substr($npwp, -strlen($kode)) === $kode) {
+                return substr($npwp, 0, -strlen($kode));
+            }
+        }
+        return $npwp;
     }
 }

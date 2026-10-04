@@ -736,7 +736,8 @@
     });
 
     // Kolom popup detail harta per kategori (ikut header tabel admin per sheet).
-    // Saldo Bentuk Awal ditambahkan otomatis jika ada datanya.
+    // KAS & INVEST sudah punya kolom tetap (KURS / SALDO DALAM BENTUK AWAL).
+    // Saldo Bentuk Awal otomatis hanya untuk kategori lain yang belum punya kolomnya.
     function hartaColumns(katId) {
         function T(v) { return (v === null || v === undefined || v === '') ? '-' : v; }
         function R(v) { return 'Rp ' + formatNum(v); }
@@ -759,6 +760,8 @@
                 {h:'Thn Perolehan', f:function(r){ return T(r.tahun_perolehan); }},
                 {h:'Harga Perolehan', f:function(r){ return R(r.harga_perolehan || r.saldo_bentuk_awal); }},
                 {h:'Nilai Saat Ini', f:function(r){ return R(r.saldo_saat_ini); }, main:1},
+                {h:'Saldo Dalam Bentuk Awal', f:function(r){ return R(r.saldo_bentuk_awal); }, isAwal:1},
+                {h:'Kurs', f:function(r){ return T(r.kurs); }},
             ]; break;
             case 4: cols = [ // HARTA BERGERAK
                 {h:'Merk/Tipe', f:function(r){ return T(r.merk_tipe || r.deskripsi); }},
@@ -807,6 +810,8 @@
                 {h:'Lokasi', f:function(r){ return T(r.lokasi_harta); }},
                 {h:'Thn', f:function(r){ return T(r.tahun_perolehan); }},
                 {h:'Nilai Saat Ini', f:function(r){ return R(r.saldo_saat_ini); }, main:1},
+                {h:'Saldo Dalam Bentuk Awal', f:function(r){ return R(r.saldo_bentuk_awal); }, isAwal:1},
+                {h:'Kurs', f:function(r){ return T(r.kurs); }},
             ];
         }
         return cols;
@@ -823,7 +828,8 @@
         if (!records || !records.length) return;
 
         var cols = hartaColumns(row.getAttribute('data-kat') || '');
-        var hasAwal = records.some(function(r){ return Number(r.saldo_bentuk_awal) > 0; });
+        var hasAwalCol = cols.some(function(c){ return c.isAwal; });
+        var hasAwal = !hasAwalCol && records.some(function(r){ return Number(r.saldo_bentuk_awal) > 0; });
         if (hasAwal) {
             var awalCol = {h:'Saldo Bentuk Awal', f:function(r){ return 'Rp ' + formatNum(r.saldo_bentuk_awal); }};
             var idx = -1;

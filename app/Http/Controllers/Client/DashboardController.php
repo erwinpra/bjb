@@ -163,6 +163,7 @@ class DashboardController extends Controller
 
         $itemsByKode = $allDetailItems->groupBy('kode');
         $totalHarta = 0;
+        $totalHutang = 0;
         $hartaDetail = [];
         $hartaByKategori = [];
 
@@ -172,7 +173,11 @@ class DashboardController extends Controller
             $katLabel = $master->kategori->label ?? 'Lainnya';
             $nama = ($master->sub_kode ?? $kode) . ' ' . ($master->nama ?? '');
             $nilai = (float) $detailItems->sum('saldo_saat_ini');
-            $totalHarta += $nilai;
+            if ((int) ($master->kategori_id ?? 0) === 7) {
+                $totalHutang += $nilai;
+            } else {
+                $totalHarta += $nilai;
+            }
             $hartaDetail[] = [
                 'kategori' => $katLabel,
                 'kategori_id' => $master->kategori_id,
@@ -217,7 +222,7 @@ class DashboardController extends Controller
                 $katColors[] = $chartColors[$i % count($chartColors)];
             }
             $at['harta'] = $isInduk ? [
-                'total' => $totalHarta, 'detail' => $hartaDetail,
+                'total' => $totalHarta - $totalHutang, 'detail' => $hartaDetail,
                 'by_kategori' => ['labels' => $katLabels, 'values' => $katValues, 'colors' => $katColors],
             ] : ['total' => 0, 'detail' => [], 'by_kategori' => ['labels' => [], 'values' => [], 'colors' => []]];
         }
@@ -232,7 +237,8 @@ class DashboardController extends Controller
 
         return [
             'exists' => $transaksis->isNotEmpty(),
-            'total_harta' => $totalHarta,
+            'total_harta' => $totalHarta - $totalHutang,
+            'total_hutang' => $totalHutang,
             'total_omset' => $totalOmset,
             'total_pph' => $totalPph,
             'harta_detail' => $hartaDetail,

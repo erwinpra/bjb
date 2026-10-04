@@ -151,7 +151,7 @@
                         @if($katId === 1)
                         {{-- KAS: NOMOR AKUN, ATAS NAMA, BANK, LOKASI, THN, SALDO --}}
                         <table class="table table-bordered align-middle table-lampiran" id="tableKat-{{ $katId }}" style="font-size:0.8rem">
-                            <thead class="table-dark"><tr><th>KODE</th><th>DESKRIPSI</th><th>NOMOR AKUN</th><th>ATAS NAMA</th><th>BANK/INSTITUSI</th><th>LOKASI</th><th>THN</th><th class="text-end">SALDO SAAT INI</th><th>AKSI</th></tr></thead>
+                            <thead class="table-dark"><tr><th>KODE</th><th>DESKRIPSI</th><th>NOMOR AKUN</th><th>ATAS NAMA</th><th>BANK/INSTITUSI</th><th>LOKASI</th><th>THN</th><th class="text-end">SALDO SAAT INI</th><th class="text-end">SALDO DALAM BENTUK AWAL</th><th>KURS</th><th>AKSI</th></tr></thead>
                             <tbody>
                                 @forelse($items as $d)
                                 <tr class="row-edit" data-row-id="{{ $d->id }}">
@@ -171,8 +171,10 @@
                                     <td><span class="field-display">{{ $d->lokasi_harta ?: '-' }}</span><input type="text" class="cell-input cell-edit d-none" data-field="lokasi_harta" value="{{ $d->lokasi_harta }}"></td>
                                     <td><span class="field-display">{{ $d->tahun_perolehan ?: '-' }}</span><select class="cell-input cell-select cell-edit d-none" data-field="tahun_perolehan"><option value="">--</option>@foreach($tahunPerolehanList as $t)<option value="{{ $t }}" {{ $d->tahun_perolehan == $t ? 'selected' : '' }}>{{ $t }}</option>@endforeach</select></td>
                                     <td><span class="field-display text-end">{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '-' }}</span><input type="text" class="cell-input cell-edit format-number text-end d-none" data-field="saldo_saat_ini" value="{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '' }}"></td>
+                                    <td><span class="field-display text-end">{{ $d->saldo_bentuk_awal > 0 ? number_format($d->saldo_bentuk_awal, 0, ',', '.') : '-' }}</span><input type="text" class="cell-input cell-edit format-number text-end d-none" data-field="saldo_bentuk_awal" value="{{ $d->saldo_bentuk_awal > 0 ? number_format($d->saldo_bentuk_awal, 0, ',', '.') : '' }}"></td>
+                                    <td><span class="field-display">{{ $d->kurs ?: '-' }}</span><input type="text" class="cell-input cell-edit d-none" data-field="kurs" value="{{ $d->kurs }}"></td>
                                     <td class="d-none">
-                                        <input type="hidden" data-field="kurs" value="{{ $d->kurs }}"><input type="hidden" data-field="saldo_bentuk_awal" value="{{ $d->saldo_bentuk_awal }}"><input type="hidden" data-field="nilai_kurs" value="{{ $d->nilai_kurs }}"><input type="hidden" data-field="harga_perolehan" value="{{ $d->harga_perolehan }}"><input type="hidden" data-field="merk_tipe" value="{{ $d->merk_tipe }}"><input type="hidden" data-field="nopol_sertifikat" value="{{ $d->nopol_sertifikat }}"><input type="hidden" data-field="kepemilikan" value="{{ $d->kepemilikan }}"><input type="hidden" data-field="nik_npwp_pihak" value="{{ $d->nik_npwp_pihak }}"><input type="hidden" data-field="nama_pihak" value="{{ $d->nama_pihak }}"><input type="hidden" data-field="negara_kreditur" value="{{ $d->negara_kreditur }}"><input type="hidden" data-field="ukuran_tanah" value="{{ $d->ukuran_tanah }}"><input type="hidden" data-field="ukuran_bangunan" value="{{ $d->ukuran_bangunan }}"><input type="hidden" data-field="sumber_kepemilikan" value="{{ $d->sumber_kepemilikan }}"><input type="hidden" data-field="detail_info" value="{{ $d->detail_info }}"><input type="hidden" data-field="tahun_mulai" value="{{ $d->tahun_mulai }}">
+                                        <input type="hidden" data-field="nilai_kurs" value="{{ $d->nilai_kurs }}"><input type="hidden" data-field="harga_perolehan" value="{{ $d->harga_perolehan }}"><input type="hidden" data-field="merk_tipe" value="{{ $d->merk_tipe }}"><input type="hidden" data-field="nopol_sertifikat" value="{{ $d->nopol_sertifikat }}"><input type="hidden" data-field="kepemilikan" value="{{ $d->kepemilikan }}"><input type="hidden" data-field="nik_npwp_pihak" value="{{ $d->nik_npwp_pihak }}"><input type="hidden" data-field="nama_pihak" value="{{ $d->nama_pihak }}"><input type="hidden" data-field="negara_kreditur" value="{{ $d->negara_kreditur }}"><input type="hidden" data-field="ukuran_tanah" value="{{ $d->ukuran_tanah }}"><input type="hidden" data-field="ukuran_bangunan" value="{{ $d->ukuran_bangunan }}"><input type="hidden" data-field="sumber_kepemilikan" value="{{ $d->sumber_kepemilikan }}"><input type="hidden" data-field="detail_info" value="{{ $d->detail_info }}"><input type="hidden" data-field="tahun_mulai" value="{{ $d->tahun_mulai }}">
                                     </td>
                                     <td class="text-center text-nowrap">
                                         @cmsCan('lampiran_spt', 'edit')<button type="button" class="btn btn-outline-primary btn-sm btn-edit-row" title="Edit baris"><i class="bi bi-pencil"></i></button>@endCmsCan
@@ -180,7 +182,7 @@
                                     </td>
                                 </tr>
                                 @empty
-                                <tr class="empty-row"><td colspan="9" class="text-center text-muted py-4">Belum ada data KAS. Import sheet 01 atau klik "Tambah Baris".</td></tr>
+                                <tr class="empty-row"><td colspan="11" class="text-center text-muted py-4">Belum ada data KAS. Import sheet 01 atau klik "Tambah Baris".</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -222,7 +224,7 @@
                         @elseif($katId === 3)
                         {{-- INVESTASI: LOKASI, NPWP, NAMA, NOMOR AKUN, HARGA, THN, NILAI --}}
                         <table class="table table-bordered align-middle table-lampiran" id="tableKat-{{ $katId }}" style="font-size:0.8rem">
-                            <thead class="table-dark"><tr><th>KODE</th><th>DESKRIPSI</th><th>LOKASI</th><th>NPWP</th><th>NAMA INSTITUSI</th><th>NOMOR AKUN</th><th>THN</th><th class="text-end">HARGA PEROLEHAN</th><th class="text-end">NILAI SAAT INI</th><th>AKSI</th></tr></thead>
+                            <thead class="table-dark"><tr><th>KODE</th><th>DESKRIPSI</th><th>LOKASI</th><th>NPWP</th><th>NAMA INSTITUSI</th><th>NOMOR AKUN</th><th>THN</th><th class="text-end">HARGA PEROLEHAN</th><th class="text-end">NILAI SAAT INI</th><th class="text-end">SALDO DALAM BENTUK AWAL</th><th>KURS</th><th>AKSI</th></tr></thead>
                             <tbody>
                                 @forelse($items as $d)
                                 <tr class="row-edit" data-row-id="{{ $d->id }}">
@@ -243,8 +245,10 @@
                                     <td><span class="field-display">{{ $d->tahun_perolehan ?: '-' }}</span><select class="cell-input cell-select cell-edit d-none" data-field="tahun_perolehan"><option value="">--</option>@foreach($tahunPerolehanList as $t)<option value="{{ $t }}" {{ $d->tahun_perolehan == $t ? 'selected' : '' }}>{{ $t }}</option>@endforeach</select></td>
                                     <td><span class="field-display text-end">{{ ($d->harga_perolehan ?: $d->saldo_bentuk_awal) > 0 ? number_format($d->harga_perolehan ?: $d->saldo_bentuk_awal, 0, ',', '.') : '-' }}</span><input type="text" class="cell-input cell-edit format-number text-end d-none" data-field="harga_perolehan" value="{{ ($d->harga_perolehan ?: $d->saldo_bentuk_awal) > 0 ? number_format($d->harga_perolehan ?: $d->saldo_bentuk_awal, 0, ',', '.') : '' }}"></td>
                                     <td><span class="field-display text-end">{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '-' }}</span><input type="text" class="cell-input cell-edit format-number text-end d-none" data-field="saldo_saat_ini" value="{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '' }}"></td>
+                                    <td><span class="field-display text-end">{{ $d->saldo_bentuk_awal > 0 ? number_format($d->saldo_bentuk_awal, 0, ',', '.') : '-' }}</span><input type="text" class="cell-input cell-edit format-number text-end d-none" data-field="saldo_bentuk_awal" value="{{ $d->saldo_bentuk_awal > 0 ? number_format($d->saldo_bentuk_awal, 0, ',', '.') : '' }}"></td>
+                                    <td><span class="field-display">{{ $d->kurs ?: '-' }}</span><input type="text" class="cell-input cell-edit d-none" data-field="kurs" value="{{ $d->kurs }}"></td>
                                     <td class="d-none">
-                                        <input type="hidden" data-field="atas_nama" value="{{ $d->atas_nama }}"><input type="hidden" data-field="nama_bank_institusi" value="{{ $d->nama_bank_institusi }}"><input type="hidden" data-field="kurs" value="{{ $d->kurs }}"><input type="hidden" data-field="saldo_bentuk_awal" value="{{ $d->saldo_bentuk_awal }}"><input type="hidden" data-field="nilai_kurs" value="{{ $d->nilai_kurs }}"><input type="hidden" data-field="merk_tipe" value="{{ $d->merk_tipe }}"><input type="hidden" data-field="nopol_sertifikat" value="{{ $d->nopol_sertifikat }}"><input type="hidden" data-field="kepemilikan" value="{{ $d->kepemilikan }}"><input type="hidden" data-field="negara_kreditur" value="{{ $d->negara_kreditur }}"><input type="hidden" data-field="ukuran_tanah" value="{{ $d->ukuran_tanah }}"><input type="hidden" data-field="ukuran_bangunan" value="{{ $d->ukuran_bangunan }}"><input type="hidden" data-field="sumber_kepemilikan" value="{{ $d->sumber_kepemilikan }}"><input type="hidden" data-field="detail_info" value="{{ $d->detail_info }}"><input type="hidden" data-field="tahun_mulai" value="{{ $d->tahun_mulai }}">
+                                        <input type="hidden" data-field="atas_nama" value="{{ $d->atas_nama }}"><input type="hidden" data-field="nama_bank_institusi" value="{{ $d->nama_bank_institusi }}"><input type="hidden" data-field="nilai_kurs" value="{{ $d->nilai_kurs }}"><input type="hidden" data-field="merk_tipe" value="{{ $d->merk_tipe }}"><input type="hidden" data-field="nopol_sertifikat" value="{{ $d->nopol_sertifikat }}"><input type="hidden" data-field="kepemilikan" value="{{ $d->kepemilikan }}"><input type="hidden" data-field="negara_kreditur" value="{{ $d->negara_kreditur }}"><input type="hidden" data-field="ukuran_tanah" value="{{ $d->ukuran_tanah }}"><input type="hidden" data-field="ukuran_bangunan" value="{{ $d->ukuran_bangunan }}"><input type="hidden" data-field="sumber_kepemilikan" value="{{ $d->sumber_kepemilikan }}"><input type="hidden" data-field="detail_info" value="{{ $d->detail_info }}"><input type="hidden" data-field="tahun_mulai" value="{{ $d->tahun_mulai }}">
                                     </td>
                                     <td class="text-center text-nowrap">
                                         @cmsCan('lampiran_spt', 'edit')<button type="button" class="btn btn-outline-primary btn-sm btn-edit-row" title="Edit baris"><i class="bi bi-pencil"></i></button>@endCmsCan
@@ -252,7 +256,7 @@
                                     </td>
                                 </tr>
                                 @empty
-                                <tr class="empty-row"><td colspan="10" class="text-center text-muted py-4">Belum ada data INVESTASI. Import sheet 03 atau klik "Tambah Baris".</td></tr>
+                                <tr class="empty-row"><td colspan="12" class="text-center text-muted py-4">Belum ada data INVESTASI. Import sheet 03 atau klik "Tambah Baris".</td></tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -591,9 +595,9 @@ var ALL_FIELDS = ['deskripsi','nomor_akun','atas_nama','nama_bank_institusi','lo
 var NUM_FIELDS = ['saldo_saat_ini','saldo_bentuk_awal','nilai_kurs','harga_perolehan'];
 // Kolom visible (selain KODE) untuk builder tambah-baris per tab
 var KAT_FIELDS = {
-    1: [{f:'deskripsi',ro:1},{f:'nomor_akun'},{f:'atas_nama'},{f:'nama_bank_institusi'},{f:'lokasi_harta'},{f:'tahun_perolehan',type:'tahun'},{f:'saldo_saat_ini',type:'number'}],
+    1: [{f:'deskripsi',ro:1},{f:'nomor_akun'},{f:'atas_nama'},{f:'nama_bank_institusi'},{f:'lokasi_harta'},{f:'tahun_perolehan',type:'tahun'},{f:'saldo_saat_ini',type:'number'},{f:'saldo_bentuk_awal',type:'number'},{f:'kurs'}],
     2: [{f:'deskripsi',ro:1},{f:'lokasi_harta'},{f:'nik_npwp_pihak'},{f:'nama_pihak'},{f:'tahun_mulai',type:'tahun'},{f:'saldo_saat_ini',type:'number'}],
-    3: [{f:'deskripsi',ro:1},{f:'lokasi_harta'},{f:'nik_npwp_pihak'},{f:'nama_pihak'},{f:'nomor_akun'},{f:'tahun_perolehan',type:'tahun'},{f:'harga_perolehan',type:'number'},{f:'saldo_saat_ini',type:'number'}],
+    3: [{f:'deskripsi',ro:1},{f:'lokasi_harta'},{f:'nik_npwp_pihak'},{f:'nama_pihak'},{f:'nomor_akun'},{f:'tahun_perolehan',type:'tahun'},{f:'harga_perolehan',type:'number'},{f:'saldo_saat_ini',type:'number'},{f:'saldo_bentuk_awal',type:'number'},{f:'kurs'}],
     4: [{f:'merk_tipe'},{f:'nopol_sertifikat'},{f:'kepemilikan'},{f:'nik_npwp_pihak'},{f:'nama_pihak'},{f:'tahun_perolehan',type:'tahun'},{f:'harga_perolehan',type:'number'},{f:'saldo_saat_ini',type:'number'}],
     5: [{f:'deskripsi',ro:1},{f:'lokasi_harta'},{f:'detail_info'},{f:'ukuran_tanah'},{f:'ukuran_bangunan'},{f:'sumber_kepemilikan'},{f:'nopol_sertifikat'},{f:'tahun_perolehan',type:'tahun'},{f:'harga_perolehan',type:'number'},{f:'saldo_saat_ini',type:'number'}],
     6: [{f:'deskripsi',ro:1},{f:'tahun_perolehan',type:'tahun'},{f:'nopol_sertifikat'},{f:'detail_info'},{f:'harga_perolehan',type:'number'},{f:'saldo_saat_ini',type:'number'}],
