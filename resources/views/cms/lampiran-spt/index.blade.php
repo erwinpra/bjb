@@ -52,15 +52,7 @@
                         <i class="bi bi-pencil-square me-1"></i> Semua
                     </button>
                 </li>
-                @foreach($detailsByKategori ?? [] as $dbk)
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="tab-kat-{{ $dbk['kategori']->id }}" data-bs-toggle="tab"
-                        data-bs-target="#tabContent-kat-{{ $dbk['kategori']->id }}" type="button" role="tab">
-                        {{ $dbk['kategori']->label }}
-                        <span class="badge bg-secondary ms-1">{{ $dbk['count'] }}</span>
-                    </button>
-                </li>
-                @endforeach
+                {{-- Tab per kategori dihapus: diganti satu tabel gabungan section per kategori di tab Semua --}}
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="tab-recap" data-bs-toggle="tab"
                         data-bs-target="#tabContent-recap" type="button" role="tab">
@@ -110,186 +102,51 @@
                         </div>
                     </div>
 
-                    {{-- Per Page & Pagination --}}
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <form method="GET" action="{{ route('cms.lampiran-spt.index') }}" class="d-flex align-items-center gap-2">
-                            <input type="hidden" name="client_id" value="{{ $clientId }}">
-                            <input type="hidden" name="tahun" value="{{ $tahun }}">
-                            <label class="small text-muted mb-0">Tampilkan</label>
-                            <select name="per_page" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
-                                <option value="10" {{ ($perPage ?? 10) == 10 ? 'selected' : '' }}>10</option>
-                                <option value="20" {{ ($perPage ?? 10) == 20 ? 'selected' : '' }}>20</option>
-                                <option value="50" {{ ($perPage ?? 10) == 50 ? 'selected' : '' }}>50</option>
-                            </select>
-                            <small class="text-muted">{{ $details->total() ?? 0 }} data</small>
-                        </form>
-                    </div>
-
-                    {{-- Input Table --}}
+                    @php $masterByKode = $masterItems->keyBy('sub_kode'); @endphp
+                    {{-- Form hidden: dipakai JS simpan (per kategori & simpan semua) untuk client_id/tahun/action --}}
                     <form method="POST" action="{{ route('cms.lampiran-spt.store') }}" id="formLampiran" onsubmit="return false;">
                         @csrf
                         <input type="hidden" name="client_id" value="{{ $clientId }}">
                         <input type="hidden" name="tahun" value="{{ $tahun }}">
-
-                        @php $masterByKode = $masterItems->keyBy('sub_kode'); @endphp
-                        <div class="table-responsive">
-                            <table class="table table-bordered align-middle table-lampiran" id="tableLampiran">
-                                <thead class="table-dark" style="font-size:0.8rem">
-                                    <tr>
-                                        <th style="width:40px"><input type="checkbox" id="checkAll"></th>
-                                        <th style="width:120px">KODE</th>
-                                        <th style="width:200px">DESKRIPSI</th>
-                                        <th style="width:200px">NOMOR AKUN</th>
-                                        <th style="width:200px">ATAS NAMA</th>
-                                        <th style="width:220px">NAMA BANK/INSTITUSI</th>
-                                        <th style="width:200px">LOKASI HARTA</th>
-                                        <th style="width:100px">KURS</th>
-                                        <th style="width:140px">THN PEROLEHAN</th>
-                                        <th style="width:200px">SALDO SAAT INI</th>
-                                        <th style="width:200px">SALDO BENTUK AWAL</th>
-                                        <th style="width:160px">NILAI KURS</th>
-                                        <th style="width:100px">AKSI</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($details as $d)
-                                    <tr class="row-edit" data-row-id="{{ $d->id }}">
-                                        <td class="text-center"><input type="checkbox" class="row-checkbox" value="{{ $d->id }}"></td>
-                                        <td>
-                                            <span class="kode-text">{{ $d->kode }}</span>
-                                            <select class="cell-input cell-select d-none" data-field="kode">
-                                                <option value="">--</option>
-                                                @foreach($activeMasterItems as $m)
-                                                    <option value="{{ $m->sub_kode }}" {{ $d->kode === $m->sub_kode ? 'selected' : '' }}>
-                                                        {{ $m->sub_kode }} - {{ $m->nama }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <span class="field-display">{{ isset($masterByKode[$d->kode]) ? $masterByKode[$d->kode]->nama : ($d->deskripsi ?: '-') }}</span>
-                                            <input type="text" class="cell-input cell-edit d-none" data-field="deskripsi" value="{{ $d->deskripsi }}" readonly>
-                                        </td>
-                                        <td>
-                                            <span class="field-display">{{ $d->nomor_akun ?: '-' }}</span>
-                                            <input type="text" class="cell-input cell-edit d-none" data-field="nomor_akun" value="{{ $d->nomor_akun }}">
-                                        </td>
-                                        <td>
-                                            <span class="field-display">{{ $d->atas_nama ?: '-' }}</span>
-                                            <input type="text" class="cell-input cell-edit d-none" data-field="atas_nama" value="{{ $d->atas_nama }}">
-                                        </td>
-                                        <td>
-                                            <span class="field-display">{{ $d->nama_bank_institusi ?: '-' }}</span>
-                                            <input type="text" class="cell-input cell-edit d-none" data-field="nama_bank_institusi" value="{{ $d->nama_bank_institusi }}">
-                                        </td>
-                                        <td>
-                                            <span class="field-display">{{ $d->lokasi_harta ?: '-' }}</span>
-                                            <input type="text" class="cell-input cell-edit d-none" data-field="lokasi_harta" value="{{ $d->lokasi_harta }}">
-                                        </td>
-                                        <td>
-                                            <span class="field-display">{{ $d->kurs ?: '-' }}</span>
-                                            <input type="text" class="cell-input cell-edit d-none" data-field="kurs" value="{{ $d->kurs }}">
-                                        </td>
-                                        <td>
-                                            <span class="field-display">{{ $d->tahun_perolehan ?: '-' }}</span>
-                                            <select class="cell-input cell-select cell-edit d-none" data-field="tahun_perolehan">
-                                                <option value="">--</option>
-                                                @foreach($tahunPerolehanList as $t)
-                                                    <option value="{{ $t }}" {{ $d->tahun_perolehan == $t ? 'selected' : '' }}>{{ $t }}</option>
-                                                @endforeach
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <span class="field-display text-end">{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '-' }}</span>
-                                            <input type="text" class="cell-input cell-edit format-number text-end d-none" data-field="saldo_saat_ini" value="{{ $d->saldo_saat_ini > 0 ? number_format($d->saldo_saat_ini, 0, ',', '.') : '' }}">
-                                        </td>
-                                        <td>
-                                            <span class="field-display text-end">{{ $d->saldo_bentuk_awal > 0 ? number_format($d->saldo_bentuk_awal, 2, ',', '.') : '-' }}</span>
-                                            <input type="text" class="cell-input cell-edit format-currency text-end d-none" data-field="saldo_bentuk_awal" value="{{ $d->saldo_bentuk_awal > 0 ? number_format($d->saldo_bentuk_awal, 2, ',', '.') : '' }}">
-                                        </td>
-                                        <td>
-                                            <span class="field-display text-end">{{ $d->nilai_kurs > 0 ? number_format($d->nilai_kurs, 2, ',', '.') : '-' }}</span>
-                                            <input type="text" class="cell-input cell-edit format-currency text-end d-none" data-field="nilai_kurs" value="{{ $d->nilai_kurs > 0 ? number_format($d->nilai_kurs, 2, ',', '.') : '' }}">
-                                        </td>
-                                        <td class="d-none">
-                                            <input type="hidden" data-field="harga_perolehan" value="{{ $d->harga_perolehan }}">
-                                            <input type="hidden" data-field="merk_tipe" value="{{ $d->merk_tipe }}">
-                                            <input type="hidden" data-field="nopol_sertifikat" value="{{ $d->nopol_sertifikat }}">
-                                            <input type="hidden" data-field="kepemilikan" value="{{ $d->kepemilikan }}">
-                                            <input type="hidden" data-field="nik_npwp_pihak" value="{{ $d->nik_npwp_pihak }}">
-                                            <input type="hidden" data-field="nama_pihak" value="{{ $d->nama_pihak }}">
-                                            <input type="hidden" data-field="negara_kreditur" value="{{ $d->negara_kreditur }}">
-                                            <input type="hidden" data-field="ukuran_tanah" value="{{ $d->ukuran_tanah }}">
-                                            <input type="hidden" data-field="ukuran_bangunan" value="{{ $d->ukuran_bangunan }}">
-                                            <input type="hidden" data-field="sumber_kepemilikan" value="{{ $d->sumber_kepemilikan }}">
-                                            <input type="hidden" data-field="detail_info" value="{{ $d->detail_info }}">
-                                            <input type="hidden" data-field="tahun_mulai" value="{{ $d->tahun_mulai }}">
-                                        </td>
-                                        <td class="text-center">
-                                            @cmsCan('lampiran_spt', 'edit')
-                                            <button type="button" class="btn btn-outline-primary btn-sm btn-edit-row" title="Edit baris">
-                                                <i class="bi bi-pencil"></i>
-                                            </button>
-                                            @endCmsCan
-                                            @cmsCan('lampiran_spt', 'delete')
-                                            <button type="button" class="btn btn-outline-danger btn-sm btn-remove-row" title="Hapus baris" data-id="{{ $d->id }}">
-                                                <i class="bi bi-trash3"></i>
-                                            </button>
-                                            @endCmsCan
-                                        </td>
-                                    </tr>
-                                    @empty
-                                    <tr class="empty-row">
-                                        <td colspan="13" class="text-center text-muted py-4">
-                                            <i class="bi bi-plus-circle d-block mb-1 fs-4"></i>
-                                            Klik "Tambah Baris" untuk menambah data
-                                        </td>
-                                    </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div class="d-flex justify-content-between mt-3">
-                            <div>
-                                @cmsCan('lampiran_spt', 'create')
-                                <button type="button" class="btn btn-outline-primary" id="btnAddRow">
-                                    <i class="bi bi-plus-lg me-1"></i> Tambah Baris
-                                </button>
-                                @endCmsCan
-                            </div>
-                            <div class="d-flex gap-2">
-                                @cmsCan('lampiran_spt', 'delete')
-                                <button type="button" class="btn btn-outline-danger" id="btnDeleteSelected" disabled>
-                                    <i class="bi bi-check-square me-1"></i> Hapus Dipilih
-                                </button>
-                                @endCmsCan
-                                @cmsCan('lampiran_spt', 'create')
-                                <button type="button" class="btn btn-primary px-4" id="btnSimpan">
-                                    <i class="bi bi-save me-1"></i> Simpan
-                                </button>
-                                @endCmsCan
-                            </div>
-                        </div>
                     </form>
 
-                    @if($details->hasPages())
-                    <div class="mt-3 d-flex justify-content-center">
-                        {{ $details->appends(['client_id' => $clientId, 'tahun' => $tahun, 'per_page' => $perPage])->links('pagination::bootstrap-4') }}
+                    {{-- Toolbar global tabel gabungan --}}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="btnExpandAll">
+                                <i class="bi bi-arrows-expand me-1"></i> Buka Semua
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="btnCollapseAll">
+                                <i class="bi bi-arrows-collapse me-1"></i> Tutup Semua
+                            </button>
+                        </div>
+                        @cmsCan('lampiran_spt', 'create')
+                        <button type="button" class="btn btn-primary btn-sm px-3" id="btnSimpanSemua">
+                            <i class="bi bi-save me-1"></i> Simpan Semua Kategori
+                        </button>
+                        @endCmsCan
                     </div>
-                    @endif
-                </div>
 
-                {{-- Tab per kategori: tabel disesuaikan field masing-masing sheet --}}
+                    {{-- Tabel generik dihapus: diganti tabel gabungan section per kategori di bawah --}}
+
+                {{-- Satu tabel gabungan: section per kategori, title full-width (colspan) + expand/collapse.
+                     Struktur kolom tiap section sama seperti tabel per kategori sebelumnya. --}}
                 @foreach($detailsByKategori ?? [] as $dbk)
-                @php $katId = (int) $dbk['kategori']->id; $items = $dbk['items']; @endphp
-                <div class="tab-pane fade" id="tabContent-kat-{{ $katId }}" role="tabpanel">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="fw-semibold mb-0">{{ $dbk['kategori']->label }}
-                            <small class="text-muted">({{ $dbk['count'] }} data)</small>
+                @php $katId = (int) $dbk['kategori']->id; $items = $dbk['items']; $katCollapseId = 'kat-collapse-' . $katId; @endphp
+                <div class="card border mb-3 kat-section">
+                    <div class="card-header py-2 collapse-toggle kat-title"
+                         role="button" data-bs-toggle="collapse"
+                         data-bs-target="#{{ $katCollapseId }}" aria-expanded="true"
+                         style="background-color:#212529; color:#fff; cursor:pointer;">
+                        <h6 class="fw-semibold mb-0 d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-chevron-down collapse-icon me-2"></i>{{ $dbk['kategori']->label }}
+                                <span class="badge bg-secondary ms-2">{{ $dbk['count'] }} data</span>
+                            </span>
+                            <span class="badge bg-primary">Total: Rp {{ number_format($dbk['total'], 0, ',', '.') }}</span>
                         </h6>
-                        <span class="badge bg-primary">Total: Rp {{ number_format($dbk['total'], 0, ',', '.') }}</span>
                     </div>
+                    <div class="collapse show kat-collapse" id="{{ $katCollapseId }}">
+                        <div class="p-2">
                     <div class="table-responsive">
                         @if($katId === 1)
                         {{-- KAS: NOMOR AKUN, ATAS NAMA, BANK, LOKASI, THN, SALDO --}}
@@ -549,6 +406,7 @@
                         </table>
                         @endif
                     </div>
+                    <div class="kat-pagination d-flex justify-content-between align-items-center mt-2" data-table="tableKat-{{ $katId }}" style="font-size:0.8rem"></div>
                     <div class="d-flex justify-content-between mt-3 kat-toolbar" data-table="tableKat-{{ $katId }}" data-kat="{{ $katId }}">
                         @cmsCan('lampiran_spt', 'create')
                         <button type="button" class="btn btn-outline-primary btn-kat-add" data-kode-opts='@json($activeMasterItems->where("kategori_id", $katId)->map(function($m){ return ["kode" => $m->sub_kode, "nama" => $m->nama]; })->values())'>
@@ -559,8 +417,11 @@
                         </button>
                         @endCmsCan
                     </div>
+                        </div>
+                    </div>
                 </div>
                 @endforeach
+                </div>
 
                 {{-- Tab: Recap --}}
                 <div class="tab-pane fade" id="tabContent-recap" role="tabpanel">
@@ -838,6 +699,7 @@ document.addEventListener('click', function(e) {
     tdAksi.appendChild(btnHapus);
     tr.appendChild(tdAksi);
     tbody.appendChild(tr);
+    katGotoPage(table, 'last');
 });
 $(document).ready(function() {
     $('select[name="client_id"]').select2({
@@ -1395,11 +1257,135 @@ document.querySelectorAll('.collapse-toggle').forEach(function(header) {
     }
 });
 
+// Buka / Tutup semua section kategori
+document.getElementById('btnExpandAll')?.addEventListener('click', function() {
+    document.querySelectorAll('.kat-collapse').forEach(function(el) {
+        bootstrap.Collapse.getOrCreateInstance(el, { toggle: false }).show();
+    });
+});
+document.getElementById('btnCollapseAll')?.addEventListener('click', function() {
+    document.querySelectorAll('.kat-collapse').forEach(function(el) {
+        bootstrap.Collapse.getOrCreateInstance(el, { toggle: false }).hide();
+    });
+});
+
+// Simpan semua kategori sekaligus
+document.getElementById('btnSimpanSemua')?.addEventListener('click', function() {
+    var allRows = [];
+    document.querySelectorAll('.kat-section table.table-lampiran').forEach(function(table) {
+        allRows = allRows.concat(collectLampiranRows(table));
+    });
+    postLampiranRows(allRows);
+});
+
+// Pagination per tabel kategori (client-side, tanpa reload) — 15 baris per halaman
+var KAT_PER_PAGE = 15;
+
+function katDataRows(table) {
+    var tbody = table.querySelector('tbody');
+    if (!tbody) return [];
+    return Array.prototype.filter.call(
+        tbody.querySelectorAll('tr.row-edit, tr.row-new'),
+        function(tr) { return !tr.classList.contains('empty-row'); }
+    );
+}
+
+function katPageWindow(cur, pages) {
+    if (pages <= 7) {
+        var all = [];
+        for (var i = 1; i <= pages; i++) all.push(i);
+        return all;
+    }
+    var set = [1, cur - 1, cur, cur + 1, pages].filter(function(p) { return p >= 1 && p <= pages; });
+    set = Array.from(new Set(set)).sort(function(a, b) { return a - b; });
+    var out = [];
+    var prev = 0;
+    set.forEach(function(p) {
+        if (p - prev > 1) out.push('...');
+        out.push(p);
+        prev = p;
+    });
+    return out;
+}
+
+function katRenderPager(table) {
+    var pager = document.querySelector('.kat-pagination[data-table="' + table.id + '"]');
+    if (!pager) return;
+    var rows = katDataRows(table);
+    var total = rows.length;
+    if (total <= KAT_PER_PAGE) {
+        pager.innerHTML = '';
+        pager.style.display = 'none';
+        rows.forEach(function(tr) { tr.style.display = ''; });
+        table.dataset.katPage = '1';
+        return;
+    }
+    pager.style.display = '';
+    var pages = Math.ceil(total / KAT_PER_PAGE);
+    var cur = parseInt(table.dataset.katPage || '1', 10);
+    if (isNaN(cur) || cur < 1) cur = 1;
+    if (cur > pages) cur = pages;
+    table.dataset.katPage = String(cur);
+
+    rows.forEach(function(tr, idx) {
+        var p = Math.floor(idx / KAT_PER_PAGE) + 1;
+        tr.style.display = (p === cur) ? '' : 'none';
+    });
+
+    var start = (cur - 1) * KAT_PER_PAGE + 1;
+    var end = Math.min(cur * KAT_PER_PAGE, total);
+
+    var html = '<small class="text-muted">Menampilkan ' + start + '-' + end + ' dari ' + total + ' data</small>';
+    html += '<div class="btn-group btn-group-sm" role="group">';
+    html += '<button type="button" class="btn btn-outline-secondary kat-page-btn" data-page="' + (cur - 1) + '"' + (cur === 1 ? ' disabled' : '') + '><i class="bi bi-chevron-left"></i></button>';
+    katPageWindow(cur, pages).forEach(function(p) {
+        if (p === '...') html += '<button type="button" class="btn btn-outline-secondary" disabled>...</button>';
+        else html += '<button type="button" class="btn kat-page-btn ' + (p === cur ? 'btn-primary' : 'btn-outline-secondary') + '" data-page="' + p + '">' + p + '</button>';
+    });
+    html += '<button type="button" class="btn btn-outline-secondary kat-page-btn" data-page="' + (cur + 1) + '"' + (cur === pages ? ' disabled' : '') + '><i class="bi bi-chevron-right"></i></button>';
+    html += '</div>';
+    pager.innerHTML = html;
+}
+
+function katGotoPage(table, page) {
+    if (page === 'last') {
+        page = Math.max(1, Math.ceil(katDataRows(table).length / KAT_PER_PAGE));
+    }
+    table.dataset.katPage = String(page);
+    katRenderPager(table);
+}
+
+// Klik nomor / prev / next pager (tanpa reload)
+document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.kat-page-btn');
+    if (!btn || btn.disabled) return;
+    var pager = btn.closest('.kat-pagination');
+    if (!pager) return;
+    var table = document.getElementById(pager.getAttribute('data-table'));
+    if (!table) return;
+    katGotoPage(table, parseInt(btn.getAttribute('data-page'), 10));
+});
+
+// Inisialisasi pager + pantau tambah/hapus baris agar selalu sinkron
+function katInitPagination() {
+    document.querySelectorAll('.kat-section table.table-lampiran').forEach(function(table) {
+        if (!table.dataset.katPage) table.dataset.katPage = '1';
+        katRenderPager(table);
+        var tbody = table.querySelector('tbody');
+        if (tbody && !tbody.dataset.katObserved) {
+            tbody.dataset.katObserved = '1';
+            new MutationObserver(function() { katRenderPager(table); }).observe(tbody, { childList: true });
+        }
+    });
+}
+katInitPagination();
+
 // Persist active tab
 var tabKey = localStorage.getItem('lampiranSptTab');
 if (tabKey) {
     var tab = document.querySelector('#lampiranTabs button[data-bs-target="' + tabKey + '"]');
     if (tab) { var trigger = new bootstrap.Tab(tab); trigger.show(); }
+    else { localStorage.removeItem('lampiranSptTab'); }
 }
 document.querySelectorAll('#lampiranTabs button[data-bs-toggle="tab"]').forEach(function(btn) {
     btn.addEventListener('shown.bs.tab', function(e) {
